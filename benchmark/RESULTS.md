@@ -25,6 +25,26 @@ Train 11006 / test 4799 dòng, tách theo domain gốc. **Mọi con số đều 
 
 ROC-AUC **0.9302**, Brier score 0.0585, sai số hiệu chỉnh kỳ vọng (ECE) 0.0609.
 
+## Hồ sơ rủi ro (risk profiles)
+
+Ngưỡng chọn trên tập train theo mục tiêu tỷ lệ báo nhầm, đo lại trên tập test. Báo nhầm / 10k = số cảnh báo sai trên 10.000 domain hợp lệ, không phụ thuộc tỷ lệ tấn công của môi trường.
+
+| profile | ngưỡng SUSPICIOUS | recall | báo nhầm / 10k | ngưỡng MALICIOUS | recall | báo nhầm / 10k |
+|---|---|---|---|---|---|---|
+| default | 0.5000 | 0.8698 | 160.0 | 0.9000 | 0.6395 | 26.0 |
+| banking | 0.2742 | 0.8698 | 160.0 | 0.2742 | 0.8698 | 160.0 |
+| browser | 0.8434 | 0.6407 | 26.0 | 0.9805 | 0.1836 | 6.0 |
+
+## Các điểm vận hành
+
+Muốn tự đặt ngân sách báo nhầm: chọn một dòng (`--max-fpr`). Các mục tiêu cho cùng ngưỡng được gộp.
+
+| mục tiêu FPR tối đa (train) | ngưỡng | recall (test) | FPR (test) | báo nhầm / 10k (test) |
+|---|---|---|---|---|
+| 0.0005 | 0.9805 | 0.1836 | 0.0006 | 6.0 |
+| 0.002 | 0.8434 | 0.6407 | 0.0026 | 26.0 |
+| 0.02 | 0.2742 | 0.8698 | 0.016 | 160.0 |
+
 ## Độ tin cậy của xác suất (reliability)
 
 Xác suất dự đoán so với tỷ lệ tấn công thật trong từng khoảng.

@@ -76,6 +76,11 @@ Nếu chỉ cần bảo vệ thương hiệu cho **một tổ chức**, đừng 
 3. Viết test riêng; `tests/test_engines.py` sẽ tự kiểm tra tính độc lập của engine mới.
 4. Hiệu chỉnh lại (`python benchmark/calibrate.py`). Trọng số của engine mới được học từ benchmark. Nếu trọng số ra 0, nghĩa là engine chưa thêm thông tin nào mà các engine khác chưa có.
 
+## Đổi ngưỡng cho một môi trường
+
+- Chỉ một hệ thống cần ngưỡng khác: không sửa repo, dùng `--profile`, `HOMOGLYPH_PROFILE` hoặc `--max-fpr S,M` (cách tính ngân sách trong [risk scoring](risk-scoring.md#tự-đặt-ngân-sách-báo-nhầm)).
+- Thêm / sửa profile có sẵn cho mọi người: sửa `PROFILES` trong `benchmark/calibrate.py`, chạy `python benchmark/calibrate.py`, rồi `pytest -q`.
+
 ## Cập nhật dữ liệu Unicode
 
 Workflow `Unicode data` trên GitHub chạy hằng tháng và báo lỗi khi Unicode có bản mới. Khi đó:
@@ -122,4 +127,7 @@ PSL đi kèm thư viện `publicsuffixlist`: `pip install -U publicsuffixlist`. 
 | `test_idna_tables_match_bundled_unicode_data` | `idna` và dữ liệu Unicode lệch phiên bản | `pip install -U idna` hoặc cập nhật dữ liệu Unicode |
 | `test_repository_has_no_hidden_characters` | có ký tự ẩn / bidi thật trong file (báo kèm file:dòng) | thay bằng escape Unicode của Python |
 | `test_near_table_complements_the_official_data` | một cặp trong `NEAR` đã là "giống hệt" trong dữ liệu Unicode | xóa cặp đó khỏi `NEAR` |
+| `invalid risk policy: unknown risk profile` | tên profile sai (hoặc `HOMOGLYPH_PROFILE` sai) | xem `homoglyph-detector --profiles` |
+| `the MALICIOUS false positive budget must not exceed the SUSPICIOUS one` | `--max-fpr` đảo thứ tự | viết `--max-fpr <SUSPICIOUS>,<MALICIOUS>`, số thứ hai nhỏ hơn |
+| `test_builtin_profiles_meet_their_targets_on_the_train_split` | profile không đạt mục tiêu sau khi đổi engine | chạy lại `python benchmark/calibrate.py` |
 | workflow `Unicode data` hằng tháng lỗi | Unicode có bản mới | làm theo mục *Cập nhật dữ liệu Unicode* |

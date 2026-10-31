@@ -12,6 +12,7 @@ Phát hiện tên miền, email, URL và tên hiển thị **giả mạo bằng 
 - **Unicode UTS #39** — skeleton, single / mixed / whole-script confusable, restriction level, ký tự ẩn, ký tự đảo chiều (bidi), trên dữ liệu Unicode 18 chính thức.
 - **ASCII Visual Confusable** — thay ký tự (`5`→`s`), thay cụm ký tự (`vv`→`w`, `cl`→`d`), chữ có dấu, kèm điểm độ giống hình ảnh.
 - **IDNA2008 + Public Suffix List** — kiểm tra theo RFC 5891–5893, mapping UTS #46 như trình duyệt, tách tên miền đúng (`vietcombank.com.vn`, `x.github.io`).
+- **Domain Risk Scoring theo môi trường** — cùng một điểm rủi ro, ngưỡng kết luận khác nhau: profile `default`, `banking` (chặn mọi bằng chứng), `browser` (chỉ cảnh báo bằng chứng mạnh) hoặc ngân sách báo nhầm riêng (`--max-fpr`), chọn từ benchmark theo tỷ lệ báo nhầm.
 - **Brand Intelligence Database** — thương hiệu nằm trong JSON có version; tổ chức nạp thêm database riêng; mọi dữ liệu được ghim SHA-256, dữ liệu bị sửa thì công cụ dừng.
 
 ## Ví dụ
@@ -24,6 +25,7 @@ $ homoglyph-detector "pаypal.com" 5hopee.vn paypal-login.com "tiếngviệt.vn"
     skeleton: paypal.corn
     level   : Minimally Restrictive
     risk    : 100/100   engines: unicode 0.75  idna 0.00  brand 0.95  combosquat 0.00  visual 0.00
+    profile : default (SUSPICIOUS >= 0.50, MALICIOUS >= 0.90)
     - [unicode/medium] 'pаypal' mixes scripts: Cyrillic, Latin (level: Minimally Restrictive)
     - [unicode/medium] 'pаypal' renders like ASCII 'paypal' (mixed-script confusable)
     - [unicode/info] Position 1: 'а' U+0430 (Cyrillic) looks like 'a'
@@ -33,6 +35,7 @@ $ homoglyph-detector "pаypal.com" 5hopee.vn paypal-login.com "tiếngviệt.vn"
     skeleton: 5hopee.vn
     level   : ASCII-Only
     risk    : 100/100   engines: unicode 0.00  idna 0.00  brand 0.50  combosquat 0.00  visual 0.70
+    profile : default (SUSPICIOUS >= 0.50, MALICIOUS >= 0.90)
     - [brand/medium] '5hopee' is one edit away from Shopee keyword 'shopee'
     - [visual/high] '5hopee' looks like Shopee keyword 'shopee' (visual similarity 0.95: 5->s)
 
@@ -40,6 +43,7 @@ $ homoglyph-detector "pаypal.com" 5hopee.vn paypal-login.com "tiếngviệt.vn"
     skeleton: paypal-login.corn
     level   : ASCII-Only
     risk    : 81/100   engines: unicode 0.00  idna 0.00  brand 0.00  combosquat 0.50  visual 0.00
+    profile : default (SUSPICIOUS >= 0.50, MALICIOUS >= 0.90)
     - [combosquat/medium] Contains PayPal keyword 'paypal' on unofficial domain 'paypal-login.com'
 
 ✅ SAFE       tiếngviệt.vn  [domain]
@@ -47,9 +51,10 @@ $ homoglyph-detector "pаypal.com" 5hopee.vn paypal-login.com "tiếngviệt.vn"
     skeleton: tiếngviệt.vn
     level   : Single Script
     risk    : 13/100   engines: unicode 0.00  idna 0.00  brand 0.00  combosquat 0.00  visual 0.00
+    profile : default (SUSPICIOUS >= 0.50, MALICIOUS >= 0.90)
 ```
 
-Mỗi kết quả có điểm rủi ro 0–100, điểm của từng engine và bằng chứng gắn tên engine tạo ra nó, không chỉ đúng / sai.
+Mỗi kết quả có điểm rủi ro 0–100, điểm của từng engine, bằng chứng gắn tên engine tạo ra nó, và profile đã dùng để ra kết luận, không chỉ đúng / sai.
 
 ## Cài đặt
 
@@ -69,6 +74,9 @@ homoglyph-detector "5hopee Official"                                    # tên h
 homoglyph-detector -f examples/sample_domains.txt                       # mỗi dòng một đầu vào
 cat domains.txt | homoglyph-detector -f -                               # đọc từ stdin
 homoglyph-detector g00gle.com --json                                    # JSON cho SIEM / script
+homoglyph-detector paypal-login.com --profile banking                  # profile: default, banking, browser
+homoglyph-detector paypal-login.com --max-fpr 0.01,0.001                # ngân sách báo nhầm riêng
+homoglyph-detector --profiles                                           # các profile và số liệu đo được
 homoglyph-detector x.vn --brands "org.json#sha256=<mã>"                 # thêm thương hiệu của tổ chức
 homoglyph-detector --verify                                             # kiểm tra toàn vẹn dữ liệu
 homoglyph-detector --version                                            # phiên bản công cụ và dữ liệu
@@ -86,10 +94,11 @@ Dùng như thư viện:
 ```python
 from homoglyph_detector import analyze
 
-report = analyze("pаypal.com")
+report = analyze("pаypal.com", policy="browser")   # policy: tên profile, mặc định 'default'
 report.verdict          # 'MALICIOUS'
 report.risk_score       # 100
 report.engine_scores    # {'unicode': 0.75, 'idna': 0.0, 'brand': 0.95, 'combosquat': 0.0, 'visual': 0.0}
+report.profile          # 'browser'; report.thresholds: ngưỡng SUSPICIOUS / MALICIOUS đã dùng
 report.findings         # bằng chứng, mỗi cái có engine, kind, severity, message
 report.to_dict()        # sẵn sàng xuất JSON
 ```
@@ -118,6 +127,8 @@ Chi tiết từng module, các khái niệm chính và bảng **"muốn sửa g�
 | p ≥ 0.9 (MALICIOUS) | 0.9926 | 0.6395 | 0.7778 | 0.0026 |
 | luật mức độ, không hiệu chỉnh | 0.9624 | 0.7522 | 0.8444 | 0.0156 |
 
+Ngưỡng ở bảng trên là của profile `default`; mỗi môi trường chọn điểm vận hành riêng, ví dụ `browser` chỉ có 26 báo nhầm / 10.000 domain, `banking` bắt 87% tấn công: [docs/risk-scoring.md](docs/risk-scoring.md).
+
 ROC-AUC 0.9302. Cách xây dựng, những gì benchmark đã phát hiện và các giới hạn: [docs/benchmark.md](docs/benchmark.md).
 
 ## Tài liệu
@@ -128,12 +139,14 @@ ROC-AUC 0.9302. Cách xây dựng, những gì benchmark đã phát hiện và c
 | [docs/ky-thuat.md](docs/ky-thuat.md) | UTS #39, ASCII visual, IDNA2008 + PSL, typosquat / combosquat |
 | [docs/brand-database.md](docs/brand-database.md) | định dạng brand database, các lớp, kiểm tra hợp lệ, toàn vẹn, version, dữ liệu Unicode |
 | [docs/benchmark.md](docs/benchmark.md) | bộ dữ liệu, hiệu chỉnh, kết quả, giới hạn |
+| [docs/risk-scoring.md](docs/risk-scoring.md) | profile rủi ro theo môi trường, ngân sách báo nhầm, điểm vận hành |
 | [docs/bao-tri.md](docs/bao-tri.md) | **hướng dẫn bảo trì**: thêm thương hiệu, sửa báo nhầm, thêm engine, cập nhật dữ liệu, phát hành, **tra cứu lỗi** |
 | [CHANGELOG.md](CHANGELOG.md) | lịch sử phiên bản |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | quy trình đóng góp, kiểm tra trước khi mở PR |
 
 ## Lộ trình
 
+- Điểm số mịn hơn (đặc trưng liên tục như độ dài từ khóa, mức phổ biến của domain) để có nhiều điểm vận hành hơn ba bậc hiện tại.
 - Tập test từ domain lừa đảo thật (PhishTank, OpenPhish) bên cạnh tấn công do dnstwist sinh.
 - Chế độ `.eml`: kiểm tra From / Reply-To / Return-Path và mọi liên kết trong email lừa đảo.
 - Ký số brand database (Ed25519) để chống sửa cả `MANIFEST.json`.

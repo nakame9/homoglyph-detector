@@ -7,9 +7,88 @@
     "visual": 7.798
   },
   "bias": -1.8926,
-  "thresholds": {
-    "suspicious": 0.5,
-    "malicious": 0.9
+  "profiles": {
+    "default": {
+      "description": "General use: SUSPICIOUS when more likely than not, MALICIOUS at 9 in 10.",
+      "suspicious": 0.5,
+      "malicious": 0.9,
+      "targets": {
+        "suspicious": {
+          "probability": 0.5
+        },
+        "malicious": {
+          "probability": 0.9
+        }
+      },
+      "test": {
+        "suspicious": {
+          "recall": 0.8698,
+          "false_positive_rate": 0.016,
+          "false_alerts_per_10k": 160.0,
+          "precision": 0.9667
+        },
+        "malicious": {
+          "recall": 0.6395,
+          "false_positive_rate": 0.0026,
+          "false_alerts_per_10k": 26.0,
+          "precision": 0.9926
+        }
+      }
+    },
+    "banking": {
+      "description": "High-value transactions (banking, payments): flag and block on any evidence; false positives go to step-up verification.",
+      "suspicious": 0.274228,
+      "malicious": 0.274228,
+      "targets": {
+        "suspicious": {
+          "max_fpr": 0.05
+        },
+        "malicious": {
+          "max_fpr": 0.02
+        }
+      },
+      "test": {
+        "suspicious": {
+          "recall": 0.8698,
+          "false_positive_rate": 0.016,
+          "false_alerts_per_10k": 160.0,
+          "precision": 0.9667
+        },
+        "malicious": {
+          "recall": 0.8698,
+          "false_positive_rate": 0.016,
+          "false_alerts_per_10k": 160.0,
+          "precision": 0.9667
+        }
+      }
+    },
+    "browser": {
+      "description": "End-user browser warnings: every alert interrupts a person, so only strong look-alike evidence counts.",
+      "suspicious": 0.843448,
+      "malicious": 0.98053,
+      "targets": {
+        "suspicious": {
+          "max_fpr": 0.002
+        },
+        "malicious": {
+          "max_fpr": 0.0005
+        }
+      },
+      "test": {
+        "suspicious": {
+          "recall": 0.6407,
+          "false_positive_rate": 0.0026,
+          "false_alerts_per_10k": 26.0,
+          "precision": 0.9926
+        },
+        "malicious": {
+          "recall": 0.1836,
+          "false_positive_rate": 0.0006,
+          "false_alerts_per_10k": 6.0,
+          "precision": 0.9935
+        }
+      }
+    }
   },
   "brands": {
     "name": "homoglyph-detector default brands",
@@ -45,6 +124,194 @@
       "false_negatives": 601
     }
   },
+  "operating_points": [
+    {
+      "max_fpr_target": 0.0005,
+      "threshold": 0.98053,
+      "recall": 0.1836,
+      "false_positive_rate": 0.0006,
+      "false_alerts_per_10k": 6.0,
+      "precision": 0.9935
+    },
+    {
+      "max_fpr_target": 0.002,
+      "threshold": 0.843448,
+      "recall": 0.6407,
+      "false_positive_rate": 0.0026,
+      "false_alerts_per_10k": 26.0,
+      "precision": 0.9926
+    },
+    {
+      "max_fpr_target": 0.02,
+      "threshold": 0.274228,
+      "recall": 0.8698,
+      "false_positive_rate": 0.016,
+      "false_alerts_per_10k": 160.0,
+      "precision": 0.9667
+    }
+  ],
+  "operating_curve": [
+    {
+      "threshold": 0.0,
+      "recall": 1.0,
+      "fpr": 1.0
+    },
+    {
+      "threshold": 0.274228,
+      "recall": 0.7945,
+      "fpr": 0.014856
+    },
+    {
+      "threshold": 0.513691,
+      "recall": 0.793518,
+      "fpr": 0.014856
+    },
+    {
+      "threshold": 0.635648,
+      "recall": 0.793027,
+      "fpr": 0.014856
+    },
+    {
+      "threshold": 0.717321,
+      "recall": 0.711269,
+      "fpr": 0.014856
+    },
+    {
+      "threshold": 0.789326,
+      "recall": 0.704395,
+      "fpr": 0.014856
+    },
+    {
+      "threshold": 0.843448,
+      "recall": 0.590719,
+      "fpr": 0.00101
+    },
+    {
+      "threshold": 0.911695,
+      "recall": 0.589983,
+      "fpr": 0.00101
+    },
+    {
+      "threshold": 0.957216,
+      "recall": 0.558802,
+      "fpr": 0.00101
+    },
+    {
+      "threshold": 0.975193,
+      "recall": 0.558311,
+      "fpr": 0.00101
+    },
+    {
+      "threshold": 0.978615,
+      "recall": 0.552664,
+      "fpr": 0.00101
+    },
+    {
+      "threshold": 0.98053,
+      "recall": 0.202799,
+      "fpr": 0.000144
+    },
+    {
+      "threshold": 0.984456,
+      "recall": 0.202308,
+      "fpr": 0.000144
+    },
+    {
+      "threshold": 0.988469,
+      "recall": 0.200098,
+      "fpr": 0.000144
+    },
+    {
+      "threshold": 0.992501,
+      "recall": 0.199853,
+      "fpr": 0.000144
+    },
+    {
+      "threshold": 0.995427,
+      "recall": 0.173091,
+      "fpr": 0.000144
+    },
+    {
+      "threshold": 0.996981,
+      "recall": 0.172846,
+      "fpr": 0.000144
+    },
+    {
+      "threshold": 0.998541,
+      "recall": 0.1726,
+      "fpr": 0.000144
+    },
+    {
+      "threshold": 0.998853,
+      "recall": 0.169654,
+      "fpr": 0.000144
+    },
+    {
+      "threshold": 0.999117,
+      "recall": 0.168672,
+      "fpr": 0.000144
+    },
+    {
+      "threshold": 0.99948,
+      "recall": 0.024061,
+      "fpr": 0.000144
+    },
+    {
+      "threshold": 0.999766,
+      "recall": 0.023815,
+      "fpr": 0.000144
+    },
+    {
+      "threshold": 0.999853,
+      "recall": 0.023324,
+      "fpr": 0.000144
+    },
+    {
+      "threshold": 0.999906,
+      "recall": 0.022342,
+      "fpr": 0.000144
+    },
+    {
+      "threshold": 0.999926,
+      "recall": 0.021851,
+      "fpr": 0.0
+    },
+    {
+      "threshold": 0.99995,
+      "recall": 0.021606,
+      "fpr": 0.0
+    },
+    {
+      "threshold": 0.999971,
+      "recall": 0.01424,
+      "fpr": 0.0
+    },
+    {
+      "threshold": 0.999989,
+      "recall": 0.013013,
+      "fpr": 0.0
+    },
+    {
+      "threshold": 0.999996,
+      "recall": 0.012767,
+      "fpr": 0.0
+    },
+    {
+      "threshold": 0.999998,
+      "recall": 0.007857,
+      "fpr": 0.0
+    },
+    {
+      "threshold": 0.999999,
+      "recall": 0.005647,
+      "fpr": 0.0
+    },
+    {
+      "threshold": 1.0,
+      "recall": 0.0,
+      "fpr": 0.0
+    }
+  ],
   "baseline_test_metrics": {
     "suspicious_or_worse": {
       "precision": 0.9624,

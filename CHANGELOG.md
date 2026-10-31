@@ -2,6 +2,15 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/), đánh số theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [0.9.0] - 2026-10-31
+### Thêm
+- Domain Risk Scoring theo môi trường: profile rủi ro `default`, `banking`, `browser`, chọn ngưỡng trên tập train theo mục tiêu tỷ lệ báo nhầm và đo lại trên tập test.
+- Ngân sách báo nhầm riêng: `--max-fpr S,M` (CLI) và `custom_profile()` (thư viện), dựa trên đường cong vận hành lưu trong `calibration.json`.
+- `--profile`, biến môi trường `HOMOGLYPH_PROFILE`, `--profiles`; trường `profile` và `thresholds` trong báo cáo.
+- `docs/risk-scoring.md`; bảng profile và điểm vận hành trong `benchmark/RESULTS.md`.
+### Thay đổi
+- `analyze()` nhận tham số `policy`; `calibration.json` thay `thresholds` bằng `profiles`, `operating_points`, `operating_curve`.
+
 ## [0.8.0] - 2026-10-31
 ### Thay đổi
 - Tổ chức lại repo để dễ quản lý: mỗi engine một file trong `src/homoglyph_detector/engines/` (trước đây gộp trong `engines.py`); hành vi và trọng số hiệu chỉnh giữ nguyên.

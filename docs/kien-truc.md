@@ -22,6 +22,10 @@ fusion               scoring.py      p = sigmoid(bias + Σ trọng_số × đi�
                                      trọng số lấy từ data/calibration.json (do benchmark sinh ra)
    │
    ▼
+chính sách           scoring.py      profile (default / banking / browser) hoặc --max-fpr
+                                     -> hai ngưỡng -> SAFE / SUSPICIOUS / MALICIOUS
+   │
+   ▼
 Report               analyzer.py     xác suất, risk 0–100, verdict, điểm từng engine,
                                      bằng chứng, brand database đã dùng
 ```
@@ -43,7 +47,7 @@ homoglyph-detector/
 │   │   ├── brand_engine.py
 │   │   ├── combosquat_engine.py
 │   │   └── visual_engine.py
-│   ├── scoring.py              hợp nhất điểm đã hiệu chỉnh -> xác suất, verdict
+│   ├── scoring.py              hợp nhất điểm -> xác suất; profile rủi ro -> verdict
 │   ├── brands.py               Brand Intelligence Database: nạp, kiểm tra, ghim, gộp
 │   ├── integrity.py            kiểm tra SHA-256 mọi file dữ liệu theo MANIFEST.json
 │   ├── unicode_data.py         thuật toán UTS #39: skeleton, script, restriction level
@@ -78,7 +82,8 @@ homoglyph-detector/
 | Sửa luật IDNA2008 | `engines/idna_engine.py`, `context.py` | pytest, calibrate |
 | Sửa luật typosquat / homograph thương hiệu | `engines/brand_engine.py` | pytest, calibrate |
 | Sửa luật combosquat | `engines/combosquat_engine.py` | pytest, calibrate |
-| Đổi ngưỡng SUSPICIOUS / MALICIOUS | `THRESHOLDS` trong `benchmark/calibrate.py` | calibrate |
+| Thêm / sửa profile rủi ro (ngưỡng theo môi trường) | `PROFILES` trong `benchmark/calibrate.py` | calibrate (xem [risk scoring](risk-scoring.md)) |
+| Dùng ngưỡng riêng cho một hệ thống | `--profile` / `--max-fpr` / `HOMOGLYPH_PROFILE` | không cần sửa repo |
 | Thêm engine mới | file mới trong `engines/` + đăng ký trong `engines/__init__.py` | pytest, calibrate |
 | Đổi cách in kết quả | `cli.py` (`render`) | pytest |
 | Thêm trường vào kết quả JSON | `analyzer.py` (`Report`) | pytest |
@@ -108,7 +113,8 @@ Quy tắc chung: **mọi thay đổi làm đổi điểm của engine đều ph�
 | Trường | Ý nghĩa |
 |---|---|
 | `verdict` | `SAFE`, `SUSPICIOUS`, `MALICIOUS` |
-| `probability`, `risk_score` | xác suất đã hiệu chỉnh, và cùng giá trị đó theo thang 0–100 |
+| `probability`, `risk_score` | xác suất đã hiệu chỉnh, và cùng giá trị đó theo thang 0–100 (giống nhau ở mọi môi trường) |
+| `profile`, `thresholds` | chính sách rủi ro đã dùng và hai ngưỡng của nó (khác nhau theo môi trường) |
 | `engine_scores` | điểm thô của từng engine |
 | `findings` | bằng chứng, gắn tên engine tạo ra nó |
 | `target`, `a_label`, `skeleton`, `restriction_level` | thông tin phân tích |

@@ -26,11 +26,28 @@ from homoglyph_detector.analyzer import run_engines  # noqa: E402
 from homoglyph_detector.brands import bundled  # noqa: E402
 from homoglyph_detector.cli import visible  # noqa: E402
 from homoglyph_detector.engines import ENGINES  # noqa: E402
+from homoglyph_detector.scoring import operating_curve, threshold_for_fpr  # noqa: E402
 
 DATASET = ROOT / "benchmark" / "dataset.jsonl"
 CALIBRATION = ROOT / "src" / "homoglyph_detector" / "data" / "calibration.json"
 RESULTS = ROOT / "benchmark" / "RESULTS.md"
-THRESHOLDS = {"suspicious": 0.5, "malicious": 0.9}   # "more likely than not" / "9 in 10"
+THRESHOLDS = {"suspicious": 0.5, "malicious": 0.9}   # default profile: "more likely than not" / "9 in 10"
+LEVELS = ("suspicious", "malicious")
+# Risk profiles: each threshold is a target, resolved on the train split, measured on the test split.
+# Targets are false positive rates (alert budgets): unlike precision they do not depend on how
+# many attacks a given environment sees.
+PROFILES = {
+    "default": {"description": "General use: SUSPICIOUS when more likely than not, MALICIOUS at 9 in 10.",
+                "suspicious": {"probability": THRESHOLDS["suspicious"]},
+                "malicious": {"probability": THRESHOLDS["malicious"]}},
+    "banking": {"description": "High-value transactions (banking, payments): flag and block on any evidence; "
+                               "false positives go to step-up verification.",
+                "suspicious": {"max_fpr": 0.05}, "malicious": {"max_fpr": 0.02}},
+    "browser": {"description": "End-user browser warnings: every alert interrupts a person, "
+                               "so only strong look-alike evidence counts.",
+                "suspicious": {"max_fpr": 0.002}, "malicious": {"max_fpr": 0.0005}},
+}
+FPR_GRID = (0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.05)
 L2 = 1.0
 SEVERITY_RANK = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
 
@@ -110,6 +127,12 @@ def confusion(y: list[int], flagged: list[bool]) -> dict:
             "false_positive_rate": round(fp / negatives, 4), "false_positives": fp, "false_negatives": fn}
 
 
+def operating(y: list[int], p: list[float], threshold: float) -> dict:
+    m = confusion(y, [pi >= threshold for pi in p])
+    return {"recall": m["recall"], "false_positive_rate": m["false_positive_rate"],
+            "false_alerts_per_10k": round(m["false_positive_rate"] * 10_000, 1), "precision": m["precision"]}
+
+
 def reliability(y: list[int], p: list[float], bins: int = 10) -> tuple[list[tuple], float]:
     table, ece = [], 0.0
     for b in range(bins):
@@ -153,15 +176,31 @@ def main() -> int:
         "suspicious_or_worse": confusion(y, [r["severity"] >= 2 for r in test]),
         "malicious": confusion(y, [r["severity"] >= 3 for r in test]),
     }
+    curve = operating_curve([r["label"] for r in train], [r["p"] for r in train])
+    profiles = {}
+    for name, spec in PROFILES.items():
+        cut = {level: spec[level]["probability"] if "probability" in spec[level]
+               else threshold_for_fpr(spec[level]["max_fpr"], curve) for level in LEVELS}
+        cut["malicious"] = max(cut["malicious"], cut["suspicious"])
+        profiles[name] = {"description": spec["description"], **cut,
+                          "targets": {level: spec[level] for level in LEVELS},
+                          "test": {level: operating(y, p, cut[level]) for level in LEVELS}}
+    grid = {}
+    for max_fpr in FPR_GRID:
+        t = threshold_for_fpr(max_fpr, curve)
+        grid.setdefault(t, {"max_fpr_target": max_fpr, "threshold": t, **operating(y, p, t)})
+
     model = {
         "weights": {n: round(wi, 4) for n, wi in zip(names, w[1:])},
         "bias": round(w[0], 4),
-        "thresholds": THRESHOLDS,
+        "profiles": profiles,
         "brands": {k: v for k, v in bundled().info().items() if k in ("name", "version", "sha256")},
         "dataset": {"file": "benchmark/dataset.jsonl", "sha256": hashlib.sha256(raw).hexdigest(),
                     "rows": len(rows), "attacks": sum(r["label"] for r in rows),
                     "train_rows": len(train), "test_rows": len(test)},
         "test_metrics": metrics,
+        "operating_points": list(grid.values()),   # test-split rates for common alert budgets
+        "operating_curve": curve,                  # train split: used by --max-fpr
         "baseline_test_metrics": baseline,
     }
     CALIBRATION.write_text(json.dumps(model, indent=2) + "\n", encoding="utf-8")
@@ -193,6 +232,21 @@ def main() -> int:
             ("luật mức độ, không hiệu chỉnh: MALICIOUS", baseline["malicious"])]],
         "", f"ROC-AUC **{metrics['roc_auc']}**, Brier score {metrics['brier']}, "
             f"sai số hiệu chỉnh kỳ vọng (ECE) {metrics['ece']}.", "",
+        "## Hồ sơ rủi ro (risk profiles)", "",
+        "Ngưỡng chọn trên tập train theo mục tiêu tỷ lệ báo nhầm, đo lại trên tập test. "
+        "Báo nhầm / 10k = số cảnh báo sai trên 10.000 domain hợp lệ, không phụ thuộc tỷ lệ tấn công của môi trường.", "",
+        "| profile | ngưỡng SUSPICIOUS | recall | báo nhầm / 10k | ngưỡng MALICIOUS | recall | báo nhầm / 10k |",
+        "|---|---|---|---|---|---|---|",
+        *[f"| {n} | {pr['suspicious']:.4f} | {pr['test']['suspicious']['recall']} | "
+          f"{pr['test']['suspicious']['false_alerts_per_10k']} | {pr['malicious']:.4f} | "
+          f"{pr['test']['malicious']['recall']} | {pr['test']['malicious']['false_alerts_per_10k']} |"
+          for n, pr in profiles.items()], "",
+        "## Các điểm vận hành", "",
+        "Muốn tự đặt ngân sách báo nhầm: chọn một dòng (`--max-fpr`). Các mục tiêu cho cùng ngưỡng được gộp.", "",
+        "| mục tiêu FPR tối đa (train) | ngưỡng | recall (test) | FPR (test) | báo nhầm / 10k (test) |",
+        "|---|---|---|---|---|",
+        *[f"| {g['max_fpr_target']} | {g['threshold']:.4f} | {g['recall']} | {g['false_positive_rate']} | "
+          f"{g['false_alerts_per_10k']} |" for g in grid.values()], "",
         "## Độ tin cậy của xác suất (reliability)", "",
         "Xác suất dự đoán so với tỷ lệ tấn công thật trong từng khoảng.", "",
         "| khoảng dự đoán | số dòng | dự đoán trung bình | tỷ lệ tấn công thực tế |", "|---|---|---|---|",

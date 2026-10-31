@@ -21,11 +21,12 @@
 1. chạy 5 engine trên mọi domain để lấy điểm thô;
 2. tách 70% train / 30% test theo `group` (SHA-256 của domain gốc), nên tập test gồm toàn domain mô hình chưa thấy;
 3. học logistic regression (phương pháp Newton, L2) với **trọng số ≥ 0**: thêm bằng chứng không bao giờ làm giảm rủi ro;
-4. đo trên tập test, ghi `data/calibration.json` + `benchmark/RESULTS.md`, rồi tự niêm phong `MANIFEST.json`.
+4. chọn ngưỡng cho từng profile rủi ro trên đường cong của tập train;
+5. đo trên tập test, ghi `data/calibration.json` + `benchmark/RESULTS.md`, rồi tự niêm phong `MANIFEST.json`.
 
 Kết quả tái tạo được từng byte; CI chạy lại và báo lỗi nếu `calibration.json` không khớp code.
 
-Trọng số hiện tại: unicode 17.0816, idna 0.0, brand 11.5037, combosquat 6.6264, visual 7.798, bias -1.8926. Ngưỡng: `SUSPICIOUS` khi p ≥ 0.5 (khả năng cao hơn không), `MALICIOUS` khi p ≥ 0.9 (9 trên 10).
+Trọng số hiện tại: unicode 17.0816, idna 0.0, brand 11.5037, combosquat 6.6264, visual 7.798, bias -1.8926. Ngưỡng của profile `default`: `SUSPICIOUS` khi p ≥ 0.5 (khả năng cao hơn không), `MALICIOUS` khi p ≥ 0.9 (9 trên 10). Các profile khác (`banking`, `browser`) và ngân sách báo nhầm riêng được chọn trên tập train theo mục tiêu tỷ lệ báo nhầm: xem [risk scoring](risk-scoring.md).
 
 ## Kết quả trên tập test (4.799 dòng)
 

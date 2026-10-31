@@ -6,7 +6,7 @@ from dataclasses import asdict, dataclass, field
 from .context import Context, classify, prepare, registrable  # noqa: F401  (re-exported)
 from .brands import load, resolve
 from .engines import ENGINES, EngineResult, Finding
-from .scoring import probability, verdict
+from .scoring import probability, profile, verdict
 from .unicode_data import skeleton
 
 
@@ -20,6 +20,8 @@ class Report:
     verdict: str = "SAFE"
     probability: float = 0.0    # calibrated P(look-alike attack); see benchmark/RESULTS.md
     risk_score: int = 0         # the probability on a 0-100 scale
+    profile: str = "default"    # risk profile that turned the probability into the verdict
+    thresholds: dict = field(default_factory=dict)   # its SUSPICIOUS / MALICIOUS probability cut-offs
     restriction_level: str = "ASCII-Only"   # UTS #39 §5.2, least restrictive part wins
     engine_scores: dict[str, float] = field(default_factory=dict)   # raw 0..1 score of every engine
     brand_db: list[dict] = field(default_factory=list)  # brand databases used: name, version, sha256, verification
@@ -35,12 +37,17 @@ def run_engines(raw: str, brand_files: tuple[str, ...] = ()) -> tuple[Context, d
     return ctx, {name: engine(ctx, brands) for name, engine in ENGINES.items()}
 
 
-def analyze(raw: str, brand_files: tuple[str, ...] = ()) -> Report:
+def analyze(raw: str, brand_files: tuple[str, ...] = (), policy: str | dict | None = None) -> Report:
+    """policy: a built-in profile name ('default', 'banking', 'browser', ...; None = $HOMOGLYPH_PROFILE
+    or 'default') or a dict from scoring.custom_profile()."""
     ctx, results = run_engines(raw, brand_files)
     scores = {name: result.score for name, result in results.items()}
     p = probability(scores)
+    policy = policy if isinstance(policy, dict) else profile(policy)
     return Report(input=raw, input_type=ctx.input_type, target=ctx.text, skeleton=skeleton(ctx.text),
-                  a_label=ctx.a_label, verdict=verdict(p), probability=round(p, 4), risk_score=round(100 * p),
+                  a_label=ctx.a_label, verdict=verdict(p, policy), probability=round(p, 4), risk_score=round(100 * p),
+                  profile=policy["name"],
+                  thresholds={level: policy[level] for level in ("suspicious", "malicious")},
                   restriction_level=results["unicode"].facts["restriction_level"], engine_scores=scores,
                   brand_db=[db.info() for db in load(resolve(tuple(brand_files)))[1]],
                   findings=[finding for result in results.values() for finding in result.findings])
