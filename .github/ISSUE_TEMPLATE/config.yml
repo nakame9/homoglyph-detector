@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Hướng dẫn bảo trì và tra cứu lỗi
+    url: https://github.com/nakame9/homoglyph-detector/blob/main/docs/bao-tri.md
+    about: Xem bảng tra cứu lỗi thường gặp trước khi mở issue
