@@ -4,6 +4,7 @@ Detect look-alike (homoglyph / IDN homograph) domains, emails, URLs and names �
 
 **Techniques**
 - **Unicode [UTS #39](https://www.unicode.org/reports/tr39/) Confusable Detection** — skeletons, single / mixed / whole-script confusables, restriction levels, mixed numbers, bidi controls and default-ignorable characters, on the official Unicode 18 data files.
+- **ASCII Visual Confusable Detection** — look-alikes made only of ordinary characters: single (`5hopee`, `paypai`) and multi-character substitutions (`vvhatsapp`, `clropbox`, `nnicrosoft`) with a visual similarity score.
 - **IDNA2008 validation** ([RFC 5890–5893](https://www.rfc-editor.org/rfc/rfc5891)) with [UTS #46](https://www.unicode.org/reports/tr46/) lookup mapping via [`idna`](https://pypi.org/project/idna/), and **Public Suffix List** parsing via [`publicsuffixlist`](https://pypi.org/project/publicsuffixlist/).
 
 ```
@@ -96,6 +97,21 @@ pytest                                                   # then the compatibilit
 
 **Self-check** — a test scans this repository with the tool's own bidi / default-ignorable detection, so no Trojan-Source-style character can slip into the code or docs.
 
+## Technique: ASCII Visual Confusable Detection
+
+Many phishing domains use no Unicode at all. UTS #39 only lists pairs that look *identical* (`0`/`o`, `1`/`l`, `m`/`rn` among domain characters), so `5hopee` or `vvhatsapp` are not confusable in the standard sense — but a reader in a hurry sees `shopee` and `whatsapp`. [`visual.py`](src/homoglyph_detector/visual.py) covers that gap:
+
+| | What | Examples |
+|---|---|---|
+| **A. Character substitution** | one domain character for a similar one | `5hopee` (5→s), `paypai` (i→l), `qoogle` (q→g), `g00gle` (0→o) |
+| **B. Multi-character substitution** | several characters drawn like one | `vvhatsapp` (vv→w), `clropbox` (cl→d), `nnicrosoft` (nn→m), `rnicrosoft` (rn→m) |
+| **C. Visual similarity scoring** | weighted edit distance: a look-alike substitution costs `1 − similarity`, any other edit costs 1; score = `1 − distance / length` | `5hopee`/`shopee` = 0.95, `vvhatsapp`/`whatsapp` = 0.99 |
+
+- **Where the weights come from:** pairs UTS #39 calls identical are read from `confusables.txt` and cost 0. Only the *near* pairs (similar, not identical) live in the small `NEAR` table, restricted to `a-z 0-9 -`, so there is no Unicode version to track. A test fails if a `NEAR` pair ever becomes identical in the official data.
+- **Typos are not look-alikes:** a substitution outside the table costs a full character, so `paypak` or `shoppe` (distance 1.0) stay ordinary *typosquats* (medium), while a visual look-alike (distance ≤ 0.5, i.e. at most half a character of visible difference) is **high**: `brand_visual`.
+- Each hyphen-separated part of a name is compared too (`paypai-login.com`), and display names / usernames get the same check (`5hopee Official`).
+- Checked against 50+ popular legitimate domains (Vietnamese banks and news sites, `mono`, `memo`, `nomo` near `momo`, ...) without a single `brand_visual` false positive.
+
 ## Technique: IDNA2008 validation and Public Suffix List
 
 Every host (from a domain, an email address or a URL) goes through this pipeline in [`analyzer.py`](src/homoglyph_detector/analyzer.py):
@@ -139,7 +155,7 @@ Exit code: `0` all safe, `1` something suspicious, `2` something malicious — h
 As a library:
 
 ```python
-from homoglyph_detector import analyze, skeleton, confusable_type, restriction_level
+from homoglyph_detector import analyze, skeleton, confusable_type, restriction_level, visual_similarity
 
 report = analyze("pаypal.com")
 report.verdict                     # 'MALICIOUS'
@@ -147,6 +163,7 @@ report.restriction_level           # 'Minimally Restrictive'
 report.to_dict()                   # JSON-ready
 confusable_type("аррӏе", "apple")  # 'whole-script'
 restriction_level("東京とうきょう")  # 'Single Script'
+visual_similarity("vvhatsapp", "whatsapp")  # VisualMatch(score=0.989, distance=0.1, edits=['vv->w'])
 ```
 
 ## How is this different from dnstwist?
@@ -158,6 +175,7 @@ restriction_level("東京とうきょう")  # 'Single Script'
 ```
 src/homoglyph_detector/
   unicode_data.py   UTS #39: skeleton, scripts, restriction levels, confusable types, properties
+  visual.py         ASCII visual confusables: substitution table and similarity scoring
   analyzer.py       parsing, punycode, checks, brand matching, verdict
   cli.py            command line
   data/             official Unicode data files (see above) + brands.json (edit freely)
@@ -166,6 +184,7 @@ scripts/
 tests/
   test_analyzer.py         malicious / suspicious / safe cases, one test per UTS #39 mechanism
   test_unicode_data.py     compatibility checks for the bundled Unicode data
+  test_visual.py           ASCII look-alikes, typos vs look-alikes, table consistency
 .github/workflows/
   ci.yml                   tests on every push
   unicode-data.yml         monthly check for new Unicode data
@@ -177,6 +196,7 @@ tests/
 - [x] v0.2 — full UTS #39 confusable detection: Script_Extensions, resolved script sets, restriction levels, single/mixed/whole-script confusable types, mixed numbers, invisible characters, hidden overlays
 - [x] v0.3 — official Default_Ignorable and Bidi_Control data, bidi control detection, update script with version check, data compatibility tests, monthly data workflow, safe report output
 - [x] v0.4 — IDNA2008 validation (strict + UTS #46), A-label/U-label round-trip, length / bidi / contextual rules, Public Suffix List with private suffixes
+- [x] v0.5 — ASCII visual confusable detection: character and multi-character substitutions, visual similarity scoring, WhatsApp and Dropbox brands
 - [ ] HTML report for batch runs
 - [ ] `.eml` mode: check From / Reply-To / Return-Path and every link in a phishing email
 - [ ] Optional online checks: DNS resolution, domain age (RDAP), VirusTotal — off by default

@@ -16,6 +16,7 @@ from .unicode_data import (DATA, LEVELS, confusable_type, is_allowed, is_bidi_co
                            is_single_script,
                            numbering_systems, repeated_marks, restriction_level, script_of, scripts_in,
                            skeleton)
+from .visual import MAX_VISUAL_DISTANCE, VisualMatch, visual_similarity
 
 SEVERITY_RANK = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
 VERDICT = {0: "SAFE", 1: "SAFE", 2: "SUSPICIOUS", 3: "MALICIOUS", 4: "MALICIOUS"}
@@ -193,6 +194,17 @@ def check_characters(text: str, report: Report) -> None:
                        **info)
 
 
+def _visual(report: Report, text: str, brand: str, kw: str) -> bool:
+    """ASCII visual look-alike of a brand keyword (5hopee, vvhatsapp, clropbox)."""
+    match: VisualMatch = visual_similarity(text if text.isascii() else skeleton(text), kw)
+    if match.distance > MAX_VISUAL_DISTANCE or not match.edits:   # identical text is not a look-alike
+        return False
+    report.add("brand_visual", "high", f"'{text}' looks like {brand} keyword '{kw}' "
+               f"(visual similarity {match.score:.2f}: {', '.join(match.edits)})",
+               brand=brand, keyword=kw, visual_similarity=match.score, edits=match.edits)
+    return True
+
+
 def check_brands_host(host: str, brands: list[dict], report: Report) -> None:
     rd, label = registrable(host)
     if any(host == d or host.endswith("." + d) for b in brands for d in b["domains"]):
@@ -218,6 +230,8 @@ def check_brands_host(host: str, brands: list[dict], report: Report) -> None:
                     report.add("brand_homograph", "high",
                                f"Name '{label}' renders like {name} keyword '{kw}'{_typed(kind)}",
                                brand=name, keyword=kw, confusable_type=kind)
+            elif any(_visual(report, part, name, kw) for part in dict.fromkeys([label, *label.split("-")])):
+                pass  # also catches 'paypai-login': each hyphen-separated part is compared
             elif len(kw) >= MIN_FUZZY_LEN and levenshtein(label_skel, kw_skel) == 1:
                 report.add("brand_typosquat", "medium", f"'{label}' is one edit away from {name} keyword '{kw}'",
                            brand=name, keyword=kw)
@@ -233,11 +247,15 @@ def check_brands_name(name: str, brands: list[dict], report: Report) -> None:
     for word in name.split():
         for brand in brands:
             for kw in brand["keywords"]:
-                if word.lower() != kw and skeleton(word) == skeleton(kw):
+                if word.lower() == kw:
+                    continue
+                if skeleton(word) == skeleton(kw):
                     kind = confusable_type(word, kw)
                     report.add("brand_homograph", "high",
                                f"'{word}' renders like {brand['name']} keyword '{kw}'{_typed(kind)}",
                                brand=brand["name"], keyword=kw, confusable_type=kind)
+                elif word.isascii():
+                    _visual(report, word.lower(), brand["name"], kw)
 
 
 def analyze(raw: str, brands_path: str | None = None) -> Report:

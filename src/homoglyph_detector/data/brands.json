@@ -6,6 +6,8 @@
     {"name": "Google", "domains": ["google.com", "google.com.vn", "gmail.com", "youtube.com"], "keywords": ["google", "gmail", "youtube"]},
     {"name": "Facebook", "domains": ["facebook.com", "fb.com", "messenger.com"], "keywords": ["facebook", "messenger"]},
     {"name": "Amazon", "domains": ["amazon.com"], "keywords": ["amazon"]},
+    {"name": "WhatsApp", "domains": ["whatsapp.com", "whatsapp.net", "wa.me"], "keywords": ["whatsapp"]},
+    {"name": "Dropbox", "domains": ["dropbox.com"], "keywords": ["dropbox"]},
     {"name": "Vietcombank", "domains": ["vietcombank.com.vn"], "keywords": ["vietcombank"]},
     {"name": "Techcombank", "domains": ["techcombank.com.vn", "techcombank.com"], "keywords": ["techcombank"]},
     {"name": "MoMo", "domains": ["momo.vn"], "keywords": ["momo"]},
