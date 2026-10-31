@@ -1,0 +1,142 @@
+{"input": "rnicrosoft.com", "a_label": "rnicrosoft.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "visual/brand_visual"]}
+{"input": "g00gle.com", "a_label": "g00gle.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "visual/brand_visual"]}
+{"input": "paypa1.com", "a_label": "paypa1.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "visual/brand_visual"]}
+{"input": "5hopee.vn", "a_label": "5hopee.vn", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_typosquat", "visual/brand_visual"]}
+{"input": "vvhatsapp.com", "a_label": "vvhatsapp.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["visual/brand_visual"]}
+{"input": "clropbox.com", "a_label": "clropbox.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["visual/brand_visual"]}
+{"input": "arnazon.com", "a_label": "arnazon.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "visual/brand_visual"]}
+{"input": "faceb00k.com", "a_label": "faceb00k.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "visual/brand_visual"]}
+{"input": "nnicrosoft.com", "a_label": "nnicrosoft.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_typosquat", "visual/brand_visual"]}
+{"input": "paypai.com", "a_label": "paypai.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_typosquat", "visual/brand_visual"]}
+{"input": "qoogle.com", "a_label": "qoogle.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_typosquat", "visual/brand_visual"]}
+{"input": "app1e.com", "a_label": "app1e.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "visual/brand_visual"]}
+{"input": "icl0ud.com", "a_label": "icl0ud.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "visual/brand_visual"]}
+{"input": "0utlook.com", "a_label": "0utlook.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "visual/brand_visual"]}
+{"input": "y0utube.com", "a_label": "y0utube.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "visual/brand_visual"]}
+{"input": "gmaii.com", "a_label": "gmaii.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_typosquat", "visual/brand_visual"]}
+{"input": "techc0mbank.com.vn", "a_label": "techc0mbank.com.vn", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "visual/brand_visual"]}
+{"input": "vietcornbank.com.vn", "a_label": "vietcornbank.com.vn", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "visual/brand_visual"]}
+{"input": "rnomo.vn", "a_label": "rnomo.vn", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "visual/brand_visual"]}
+{"input": "zal0.me", "a_label": "zal0.me", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "visual/brand_visual"]}
+{"input": "p\u0430ypal.com", "a_label": "xn--pypal-4ve.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "unicode/mixed_script", "unicode/whole_lookalike"]}
+{"input": "\u0430\u0440\u0440\u04cf\u0435.com", "a_label": "xn--80ak6aa92e.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "unicode/whole_lookalike"]}
+{"input": "xn--80ak6aa92e.com", "a_label": "xn--80ak6aa92e.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "unicode/whole_lookalike"]}
+{"input": "g\u043e\u043egle.com", "a_label": "xn--ggle-55da.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "unicode/mixed_script", "unicode/whole_lookalike"]}
+{"input": "mi\u0441rosoft.com", "a_label": "xn--mirosoft-gch.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "unicode/mixed_script", "unicode/whole_lookalike", "visual/brand_visual"]}
+{"input": "f\u0430\u0441ebook.com", "a_label": "xn--febook-3nf0l.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "unicode/mixed_script", "unicode/whole_lookalike"]}
+{"input": "\u0430m\u0430z\u043en.com", "a_label": "xn--mzn-5cdb9f.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "unicode/mixed_script", "unicode/whole_lookalike", "visual/brand_visual"]}
+{"input": "sh\u043ep\u0435\u0435.vn", "a_label": "xn--shp-tdda5c.vn", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "unicode/mixed_script", "unicode/whole_lookalike"]}
+{"input": "viet\u0441ombank.com.vn", "a_label": "xn--vietombank-fwi.com.vn", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "unicode/mixed_script", "unicode/whole_lookalike", "visual/brand_visual"]}
+{"input": "\u0440\u0430\u0443\u0440\u0430\u04cf.com", "a_label": "xn--80aa0cbo65f.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "unicode/whole_lookalike"]}
+{"input": "g\u03bf\u03bfgle.com", "a_label": "xn--ggle-0nda.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "unicode/mixed_script", "unicode/whole_lookalike"]}
+{"input": "\u03c1aypal.com", "a_label": "xn--aypal-2ce.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "unicode/mixed_script", "unicode/whole_lookalike"]}
+{"input": "micr\u03bfsoft.com", "a_label": "xn--micrsoft-2dg.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "unicode/mixed_script", "unicode/whole_lookalike", "visual/brand_visual"]}
+{"input": "dr\u03bfpbox.com", "a_label": "xn--drpbox-j0e.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "unicode/mixed_script", "unicode/whole_lookalike"]}
+{"input": "ex\u0430mple.com", "a_label": "xn--exmple-4nf.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["unicode/mixed_script", "unicode/whole_lookalike"]}
+{"input": "secure-l\u043egin.net", "a_label": "xn--secure-lgin-ynj.net", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["unicode/mixed_script", "unicode/whole_lookalike"]}
+{"input": "b\u0430nk-online.com", "a_label": "xn--bnk-online-zqi.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["unicode/mixed_script", "unicode/whole_lookalike"]}
+{"input": "\u0430ccount-verify.com", "a_label": "xn--ccount-verify-v1k.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["unicode/mixed_script", "unicode/whole_lookalike"]}
+{"input": "l\u03bfgin-portal.org", "a_label": "xn--lgin-portal-7ei.org", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["unicode/mixed_script", "unicode/whole_lookalike"]}
+{"input": "abc\u3068\u3046\u304d\u3087.jp", "a_label": "xn--abc-263b9a2lti.jp", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "shop\u4e2d\u6587.cn", "a_label": "xn--shop-3f5fy05j.cn", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "\ud55c\uae00abc.kr", "a_label": "xn--abc-eb9ll88m.kr", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "xn--a.com", "a_label": "", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": ["idna/idna_disallowed"]}
+{"input": "xn--zz-.com", "a_label": "", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": ["idna/idna_invalid"]}
+{"input": "xn--.com", "a_label": "", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": ["idna/idna_invalid"]}
+{"input": "xn--ls8h.la", "a_label": "", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": ["idna/idna_disallowed"]}
+{"input": "xn--80ak6aa92e-.com", "a_label": "", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": ["idna/idna_invalid"]}
+{"input": "xn--p1ai.xn--a", "a_label": "", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": ["idna/idna_disallowed"]}
+{"input": "xn--abc--.com", "a_label": "", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": ["idna/idna_invalid"]}
+{"input": "XN--A.COM", "a_label": "", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": ["idna/idna_disallowed"]}
+{"input": "pay\u200bpal.com", "a_label": "paypal.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["idna/idna_mapped", "unicode/default_ignorable", "unicode/whole_lookalike"]}
+{"input": "goo\u00adgle.com", "a_label": "google.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["idna/idna_mapped", "unicode/default_ignorable", "unicode/whole_lookalike"]}
+{"input": "micro\u2060soft.com", "a_label": "microsoft.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["idna/idna_mapped", "unicode/default_ignorable", "unicode/whole_lookalike"]}
+{"input": "face\u200cbook.com", "a_label": "", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "idna/idna_context", "idna/idna_differential", "unicode/default_ignorable", "unicode/whole_lookalike"]}
+{"input": "ama\u200dzon.com", "a_label": "", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "idna/idna_context", "idna/idna_differential", "unicode/default_ignorable", "unicode/whole_lookalike", "visual/brand_visual"]}
+{"input": "\ufeffapple.com", "a_label": "apple.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["idna/idna_mapped", "unicode/default_ignorable", "unicode/whole_lookalike"]}
+{"input": "shopee\u200b.vn", "a_label": "shopee.vn", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["idna/idna_mapped", "unicode/default_ignorable", "unicode/whole_lookalike"]}
+{"input": "user@pay\u200bpal.com", "a_label": "paypal.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["idna/idna_mapped", "unicode/default_ignorable", "unicode/whole_lookalike"]}
+{"input": "https://vietcom\u200bbank.com.vn/", "a_label": "vietcombank.com.vn", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["idna/idna_mapped", "unicode/default_ignorable", "unicode/whole_lookalike"]}
+{"input": "\u202emoc.lapyap", "a_label": "", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["idna/idna_disallowed", "unicode/bidi_control", "unicode/whole_lookalike"]}
+{"input": "invoice\u202efdp.exe", "a_label": "", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["idna/idna_disallowed", "unicode/bidi_control", "unicode/whole_lookalike"]}
+{"input": "\u2066paypal.com", "a_label": "", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "idna/idna_differential", "idna/idna_disallowed", "unicode/bidi_control", "unicode/whole_lookalike"]}
+{"input": "apple\u200f.com", "a_label": "", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "idna/idna_disallowed", "unicode/bidi_control", "unicode/whole_lookalike"]}
+{"input": "user@\u202emoc.elgoog", "a_label": "", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["idna/idna_disallowed", "unicode/bidi_control", "unicode/whole_lookalike"]}
+{"input": "https://\u202eapple.com/", "a_label": "", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "idna/idna_disallowed", "unicode/bidi_control", "unicode/whole_lookalike"]}
+{"input": "\u061cmicrosoft.com", "a_label": "", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "idna/idna_differential", "idna/idna_disallowed", "unicode/bidi_control", "unicode/mixed_script", "unicode/whole_lookalike", "visual/brand_visual"]}
+{"input": "ti\u1ebfngvi\u1ec7t.vn", "a_label": "xn--tingvit-5t4cyc.vn", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "h\u00e0n\u1ed9i.vn", "a_label": "xn--hni-9ka0849a.vn", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "\u0111\u00e0l\u1ea1t.vn", "a_label": "xn--lt-iia9qp51l.vn", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "s\u00e0ig\u00f2n.vn", "a_label": "xn--sign-0na4i.vn", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "ph\u1edfb\u00f2.vn", "a_label": "xn--phb-ena7149a.vn", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "b\u00e1nhm\u00ec.vn", "a_label": "xn--bnhm-5na3e.vn", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "nh\u00e0h\u00e0ng.com.vn", "a_label": "xn--nhhng-sqab.com.vn", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "qu\u00e0t\u1eb7ng.vn", "a_label": "xn--qutng-sqa8854c.vn", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "gi\u00e1od\u1ee5c.vn", "a_label": "xn--giodc-yqa4094c.vn", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "th\u1eddi-trang.vn", "a_label": "xn--thi-trang-6p7d.vn", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "li\u00ean-h\u1ec7@c\u00f4ngty.vn", "a_label": "xn--cngty-6ta.vn", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "https://tin-t\u1ee9c.vn/b\u00e0i-vi\u1ebft", "a_label": "xn--tin-tc-fr8b.vn", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "Nguy\u1ec5n V\u0103n A", "a_label": "", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "C\u00f4ng ty C\u1ed5 ph\u1ea7n \u00c1nh D\u01b0\u01a1ng", "a_label": "", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "Ng\u00e2n h\u00e0ng \u0110\u1ea7u t\u01b0", "a_label": "", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "m\u00fcnchen.de", "a_label": "xn--mnchen-3ya.de", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "b\u00fccher.de", "a_label": "xn--bcher-kva.de", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "k\u00f6ln.de", "a_label": "xn--kln-sna.de", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "caf\u00e9.fr", "a_label": "xn--caf-dma.fr", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "\u00e9lys\u00e9e.fr", "a_label": "xn--lyse-9oad.fr", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "espa\u00f1a.es", "a_label": "xn--espaa-rta.es", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "\u00e5land.fi", "a_label": "xn--land-poa.fi", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "bl\u00e5b\u00e6r.no", "a_label": "xn--blbr-roah.no", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "\u017c\u00f3\u0142w.pl", "a_label": "xn--w-uga1v8h.pl", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "p\u0159\u00edklad.cz", "a_label": "xn--pklad-zsa96e.cz", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "t\u00fcrkiye.com.tr", "a_label": "xn--trkiye-3ya.com.tr", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "\u0441\u0430\u0439\u0442.\u0440\u0444", "a_label": "xn--80aswg.xn--p1ai", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "\u043c\u043e\u0441\u043a\u0432\u0430.\u0440\u0444", "a_label": "xn--80adxhks.xn--p1ai", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "\u043f\u0440\u0438\u043c\u0435\u0440.\u0438\u0441\u043f\u044b\u0442\u0430\u043d\u0438\u0435", "a_label": "xn--e1afmkfd.xn--80akhbyknj4f", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "\u0443\u043a\u0440\u0430\u0457\u043d\u0430.\u0443\u043a\u0440", "a_label": "xn--80aa2annq7l.xn--j1amh", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "\u043e\u0440\u0435\u0445.\u0440\u0444", "a_label": "xn--e1argv.xn--p1ai", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "\u03c0\u03b1\u03c1\u03ac\u03b4\u03b5\u03b9\u03b3\u03bc\u03b1.\u03b4\u03bf\u03ba\u03b9\u03bc\u03ae", "a_label": "xn--hxajbheg2az3al.xn--jxalpdlp", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "\u4f8b\u5b50.\u6d4b\u8bd5", "a_label": "xn--fsqu00a.xn--0zwm56d", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "\u4e2d\u6587\u7f51.cn", "a_label": "xn--fiq228c5hs.cn", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "\u65e5\u672c\u8a9e.jp", "a_label": "xn--wgv71a119e.jp", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "\u4f8b\u3048.\u30c6\u30b9\u30c8", "a_label": "xn--r8jz45g.xn--zckzah", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "\uc2e4\ub840.\ud14c\uc2a4\ud2b8", "a_label": "xn--9n2bp8q.xn--9t4b11yi5a", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "\u0645\u062b\u0627\u0644.\u0625\u062e\u062a\u0628\u0627\u0631", "a_label": "xn--mgbh0fb.xn--kgbechtv", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "\u05d1\u05d3\u05d9\u05e7\u05d4.\u05d9\u05e9\u05e8\u05d0\u05dc", "a_label": "xn--5dbedt4e.xn--4dbrk0ce", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "\u0e44\u0e17\u0e22.th", "a_label": "xn--o3cw4h.th", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "\u0909\u0926\u093e\u0939\u0930\u0923.\u092a\u0930\u0940\u0915\u094d\u0937\u093e", "a_label": "xn--p1b6ci4b4b3a.xn--11b5bs3a9aj6g", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "xn--80aswg.xn--p1ai", "a_label": "xn--80aswg.xn--p1ai", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "vietcombank.com.vn", "a_label": "vietcombank.com.vn", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "www.vietcombank.com.vn", "a_label": "www.vietcombank.com.vn", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "bbc.co.uk", "a_label": "bbc.co.uk", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "google.com.vn", "a_label": "google.com.vn", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "myblog.blogspot.com", "a_label": "myblog.blogspot.com", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "someone.github.io", "a_label": "someone.github.io", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "amazon.co.jp", "a_label": "amazon.co.jp", "verdicts": {"default": "SUSPICIOUS", "banking": "MALICIOUS", "browser": "SAFE"}, "evidence": ["combosquat/brand_unofficial"]}
+{"input": "vietcornbank.com.vn", "a_label": "vietcornbank.com.vn", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "visual/brand_visual"]}
+{"input": "p\u0430ypal.github.io", "a_label": "xn--pypal-4ve.github.io", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "unicode/mixed_script", "unicode/whole_lookalike"]}
+{"input": "vietcombank.com.vn.evil.com", "a_label": "vietcombank.com.vn.evil.com", "verdicts": {"default": "SUSPICIOUS", "banking": "MALICIOUS", "browser": "SAFE"}, "evidence": ["combosquat/brand_in_host"]}
+{"input": "login-vietcombank.com.vn", "a_label": "login-vietcombank.com.vn", "verdicts": {"default": "SUSPICIOUS", "banking": "MALICIOUS", "browser": "SAFE"}, "evidence": ["combosquat/brand_in_host"]}
+{"input": "paypal.com.evil.co.uk", "a_label": "paypal.com.evil.co.uk", "verdicts": {"default": "SUSPICIOUS", "banking": "MALICIOUS", "browser": "SAFE"}, "evidence": ["combosquat/brand_in_host"]}
+{"input": "techc0mbank.com", "a_label": "techc0mbank.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "visual/brand_visual"]}
+{"input": "g00gle.co.uk", "a_label": "g00gle.co.uk", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "visual/brand_visual"]}
+{"input": "https://paypal.com@evil.com/login", "a_label": "evil.com", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "https://user:pass@p\u0430ypal.com:8443/x?y=1#z", "a_label": "xn--pypal-4ve.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "unicode/mixed_script", "unicode/whole_lookalike"]}
+{"input": "HTTPS://WWW.PAYPAL.COM/", "a_label": "www.paypal.com", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "https://xn--80ak6aa92e.com/", "a_label": "xn--80ak6aa92e.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "unicode/whole_lookalike"]}
+{"input": "https://paypal.com/@evil.com", "a_label": "paypal.com", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "https://[::1]:8080/", "a_label": "", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": ["idna/idna_disallowed"]}
+{"input": "http://192.168.0.1/login", "a_label": "192.168.0.1", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "https://paypal.com./", "a_label": "paypal.com", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "https://evil.com\\@paypal.com/", "a_label": "evil.com", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "https://paypal.com%2eevil.com/", "a_label": "paypal.com.evil.com", "verdicts": {"default": "SUSPICIOUS", "banking": "MALICIOUS", "browser": "SAFE"}, "evidence": ["combosquat/brand_in_host"]}
+{"input": "//paypal.com/path", "a_label": "paypal.com", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "paypal.com/login", "a_label": "paypal.com", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "paypal.com:443", "a_label": "paypal.com", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "mailto:user@p\u0430ypal.com", "a_label": "xn--pypal-4ve.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph", "unicode/mixed_script", "unicode/whole_lookalike"]}
+{"input": "https://5hopee.vn/sale", "a_label": "5hopee.vn", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_typosquat", "visual/brand_visual"]}
+{"input": "https://paypal.com\uff0f@evil.com/", "a_label": "evil.com", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "https://evil.com\uff0f@paypal.com/", "a_label": "paypal.com", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "https://pay\uff20pal.com", "a_label": "", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_typosquat", "idna/idna_differential", "idna/idna_disallowed", "unicode/compatibility", "unicode/whole_lookalike"]}
+{"input": "https://[paypal.com/", "a_label": "", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_typosquat", "combosquat/brand_in_host", "idna/idna_disallowed"]}
+{"input": "https://a\u2100b.com", "a_label": "", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["idna/idna_differential", "idna/idna_disallowed", "unicode/compatibility", "unicode/whole_lookalike"]}

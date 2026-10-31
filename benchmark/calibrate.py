@@ -13,6 +13,8 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import platform
+import time
 import os
 import subprocess
 import sys
@@ -29,6 +31,8 @@ from homoglyph_detector.engines import ENGINES  # noqa: E402
 from homoglyph_detector.scoring import operating_curve, threshold_for_fpr  # noqa: E402
 
 DATASET = ROOT / "benchmark" / "dataset.jsonl"
+GOLDEN = ROOT / "tests" / "golden" / "corpus.jsonl"
+MULTILINGUAL = {"vietnamese", "multilingual_legit", "mixed_script"}   # golden groups of legitimate non-ASCII names
 CALIBRATION = ROOT / "src" / "homoglyph_detector" / "data" / "calibration.json"
 RESULTS = ROOT / "benchmark" / "RESULTS.md"
 THRESHOLDS = {"suspicious": 0.5, "malicious": 0.9}   # default profile: "more likely than not" / "9 in 10"
@@ -124,7 +128,18 @@ def confusion(y: list[int], flagged: list[bool]) -> dict:
     recall = tp / (tp + fn) if tp + fn else 0.0
     return {"precision": round(precision, 4), "recall": round(recall, 4),
             "f1": round(2 * precision * recall / (precision + recall), 4) if precision + recall else 0.0,
-            "false_positive_rate": round(fp / negatives, 4), "false_positives": fp, "false_negatives": fn}
+            "false_positive_rate": round(fp / negatives, 4) if negatives else 0.0,
+            "false_negative_rate": round(fn / (tp + fn), 4) if tp + fn else 0.0,
+            "false_positives": fp, "false_negatives": fn}
+
+
+def rate(hits: int, total: int) -> str:
+    return f"{hits / total:.1%} ({hits}/{total})" if total else "–"
+
+
+def percentile(values: list[float], q: float) -> float:
+    ordered = sorted(values)
+    return ordered[min(len(ordered) - 1, int(q * len(ordered)))]
 
 
 def operating(y: list[int], p: list[float], threshold: float) -> dict:
@@ -145,13 +160,67 @@ def reliability(y: list[int], p: list[float], bins: int = 10) -> tuple[list[tupl
     return table, ece
 
 
+def _flagged(raw: str, threshold: float, w: list[float], names: list[str]) -> bool:
+    _, results = run_engines(raw)
+    return sigmoid(w[0] + sum(wi * results[n].score for wi, n in zip(w[1:], names))) >= threshold
+
+
+def golden_section(profiles: dict, w: list[float], names: list[str]) -> list[str]:
+    """Per-group results on the hand-labelled golden corpus (tests/golden), default profile."""
+    cases = [json.loads(line) for line in GOLDEN.read_text("utf-8").splitlines()]
+    t = profiles["default"]["suspicious"]
+    lines = ["## Golden corpus (10 nhóm test bắt buộc)", "",
+             f"{len(cases)} ca gán nhãn thủ công trong `tests/golden/corpus.jsonl`, profile `default` "
+             "(gắn cờ = SUSPICIOUS trở lên). Recall / FNR tính trên ca tấn công, FPR trên ca hợp lệ.", "",
+             "| nhóm | recall | FNR | FPR | lỗi đã biết |", "|---|---|---|---|---|"]
+    groups = dict.fromkeys(c["group"] for c in cases)
+    for group in groups:
+        rows = [c for c in cases if c["group"] == group and c["label"]]
+        attacks = [c for c in rows if c["label"] == "attack"]
+        benign = [c for c in rows if c["label"] == "benign"]
+        caught = sum(_flagged(c["input"], t, w, names) for c in attacks)
+        false = sum(_flagged(c["input"], t, w, names) for c in benign)
+        known = sum("known_issue" in c for c in rows)
+        lines.append(f"| {group} | {rate(caught, len(attacks))} | {rate(len(attacks) - caught, len(attacks))} | "
+                     f"{rate(false, len(benign))} | {known or ''} |")
+    return lines + [""]
+
+
+def goal_section(profiles: dict, w: list[float], names: list[str], test: list[dict]) -> list[str]:
+    """The stated goal: high recall on labelled spoofing, low FPR on legitimate multilingual domains."""
+    cases = [json.loads(line) for line in GOLDEN.read_text("utf-8").splitlines()]
+    golden_attacks = [c["input"] for c in cases if c["label"] == "attack"]
+    golden_multi = [c["input"] for c in cases if c["label"] == "benign" and c["group"] in MULTILINGUAL]
+    lines = ["## Mục tiêu kỹ thuật: recall cao, báo nhầm thấp trên domain đa ngôn ngữ", "",
+             "| profile | recall: golden tấn công | recall: benchmark test | FPR: golden đa ngôn ngữ | "
+             "FPR: mẫu âm khó (test) | FPR: top 10k (test) |", "|---|---|---|---|---|---|"]
+    for name, pr in profiles.items():
+        t = pr["suspicious"]
+        flag = lambda raw: _flagged(raw, t, w, names)  # noqa: E731
+        bench_attacks = [r for r in test if r["label"]]
+        hard = [r for r in test if r["category"] == "hard-negative"]
+        top = [r for r in test if r["category"] == "top10k"]
+        lines.append(
+            f"| {name} | {rate(sum(map(flag, golden_attacks)), len(golden_attacks))} | "
+            f"{rate(sum(r['p'] >= t for r in bench_attacks), len(bench_attacks))} | "
+            f"{rate(sum(map(flag, golden_multi)), len(golden_multi))} | "
+            f"{rate(sum(r['p'] >= t for r in hard), len(hard))} | {rate(sum(r['p'] >= t for r in top), len(top))} |")
+    return lines + [""]
+
+
 def main() -> int:
     os.environ.pop("HOMOGLYPH_BRANDS", None)   # calibrate on the bundled brand database only
     raw = DATASET.read_bytes()
     rows = [json.loads(line) for line in raw.decode("ascii").splitlines()]
     names = list(ENGINES)
+    started = time.perf_counter()
+    run_engines("first-call.example")   # cold start: loads and verifies the data files
+    cold_ms = (time.perf_counter() - started) * 1000
+    latencies = []
     for row in rows:
+        started = time.perf_counter()
         _, results = run_engines(row["domain"])
+        latencies.append((time.perf_counter() - started) * 1000)
         row["scores"] = [results[n].score for n in names]
         row["severity"] = max((SEVERITY_RANK[f.severity] for r in results.values() for f in r.findings), default=0)
         row["test"] = int(hashlib.sha256(row["group"].encode()).hexdigest(), 16) % 10 >= 7
@@ -247,6 +316,15 @@ def main() -> int:
         "|---|---|---|---|---|",
         *[f"| {g['max_fpr_target']} | {g['threshold']:.4f} | {g['recall']} | {g['false_positive_rate']} | "
           f"{g['false_alerts_per_10k']} |" for g in grid.values()], "",
+        *golden_section(profiles, w, names), *goal_section(profiles, w, names, test),
+        "## Độ trễ phát hiện", "",
+        f"Đo trên {len(latencies)} domain của benchmark, Python {platform.python_version()} ({platform.machine()}), "
+        "một luồng, gồm cả 5 engine; số liệu thay đổi theo máy.", "",
+        "| p50 | p95 | p99 | lớn nhất | trung bình | thông lượng | lần gọi đầu (nạp dữ liệu) |",
+        "|---|---|---|---|---|---|---|",
+        f"| {percentile(latencies, 0.5):.2f} ms | {percentile(latencies, 0.95):.2f} ms | {percentile(latencies, 0.99):.2f} ms | "
+        f"{max(latencies):.2f} ms | {sum(latencies) / len(latencies):.2f} ms | "
+        f"{len(latencies) / (sum(latencies) / 1000):.0f} domain/giây | {cold_ms:.0f} ms |", "",
         "## Độ tin cậy của xác suất (reliability)", "",
         "Xác suất dự đoán so với tỷ lệ tấn công thật trong từng khoảng.", "",
         "| khoảng dự đoán | số dòng | dự đoán trung bình | tỷ lệ tấn công thực tế |", "|---|---|---|---|",

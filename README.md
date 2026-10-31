@@ -61,7 +61,7 @@ Mỗi kết quả có điểm rủi ro 0–100, điểm của từng engine, b�
 ```bash
 git clone https://github.com/nakame9/homoglyph-detector
 cd homoglyph-detector
-pip install -e .                 # thêm ".[dev]" để chạy test, ".[bench]" để tạo lại benchmark
+pip install -e .                 # thêm ".[dev]" để chạy test (pytest, Hypothesis), ".[bench]" để tạo lại benchmark
 ```
 
 Yêu cầu Python 3.10+. Thư viện phụ thuộc: `idna`, `publicsuffixlist` (không cần mạng khi chạy).
@@ -129,6 +129,8 @@ Chi tiết từng module, các khái niệm chính và bảng **"muốn sửa g�
 
 Ngưỡng ở bảng trên là của profile `default`; mỗi môi trường chọn điểm vận hành riêng, ví dụ `browser` chỉ có 26 báo nhầm / 10.000 domain, `banking` bắt 87% tấn công: [docs/risk-scoring.md](docs/risk-scoring.md).
 
+Golden corpus 142 ca cho 10 nhóm test bắt buộc: **recall 97,1%** trên tấn công, **0 báo nhầm** trên 45 domain hợp lệ đa ngôn ngữ (tiếng Việt, Đức, Nga, Trung, Nhật, Hàn, Ả Rập, ...). Độ trễ p50 **4,3 ms**, p99 14 ms mỗi domain. Kiểm thử gồm pytest, Hypothesis (property-based, fuzzing Unicode), differential testing giữa các bản cài đặt IDNA và regression snapshot: [docs/testing.md](docs/testing.md).
+
 ROC-AUC 0.9302. Cách xây dựng, những gì benchmark đã phát hiện và các giới hạn: [docs/benchmark.md](docs/benchmark.md).
 
 ## Tài liệu
@@ -139,6 +141,7 @@ ROC-AUC 0.9302. Cách xây dựng, những gì benchmark đã phát hiện và c
 | [docs/ky-thuat.md](docs/ky-thuat.md) | UTS #39, ASCII visual, IDNA2008 + PSL, typosquat / combosquat |
 | [docs/brand-database.md](docs/brand-database.md) | định dạng brand database, các lớp, kiểm tra hợp lệ, toàn vẹn, version, dữ liệu Unicode |
 | [docs/benchmark.md](docs/benchmark.md) | bộ dữ liệu, hiệu chỉnh, kết quả, giới hạn |
+| [docs/testing.md](docs/testing.md) | kỹ thuật kiểm thử, golden corpus 10 nhóm, precision / recall / FPR / FNR / độ trễ, các lỗi đã tìm ra |
 | [docs/risk-scoring.md](docs/risk-scoring.md) | profile rủi ro theo môi trường, ngân sách báo nhầm, điểm vận hành |
 | [docs/bao-tri.md](docs/bao-tri.md) | **hướng dẫn bảo trì**: thêm thương hiệu, sửa báo nhầm, thêm engine, cập nhật dữ liệu, phát hành, **tra cứu lỗi** |
 | [CHANGELOG.md](CHANGELOG.md) | lịch sử phiên bản |
@@ -146,6 +149,7 @@ ROC-AUC 0.9302. Cách xây dựng, những gì benchmark đã phát hiện và c
 
 ## Lộ trình
 
+- Phát hiện lừa bằng phần userinfo của URL (`https://paypal.com@evil.com/`); bổ sung domain quốc gia của các thương hiệu (`amazon.co.jp`).
 - Điểm số mịn hơn (đặc trưng liên tục như độ dài từ khóa, mức phổ biến của domain) để có nhiều điểm vận hành hơn ba bậc hiện tại.
 - Tập test từ domain lừa đảo thật (PhishTank, OpenPhish) bên cạnh tấn công do dnstwist sinh.
 - Chế độ `.eml`: kiểm tra From / Reply-To / Return-Path và mọi liên kết trong email lừa đảo.

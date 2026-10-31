@@ -1,4 +1,5 @@
-"""idna engine: IDNA2008 / UTS #46 validity, browser mapping, A-label <-> U-label round-trip."""
+"""idna engine: IDNA2008 / UTS #46 validity, browser mapping, A-label <-> U-label round-trip,
+and differences with legacy IDNA2003 software (Python's own socket / urllib codec, old clients)."""
 from __future__ import annotations
 
 import unicodedata
@@ -21,6 +22,14 @@ def _idna_error(error: idna.IDNAError) -> tuple[str, str]:
     return "idna_invalid", "is not a valid IDNA2008 domain name"
 
 
+def legacy_a_label(host: str) -> str | None:
+    """The domain IDNA2003 software resolves (Python's built-in 'idna' codec), or None if it refuses."""
+    try:
+        return host.encode("idna").decode("ascii").lower()
+    except UnicodeError:
+        return None
+
+
 def idna_engine(ctx: Context, brands: list[dict]) -> EngineResult:
     result = EngineResult("idna")
     if unicodedata.normalize("NFC", ctx.raw.strip()) != ctx.raw.strip():
@@ -39,6 +48,12 @@ def idna_engine(ctx: Context, brands: list[dict]) -> EngineResult:
     elif ctx.strict_error:
         result.add("idna_mapped", "low", f"Not valid IDNA2008 as written ({ctx.strict_error}); browsers map it "
                    f"to '{ctx.resolved}'", mapped=ctx.resolved)
+    legacy = legacy_a_label(ctx.host) if not ctx.host.isascii() else None   # ASCII passes both unchanged
+    if legacy and legacy != ctx.a_label:
+        # e.g. 'faß.de': fass.de for IDNA2003, xn--fa-hia.de for browsers; 'a<ZWJ>b.com': ab.com vs refused
+        result.add("idna_differential", "medium",
+                   f"Resolves differently by implementation: IDNA2003 software -> '{legacy}', "
+                   f"modern browsers -> '{ctx.a_label or 'refused'}'", idna2003=legacy, uts46=ctx.a_label or None)
     if ctx.a_label and idna.encode(idna.decode(ctx.a_label)).decode("ascii") != ctx.a_label:
         result.add("idna_roundtrip", "medium",
                    f"'{ctx.a_label}' does not round-trip through its U-label '{idna.decode(ctx.a_label)}'")

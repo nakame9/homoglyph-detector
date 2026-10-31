@@ -36,6 +36,8 @@ Trọng số hiện tại: unicode 17.0816, idna 0.0, brand 11.5037, combosquat 
 | đã hiệu chỉnh, p ≥ 0.9 | 0.9926 | 0.6395 | 0.7778 | 0.0026 |
 | luật mức độ, không hiệu chỉnh | 0.9624 | 0.7522 | 0.8444 | 0.0156 |
 
+Ngoài ra: FNR (tỷ lệ bỏ lọt) = 1 − recall; kết quả theo 10 nhóm trên golden corpus, mục tiêu kỹ thuật theo profile và độ trễ phát hiện nằm trong `RESULTS.md` (xem [testing](testing.md#kết-quả-đo)).
+
 ROC-AUC 0.9302, Brier score 0.0585, sai số hiệu chỉnh kỳ vọng (ECE) 0.0609.
 
 ## Benchmark đã phát hiện gì

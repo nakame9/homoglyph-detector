@@ -45,6 +45,39 @@ Muốn tự đặt ngân sách báo nhầm: chọn một dòng (`--max-fpr`). C�
 | 0.002 | 0.8434 | 0.6407 | 0.0026 | 26.0 |
 | 0.02 | 0.2742 | 0.8698 | 0.016 | 160.0 |
 
+## Golden corpus (10 nhóm test bắt buộc)
+
+142 ca gán nhãn thủ công trong `tests/golden/corpus.jsonl`, profile `default` (gắn cờ = SUSPICIOUS trở lên). Recall / FNR tính trên ca tấn công, FPR trên ca hợp lệ.
+
+| nhóm | recall | FNR | FPR | lỗi đã biết |
+|---|---|---|---|---|
+| ascii_lookalike | 100.0% (20/20) | 0.0% (0/20) | – |  |
+| cyrillic_greek_homoglyph | 100.0% (14/14) | 0.0% (0/14) | – |  |
+| mixed_script | 100.0% (5/5) | 0.0% (0/5) | 0.0% (0/3) |  |
+| punycode_malformed | – | – | – |  |
+| zero_width | 100.0% (9/9) | 0.0% (0/9) | – |  |
+| bidi_override | 100.0% (7/7) | 0.0% (0/7) | – |  |
+| vietnamese | – | – | 0.0% (0/15) |  |
+| multilingual_legit | – | – | 0.0% (0/27) |  |
+| multi_level_suffix | 100.0% (7/7) | 0.0% (0/7) | 14.3% (1/7) | 1 |
+| url_edge | 71.4% (5/7) | 28.6% (2/7) | 0.0% (0/7) | 2 |
+
+## Mục tiêu kỹ thuật: recall cao, báo nhầm thấp trên domain đa ngôn ngữ
+
+| profile | recall: golden tấn công | recall: benchmark test | FPR: golden đa ngôn ngữ | FPR: mẫu âm khó (test) | FPR: top 10k (test) |
+|---|---|---|---|---|---|
+| default | 97.1% (67/69) | 87.0% (1450/1667) | 0.0% (0/45) | 22.7% (5/22) | 1.4% (45/3110) |
+| banking | 97.1% (67/69) | 87.0% (1450/1667) | 0.0% (0/45) | 22.7% (5/22) | 1.4% (45/3110) |
+| browser | 91.3% (63/69) | 64.1% (1068/1667) | 0.0% (0/45) | 13.6% (3/22) | 0.2% (5/3110) |
+
+## Độ trễ phát hiện
+
+Đo trên 15805 domain của benchmark, Python 3.13.18 (x86_64), một luồng, gồm cả 5 engine; số liệu thay đổi theo máy.
+
+| p50 | p95 | p99 | lớn nhất | trung bình | thông lượng | lần gọi đầu (nạp dữ liệu) |
+|---|---|---|---|---|---|---|
+| 4.34 ms | 10.20 ms | 14.11 ms | 28.98 ms | 5.04 ms | 198 domain/giây | 96 ms |
+
 ## Độ tin cậy của xác suất (reliability)
 
 Xác suất dự đoán so với tỷ lệ tấn công thật trong từng khoảng.

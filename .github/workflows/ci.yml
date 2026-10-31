@@ -14,6 +14,8 @@ jobs:
       - run: pip install -e ".[dev]"
       - run: python scripts/seal_data.py --check   # every data file pinned in MANIFEST.json
       - run: pytest -q
+        env:
+          HYPOTHESIS_PROFILE: ci   # deterministic property tests, 400 examples each
       - run: homoglyph-detector -f examples/sample_domains.txt || [ $? -eq 2 ]
       - name: Calibration must match the committed engines and benchmark
         if: matrix.python-version == '3.13'

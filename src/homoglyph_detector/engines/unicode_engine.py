@@ -10,7 +10,7 @@ from ..unicode_data import (LEVELS, confusable_type, is_allowed, is_bidi_control
 from .base import EngineResult, typed
 
 
-def _check_characters(text: str, result: EngineResult) -> None:
+def _check_characters(text: str, result: EngineResult, tld_scripts: set[str] = frozenset()) -> None:
     if unicodedata.normalize("NFKC", text) != text:
         result.add("compatibility", "medium",
                    "Contains compatibility characters (e.g. fullwidth) that normalise to other text",
@@ -20,7 +20,9 @@ def _check_characters(text: str, result: EngineResult) -> None:
         level = restriction_level(part)
         if LEVELS.index(level) > LEVELS.index(result.facts["restriction_level"]):
             result.facts["restriction_level"] = level
-        if level in ("Moderately Restrictive", "Minimally Restrictive") or not is_single_script(part):
+        # Highly Restrictive (Latin + Han/Kana/Hangul, e.g. 'sonyストア') is normal CJK writing, not mixing
+        if level in ("Moderately Restrictive", "Minimally Restrictive") or (
+                level == "Unrestricted" and not is_single_script(part)):
             severity = "low" if level == "Moderately Restrictive" else "medium"
             result.add("mixed_script", severity,
                        f"'{part}' mixes scripts: {', '.join(sorted(scripts_in(part)))} (level: {level})",
@@ -28,7 +30,12 @@ def _check_characters(text: str, result: EngineResult) -> None:
         skel = skeleton(part)
         if not part.isascii() and skel.isascii() and skel != part:
             kind = confusable_type(part, skel)
-            result.add("whole_lookalike", "medium", f"'{part}' renders like ASCII '{skel}'{typed(kind)}",
+            # Chromium's IDN policy: a Cyrillic word that happens to look Latin ('орех') is ordinary under a
+            # Cyrillic TLD (.рф) and suspicious elsewhere; brand look-alikes are still caught by the brand engine
+            expected = bool(tld_scripts) and scripts_in(part) <= tld_scripts
+            result.add("whole_lookalike", "info" if expected else "medium",
+                       f"'{part}' renders like ASCII '{skel}'{typed(kind)}"
+                       + (" (normal under a same-script TLD)" if expected else ""),
                        looks_like=skel, confusable_type=kind)
         if len(numbering_systems(part)) > 1:
             result.add("mixed_numbers", "medium", f"'{part}' mixes digits from different number systems")
@@ -60,7 +67,8 @@ def _check_characters(text: str, result: EngineResult) -> None:
 
 def unicode_engine(ctx: Context, brands: list[dict]) -> EngineResult:
     result = EngineResult("unicode", facts={"restriction_level": "ASCII-Only"})
-    _check_characters(ctx.text, result)
+    tld = ctx.text.rsplit(".", 1)[-1] if ctx.host and "." in ctx.text else ""
+    _check_characters(ctx.text, result, scripts_in(tld) if not tld.isascii() else set())
     if ctx.local:
         _check_characters(ctx.local, result)
     return result.noisy_or()

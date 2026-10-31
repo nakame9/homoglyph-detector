@@ -14,7 +14,7 @@ pytest -q                            # mọi test phải qua trước khi bắt 
 ## Ba lệnh kiểm tra nhanh
 
 ```bash
-pytest -q                               # toàn bộ test (khoảng 1 giây)
+pytest -q                               # toàn bộ test (khoảng 15 giây, gồm property test)
 python scripts/seal_data.py --check     # mọi file dữ liệu khớp MANIFEST.json
 homoglyph-detector --verify             # kiểm tra toàn vẹn dữ liệu đã cài
 ```
@@ -130,4 +130,8 @@ PSL đi kèm thư viện `publicsuffixlist`: `pip install -U publicsuffixlist`. 
 | `invalid risk policy: unknown risk profile` | tên profile sai (hoặc `HOMOGLYPH_PROFILE` sai) | xem `homoglyph-detector --profiles` |
 | `the MALICIOUS false positive budget must not exceed the SUSPICIOUS one` | `--max-fpr` đảo thứ tự | viết `--max-fpr <SUSPICIOUS>,<MALICIOUS>`, số thứ hai nhỏ hơn |
 | `test_builtin_profiles_meet_their_targets_on_the_train_split` | profile không đạt mục tiêu sau khi đổi engine | chạy lại `python benchmark/calibrate.py` |
+| Hypothesis: `Falsifying example: ...` | property test tìm được phản ví dụ | thêm phản ví dụ vào golden corpus, sửa code (xem [testing](testing.md#khi-một-test-thất-bại)) |
+| `test_regression_snapshot`: `behaviour changed for: ...` | kết luận / bằng chứng của ca golden đã đổi | nếu chủ ý: `UPDATE_GOLDEN=1 pytest tests/test_golden.py`, review `git diff` |
+| `test_known_issues_are_still_issues` | một lỗi đã biết vừa được sửa | xóa `known_issue` khỏi ca đó trong `tests/golden/corpus.jsonl` |
+| `test_detection_latency_budget` | p95 độ trễ vượt 100 ms | tìm thay đổi làm chậm (`python benchmark/calibrate.py` in độ trễ chi tiết) |
 | workflow `Unicode data` hằng tháng lỗi | Unicode có bản mới | làm theo mục *Cập nhật dữ liệu Unicode* |

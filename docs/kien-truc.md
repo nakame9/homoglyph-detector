@@ -65,7 +65,9 @@ homoglyph-detector/
 ├── scripts/
 │   ├── update_unicode_data.py  tải dữ liệu Unicode mới từ unicode.org, tự niêm phong
 │   └── seal_data.py            ghim dữ liệu vào MANIFEST.json, bắt buộc tăng version brand
-├── tests/                      pytest, xem bảng bên dưới
+├── tests/                      pytest, Hypothesis, differential, golden corpus (xem testing.md)
+│   ├── golden/corpus.jsonl     142 ca gán nhãn thủ công cho 10 nhóm bắt buộc
+│   └── golden/snapshot.jsonl   kết quả đã review của từng ca (regression)
 ├── examples/                   domain mẫu, brand database mẫu cho tổ chức
 ├── docs/                       tài liệu (thư mục này)
 └── .github/                    CI, kiểm tra dữ liệu Unicode hằng tháng, mẫu issue / PR

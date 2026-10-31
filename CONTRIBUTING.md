@@ -15,7 +15,7 @@ pytest -q
 ## Quy trình
 
 1. Tạo nhánh mới từ `main`.
-2. Với lỗi phát hiện (báo nhầm / bỏ lọt): **viết test tái hiện trước**, rồi mới sửa.
+2. Với lỗi phát hiện (báo nhầm / bỏ lọt): **thêm ca vào golden corpus trước** (`tests/golden/corpus.jsonl`), rồi mới sửa. Xem [docs/testing.md](docs/testing.md).
 3. Sửa đúng chỗ theo bảng "muốn sửa gì thì mở file nào" trong [docs/kien-truc.md](docs/kien-truc.md).
 4. Chạy các bước kiểm tra bên dưới, rồi mở pull request (mẫu PR có sẵn danh sách kiểm tra).
 
@@ -23,6 +23,8 @@ pytest -q
 
 ```bash
 pytest -q                               # mọi test qua
+HYPOTHESIS_PROFILE=ci pytest -q         # như CI: property test tất định, 400 mẫu
+UPDATE_GOLDEN=1 pytest tests/test_golden.py   # chỉ khi đổi hành vi có chủ ý; review git diff snapshot
 python scripts/seal_data.py --check     # nếu có đổi dữ liệu trong src/homoglyph_detector/data/
 python benchmark/calibrate.py           # nếu có đổi engine, brands.json, bảng NEAR hay dữ liệu Unicode
 ```

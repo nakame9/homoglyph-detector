@@ -2,6 +2,21 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/), đánh số theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [0.10.0] - 2026-10-31
+### Thêm
+- Property-based testing và fuzzing Unicode với Hypothesis (`tests/test_properties.py`); profile `dev` / `ci` / `deep`.
+- Differential testing IDNA2003 (codec của Python) và IDNA2008 + UTS #46 (`tests/test_idna_differential.py`).
+- Golden corpus 142 ca cho 10 nhóm bắt buộc và regression snapshot (`tests/golden/`); lỗi đã biết chạy dưới dạng xfail nghiêm ngặt.
+- Engine `idna` báo `idna_differential` khi phần mềm IDNA2003 và trình duyệt dẫn tới hai domain khác nhau (`faß.de`, `Ⱥ.com`).
+- Đo FNR, độ trễ phát hiện (p50 / p95 / p99, thông lượng), kết quả golden theo nhóm và mục tiêu kỹ thuật trong `RESULTS.md`; test ngân sách độ trễ.
+- `docs/testing.md`.
+### Sửa
+- URL `https://evil.com\@paypal.com/` được hiểu là `paypal.com` trong khi trình duyệt vào `evil.com` (vượt bộ lọc); host được tách theo WHATWG: `\` như `/`, giải mã `%2e`.
+- URL chứa `／`, `＠`, `：` fullwidth hoặc `[` làm crash (từ chối dịch vụ khi xử lý hàng loạt).
+- `paypal.com/login`, `paypal.com:443`, `//paypal.com/x` bị coi là domain không hợp lệ.
+- Latin + chữ Nhật / Trung / Hàn (mức Highly Restrictive) bị coi là trộn script.
+- Từ Cyrillic trông như Latin dưới TLD cùng script (`орех.рф`) bị chặn; nay theo chính sách IDN của Chromium.
+
 ## [0.9.0] - 2026-10-31
 ### Thêm
 - Domain Risk Scoring theo môi trường: profile rủi ro `default`, `banking`, `browser`, chọn ngưỡng trên tập train theo mục tiêu tỷ lệ báo nhầm và đo lại trên tập test.

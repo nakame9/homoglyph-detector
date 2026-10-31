@@ -1,0 +1,142 @@
+{"group": "ascii_lookalike", "input": "rnicrosoft.com", "label": "attack"}
+{"group": "ascii_lookalike", "input": "g00gle.com", "label": "attack"}
+{"group": "ascii_lookalike", "input": "paypa1.com", "label": "attack"}
+{"group": "ascii_lookalike", "input": "5hopee.vn", "label": "attack"}
+{"group": "ascii_lookalike", "input": "vvhatsapp.com", "label": "attack"}
+{"group": "ascii_lookalike", "input": "clropbox.com", "label": "attack"}
+{"group": "ascii_lookalike", "input": "arnazon.com", "label": "attack"}
+{"group": "ascii_lookalike", "input": "faceb00k.com", "label": "attack"}
+{"group": "ascii_lookalike", "input": "nnicrosoft.com", "label": "attack"}
+{"group": "ascii_lookalike", "input": "paypai.com", "label": "attack"}
+{"group": "ascii_lookalike", "input": "qoogle.com", "label": "attack"}
+{"group": "ascii_lookalike", "input": "app1e.com", "label": "attack"}
+{"group": "ascii_lookalike", "input": "icl0ud.com", "label": "attack"}
+{"group": "ascii_lookalike", "input": "0utlook.com", "label": "attack"}
+{"group": "ascii_lookalike", "input": "y0utube.com", "label": "attack"}
+{"group": "ascii_lookalike", "input": "gmaii.com", "label": "attack"}
+{"group": "ascii_lookalike", "input": "techc0mbank.com.vn", "label": "attack"}
+{"group": "ascii_lookalike", "input": "vietcornbank.com.vn", "label": "attack"}
+{"group": "ascii_lookalike", "input": "rnomo.vn", "label": "attack"}
+{"group": "ascii_lookalike", "input": "zal0.me", "label": "attack"}
+{"group": "cyrillic_greek_homoglyph", "input": "pаypal.com", "label": "attack"}
+{"group": "cyrillic_greek_homoglyph", "input": "аррӏе.com", "label": "attack"}
+{"group": "cyrillic_greek_homoglyph", "input": "xn--80ak6aa92e.com", "label": "attack"}
+{"group": "cyrillic_greek_homoglyph", "input": "gооgle.com", "label": "attack"}
+{"group": "cyrillic_greek_homoglyph", "input": "miсrosoft.com", "label": "attack"}
+{"group": "cyrillic_greek_homoglyph", "input": "fасebook.com", "label": "attack"}
+{"group": "cyrillic_greek_homoglyph", "input": "аmаzоn.com", "label": "attack"}
+{"group": "cyrillic_greek_homoglyph", "input": "shоpее.vn", "label": "attack"}
+{"group": "cyrillic_greek_homoglyph", "input": "vietсombank.com.vn", "label": "attack"}
+{"group": "cyrillic_greek_homoglyph", "input": "раураӏ.com", "label": "attack"}
+{"group": "cyrillic_greek_homoglyph", "input": "gοοgle.com", "label": "attack"}
+{"group": "cyrillic_greek_homoglyph", "input": "ρaypal.com", "label": "attack"}
+{"group": "cyrillic_greek_homoglyph", "input": "micrοsoft.com", "label": "attack"}
+{"group": "cyrillic_greek_homoglyph", "input": "drοpbox.com", "label": "attack"}
+{"group": "mixed_script", "input": "exаmple.com", "label": "attack"}
+{"group": "mixed_script", "input": "secure-lоgin.net", "label": "attack"}
+{"group": "mixed_script", "input": "bаnk-online.com", "label": "attack"}
+{"group": "mixed_script", "input": "аccount-verify.com", "label": "attack"}
+{"group": "mixed_script", "input": "lοgin-portal.org", "label": "attack"}
+{"group": "mixed_script", "input": "abcとうきょ.jp", "label": "benign"}
+{"group": "mixed_script", "input": "shop中文.cn", "label": "benign"}
+{"group": "mixed_script", "input": "한글abc.kr", "label": "benign"}
+{"group": "punycode_malformed", "input": "xn--a.com", "label": null}
+{"group": "punycode_malformed", "input": "xn--zz-.com", "label": null}
+{"group": "punycode_malformed", "input": "xn--.com", "label": null}
+{"group": "punycode_malformed", "input": "xn--ls8h.la", "label": null}
+{"group": "punycode_malformed", "input": "xn--80ak6aa92e-.com", "label": null}
+{"group": "punycode_malformed", "input": "xn--p1ai.xn--a", "label": null}
+{"group": "punycode_malformed", "input": "xn--abc--.com", "label": null}
+{"group": "punycode_malformed", "input": "XN--A.COM", "label": null}
+{"group": "zero_width", "input": "pay\u200bpal.com", "label": "attack"}
+{"group": "zero_width", "input": "goo\u00adgle.com", "label": "attack"}
+{"group": "zero_width", "input": "micro\u2060soft.com", "label": "attack"}
+{"group": "zero_width", "input": "face\u200cbook.com", "label": "attack"}
+{"group": "zero_width", "input": "ama\u200dzon.com", "label": "attack"}
+{"group": "zero_width", "input": "\ufeffapple.com", "label": "attack"}
+{"group": "zero_width", "input": "shopee\u200b.vn", "label": "attack"}
+{"group": "zero_width", "input": "user@pay\u200bpal.com", "label": "attack"}
+{"group": "zero_width", "input": "https://vietcom\u200bbank.com.vn/", "label": "attack"}
+{"group": "bidi_override", "input": "\u202emoc.lapyap", "label": "attack"}
+{"group": "bidi_override", "input": "invoice\u202efdp.exe", "label": "attack"}
+{"group": "bidi_override", "input": "\u2066paypal.com", "label": "attack"}
+{"group": "bidi_override", "input": "apple\u200f.com", "label": "attack"}
+{"group": "bidi_override", "input": "user@\u202emoc.elgoog", "label": "attack"}
+{"group": "bidi_override", "input": "https://\u202eapple.com/", "label": "attack"}
+{"group": "bidi_override", "input": "\u061cmicrosoft.com", "label": "attack"}
+{"group": "vietnamese", "input": "tiếngviệt.vn", "label": "benign"}
+{"group": "vietnamese", "input": "hànội.vn", "label": "benign"}
+{"group": "vietnamese", "input": "đàlạt.vn", "label": "benign"}
+{"group": "vietnamese", "input": "sàigòn.vn", "label": "benign"}
+{"group": "vietnamese", "input": "phởbò.vn", "label": "benign"}
+{"group": "vietnamese", "input": "bánhmì.vn", "label": "benign"}
+{"group": "vietnamese", "input": "nhàhàng.com.vn", "label": "benign"}
+{"group": "vietnamese", "input": "quàtặng.vn", "label": "benign"}
+{"group": "vietnamese", "input": "giáodục.vn", "label": "benign"}
+{"group": "vietnamese", "input": "thời-trang.vn", "label": "benign"}
+{"group": "vietnamese", "input": "liên-hệ@côngty.vn", "label": "benign"}
+{"group": "vietnamese", "input": "https://tin-tức.vn/bài-viết", "label": "benign"}
+{"group": "vietnamese", "input": "Nguyễn Văn A", "label": "benign"}
+{"group": "vietnamese", "input": "Công ty Cổ phần Ánh Dương", "label": "benign"}
+{"group": "vietnamese", "input": "Ngân hàng Đầu tư", "label": "benign"}
+{"group": "multilingual_legit", "input": "münchen.de", "label": "benign"}
+{"group": "multilingual_legit", "input": "bücher.de", "label": "benign"}
+{"group": "multilingual_legit", "input": "köln.de", "label": "benign"}
+{"group": "multilingual_legit", "input": "café.fr", "label": "benign"}
+{"group": "multilingual_legit", "input": "élysée.fr", "label": "benign"}
+{"group": "multilingual_legit", "input": "españa.es", "label": "benign"}
+{"group": "multilingual_legit", "input": "åland.fi", "label": "benign"}
+{"group": "multilingual_legit", "input": "blåbær.no", "label": "benign"}
+{"group": "multilingual_legit", "input": "żółw.pl", "label": "benign"}
+{"group": "multilingual_legit", "input": "příklad.cz", "label": "benign"}
+{"group": "multilingual_legit", "input": "türkiye.com.tr", "label": "benign"}
+{"group": "multilingual_legit", "input": "сайт.рф", "label": "benign"}
+{"group": "multilingual_legit", "input": "москва.рф", "label": "benign"}
+{"group": "multilingual_legit", "input": "пример.испытание", "label": "benign"}
+{"group": "multilingual_legit", "input": "україна.укр", "label": "benign"}
+{"group": "multilingual_legit", "input": "орех.рф", "label": "benign"}
+{"group": "multilingual_legit", "input": "παράδειγμα.δοκιμή", "label": "benign"}
+{"group": "multilingual_legit", "input": "例子.测试", "label": "benign"}
+{"group": "multilingual_legit", "input": "中文网.cn", "label": "benign"}
+{"group": "multilingual_legit", "input": "日本語.jp", "label": "benign"}
+{"group": "multilingual_legit", "input": "例え.テスト", "label": "benign"}
+{"group": "multilingual_legit", "input": "실례.테스트", "label": "benign"}
+{"group": "multilingual_legit", "input": "مثال.إختبار", "label": "benign"}
+{"group": "multilingual_legit", "input": "בדיקה.ישראל", "label": "benign"}
+{"group": "multilingual_legit", "input": "ไทย.th", "label": "benign"}
+{"group": "multilingual_legit", "input": "उदाहरण.परीक्षा", "label": "benign"}
+{"group": "multilingual_legit", "input": "xn--80aswg.xn--p1ai", "label": "benign"}
+{"group": "multi_level_suffix", "input": "vietcombank.com.vn", "label": "benign"}
+{"group": "multi_level_suffix", "input": "www.vietcombank.com.vn", "label": "benign"}
+{"group": "multi_level_suffix", "input": "bbc.co.uk", "label": "benign"}
+{"group": "multi_level_suffix", "input": "google.com.vn", "label": "benign"}
+{"group": "multi_level_suffix", "input": "myblog.blogspot.com", "label": "benign"}
+{"group": "multi_level_suffix", "input": "someone.github.io", "label": "benign"}
+{"group": "multi_level_suffix", "input": "amazon.co.jp", "label": "benign", "known_issue": "brand database lacks Amazon's country domains: shows up as a combosquat"}
+{"group": "multi_level_suffix", "input": "vietcornbank.com.vn", "label": "attack"}
+{"group": "multi_level_suffix", "input": "pаypal.github.io", "label": "attack"}
+{"group": "multi_level_suffix", "input": "vietcombank.com.vn.evil.com", "label": "attack"}
+{"group": "multi_level_suffix", "input": "login-vietcombank.com.vn", "label": "attack"}
+{"group": "multi_level_suffix", "input": "paypal.com.evil.co.uk", "label": "attack"}
+{"group": "multi_level_suffix", "input": "techc0mbank.com", "label": "attack"}
+{"group": "multi_level_suffix", "input": "g00gle.co.uk", "label": "attack"}
+{"group": "url_edge", "input": "https://paypal.com@evil.com/login", "label": "attack", "host": "evil.com", "known_issue": "userinfo deception ('paypal.com@' before the real host) is not detected yet: the host evil.com is not a look-alike"}
+{"group": "url_edge", "input": "https://user:pass@pаypal.com:8443/x?y=1#z", "label": "attack", "host": "pаypal.com"}
+{"group": "url_edge", "input": "HTTPS://WWW.PAYPAL.COM/", "label": "benign", "host": "www.paypal.com"}
+{"group": "url_edge", "input": "https://xn--80ak6aa92e.com/", "label": "attack"}
+{"group": "url_edge", "input": "https://paypal.com/@evil.com", "label": "benign", "host": "paypal.com"}
+{"group": "url_edge", "input": "https://[::1]:8080/", "label": null, "host": "[::1]"}
+{"group": "url_edge", "input": "http://192.168.0.1/login", "label": null, "host": "192.168.0.1"}
+{"group": "url_edge", "input": "https://paypal.com./", "label": "benign", "host": "paypal.com"}
+{"group": "url_edge", "input": "https://evil.com\\@paypal.com/", "label": "benign", "host": "evil.com"}
+{"group": "url_edge", "input": "https://paypal.com%2eevil.com/", "label": "attack", "host": "paypal.com.evil.com"}
+{"group": "url_edge", "input": "//paypal.com/path", "label": "benign", "host": "paypal.com"}
+{"group": "url_edge", "input": "paypal.com/login", "label": "benign", "host": "paypal.com"}
+{"group": "url_edge", "input": "paypal.com:443", "label": "benign", "host": "paypal.com"}
+{"group": "url_edge", "input": "mailto:user@pаypal.com", "label": "attack", "host": "pаypal.com"}
+{"group": "url_edge", "input": "https://5hopee.vn/sale", "label": "attack", "host": "5hopee.vn"}
+{"group": "url_edge", "input": "https://paypal.com／@evil.com/", "label": "attack", "host": "evil.com", "known_issue": "userinfo deception with a fullwidth solidus is not detected yet"}
+{"group": "url_edge", "input": "https://evil.com／@paypal.com/", "label": null, "host": "paypal.com"}
+{"group": "url_edge", "input": "https://pay＠pal.com", "label": null, "host": "pay＠pal.com"}
+{"group": "url_edge", "input": "https://[paypal.com/", "label": null, "host": "[paypal.com"}
+{"group": "url_edge", "input": "https://a℀b.com", "label": null, "host": "a℀b.com"}

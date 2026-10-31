@@ -8,7 +8,7 @@ import re
 import unicodedata
 from dataclasses import dataclass
 from functools import cache
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 import idna
 from publicsuffixlist import PublicSuffixList
@@ -27,17 +27,31 @@ class Context:
     lookup_error: idna.IDNAError | None = None   # why even UTS #46 lookup rejects it
 
 
+SPECIAL_SCHEMES = {"http", "https", "ws", "wss", "ftp", "file"}   # WHATWG "special" URL schemes
+
+
+def _strip_port(host: str) -> str:
+    return re.sub(r":\d*$", "", host)
+
+
 def classify(raw: str) -> tuple[str, str, str]:
-    """Return (input_type, host_or_name, email_local_part)."""
+    """Return (input_type, host_or_name, email_local_part). URLs are read the way browsers (WHATWG) do."""
     raw = unicodedata.normalize("NFC", raw.strip())
-    if "://" in raw:
-        # .hostname would lower-case non-ASCII too; only drop user-info and port.
-        return "url", re.sub(r":\d*$", "", urlsplit(raw).netloc.rpartition("@")[2]), ""
+    if "://" in raw or raw.startswith("//"):
+        scheme = raw.split("://", 1)[0].lower() if "://" in raw else ""
+        if not scheme or scheme in SPECIAL_SCHEMES:
+            raw = raw.replace("\\", "/")   # 'https://evil.com\\@paypal.com' goes to evil.com in a browser
+        try:
+            netloc = urlsplit(raw if "://" in raw else "http:" + raw).netloc
+        except ValueError:   # Python refuses netlocs that NFKC-normalise to '/', '@', ... or a stray '['
+            netloc = re.split(r"[/?#]", raw.split("//", 1)[1], maxsplit=1)[0]
+        # .hostname would lower-case non-ASCII; browsers percent-decode the host ('%2e' is a dot)
+        return "url", _strip_port(unquote(netloc.rpartition("@")[2])), ""
     if "@" in raw and " " not in raw:
         local, _, host = raw.rpartition("@")
         return "email", host, local
     if "." in raw and " " not in raw:
-        return "domain", raw, ""
+        return "domain", _strip_port(re.split(r"[/?#]", raw, maxsplit=1)[0]), ""   # 'paypal.com/login'
     return "name", raw, ""
 
 
