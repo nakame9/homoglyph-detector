@@ -16,6 +16,7 @@ def render(report: Report) -> str:
     if report.target != report.input:
         lines.append(f"    decoded : {report.target}")
     lines.append(f"    skeleton: {report.skeleton}")
+    lines.append(f"    level   : {report.restriction_level}")
     lines += [f"    - [{f.severity}] {f.message}" for f in report.findings]
     return "\n".join(lines)
 

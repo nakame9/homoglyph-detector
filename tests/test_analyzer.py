@@ -4,6 +4,7 @@ import json
 import pytest
 
 from homoglyph_detector import analyze, script_of, skeleton
+from homoglyph_detector.unicode_data import confusable_type, restriction_level
 from homoglyph_detector.cli import main
 
 APPLE_CYRILLIC = "аррӏе"  # аррӏе — every letter is Cyrillic
@@ -82,3 +83,50 @@ def test_cli_json_output(capsys):
     main(["pаypal.com", "--json"])
     [report] = json.loads(capsys.readouterr().out)
     assert report["verdict"] == "MALICIOUS" and report["skeleton"] == skeleton("paypal.com")
+
+
+# --- UTS #39 building blocks -------------------------------------------------
+
+@pytest.mark.parametrize("text, level", [
+    ("paypal", "ASCII-Only"),
+    ("сайт", "Single Script"),                 # сайт
+    ("東京とうきょ", "Single Script"),     # 東京とうきょう (Japanese)
+    ("abcとうきょ", "Highly Restrictive"),         # Latin + Hiragana
+    ("abcلعربية", "Moderately Restrictive"),  # Latin + Arabic
+    ("pаypal", "Minimally Restrictive"),                     # Latin + Cyrillic
+    ("pay​pal", "Unrestricted"),                              # zero-width space
+])
+def test_restriction_level(text, level):
+    assert restriction_level(text) == level
+
+
+@pytest.mark.parametrize("x, y, kind", [
+    ("rnicrosoft", "microsoft", "single-script"),
+    ("pаypal", "paypal", "mixed-script"),
+    (APPLE_CYRILLIC, "apple", "whole-script"),
+    ("paypal", "paypal", None),
+    ("abc", "xyz", None),
+])
+def test_confusable_type(x, y, kind):
+    assert confusable_type(x, y) == kind
+
+
+def test_report_carries_uts39_details():
+    report = analyze(APPLE_PUNYCODE + ".com")
+    assert report.restriction_level == "Single Script"
+    brand = next(f for f in report.findings if f.kind == "brand_homograph")
+    assert brand.detail["confusable_type"] == "whole-script"
+    assert analyze("pаypal.com").restriction_level == "Minimally Restrictive"
+
+
+def test_invisible_character_is_stripped_and_flagged():
+    report = analyze("pay​pal.com")
+    assert report.verdict == "MALICIOUS" and "invisible_char" in kinds(report)
+
+
+def test_mixed_numbers():
+    assert "mixed_numbers" in kinds(analyze("ab1٣.com"))   # ASCII 1 + Arabic-Indic 3
+
+
+def test_hidden_overlay():
+    assert "hidden_overlay" in kinds(analyze("café́.com"))  # same accent stacked twice

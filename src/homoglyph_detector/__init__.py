@@ -1,6 +1,6 @@
 """Detect homoglyph / IDN homograph look-alikes in domains, emails, URLs and names."""
 from .analyzer import Finding, Report, analyze
-from .unicode_data import script_of, skeleton
+from .unicode_data import confusable_type, restriction_level, script_of, skeleton
 
-__all__ = ["analyze", "Report", "Finding", "skeleton", "script_of"]
-__version__ = "0.1.0"
+__all__ = ["analyze", "Report", "Finding", "skeleton", "script_of", "confusable_type", "restriction_level"]
+__version__ = "0.2.0"

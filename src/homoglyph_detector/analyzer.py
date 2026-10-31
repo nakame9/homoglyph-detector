@@ -9,17 +9,13 @@ from functools import cache
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from .unicode_data import DATA, script_of, scripts_in, skeleton
+from .unicode_data import (DATA, LEVELS, confusable_type, is_allowed, is_invisible, is_single_script,
+                           numbering_systems, repeated_marks, restriction_level, script_of, scripts_in,
+                           skeleton)
 
 SEVERITY_RANK = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
 VERDICT = {0: "SAFE", 1: "SAFE", 2: "SUSPICIOUS", 3: "MALICIOUS", 4: "MALICIOUS"}
 
-# UTS #39 "Highly Restrictive": these script sets are normal (CJK writing), not mixing.
-ALLOWED_SCRIPT_SETS = [
-    {"Latin", "Han", "Hiragana", "Katakana"},
-    {"Latin", "Han", "Bopomofo"},
-    {"Latin", "Han", "Hangul"},
-]
 # shortcut: tiny public-suffix guess, swap in tldextract/PSL when multi-level TLDs matter.
 SECOND_LEVELS = {"com", "net", "org", "edu", "gov", "co", "ac", "or", "ne", "info", "biz"}
 MIN_FUZZY_LEN = 5  # shorter brand keywords produce too many fuzzy false positives
@@ -40,6 +36,7 @@ class Report:
     target: str            # what was analysed after decoding (host or name)
     skeleton: str
     verdict: str = "SAFE"
+    restriction_level: str = "ASCII-Only"   # UTS #39 §5.2, least restrictive part wins
     findings: list[Finding] = field(default_factory=list)
 
     def add(self, kind: str, severity: str, message: str, **detail) -> None:
@@ -105,28 +102,52 @@ def levenshtein(a: str, b: str) -> int:
     return prev[-1]
 
 
+def _typed(kind: str | None) -> str:
+    return f" ({kind} confusable)" if kind else ""
+
+
 def check_characters(text: str, report: Report) -> None:
-    """Script mixing, look-alike characters and compatibility forms, per label/word."""
+    """UTS #39 checks per label/word, then per character."""
     if unicodedata.normalize("NFKC", text) != text:
         report.add("compatibility", "medium",
                    "Contains compatibility characters (e.g. fullwidth) that normalise to other text",
                    nfkc=unicodedata.normalize("NFKC", text))
 
     for part in text.replace("@", ".").replace(" ", ".").split("."):
-        scripts = scripts_in(part)
-        if len(scripts) > 1 and not any(scripts <= ok for ok in ALLOWED_SCRIPT_SETS):
-            report.add("mixed_script", "medium", f"'{part}' mixes scripts: {', '.join(sorted(scripts))}",
-                       scripts=sorted(scripts))
+        level = restriction_level(part)
+        if LEVELS.index(level) > LEVELS.index(report.restriction_level):
+            report.restriction_level = level
+        if level in ("Moderately Restrictive", "Minimally Restrictive") or not is_single_script(part):
+            severity = "low" if level == "Moderately Restrictive" else "medium"
+            report.add("mixed_script", severity,
+                       f"'{part}' mixes scripts: {', '.join(sorted(scripts_in(part)))} (level: {level})",
+                       scripts=sorted(scripts_in(part)), restriction_level=level)
         skel = skeleton(part)
         if not part.isascii() and skel.isascii() and skel != part:
-            report.add("whole_lookalike", "medium", f"'{part}' renders like ASCII '{skel}'", looks_like=skel)
+            kind = confusable_type(part, skel)
+            report.add("whole_lookalike", "medium", f"'{part}' renders like ASCII '{skel}'{_typed(kind)}",
+                       looks_like=skel, confusable_type=kind)
+        if len(numbering_systems(part)) > 1:
+            report.add("mixed_numbers", "medium", f"'{part}' mixes digits from different number systems")
+        for mark in repeated_marks(part):
+            report.add("hidden_overlay", "medium",
+                       f"'{part}' stacks the same mark U+{ord(mark):04X} twice (can hide a character)")
 
     for pos, ch in enumerate(text):
-        if not ch.isascii() and skeleton(ch).isascii() and skeleton(ch) != ch:
+        info = dict(position=pos, char=ch, codepoint=f"U+{ord(ch):04X}", script=script_of(ch))
+        if is_invisible(ch):
+            report.add("invisible_char", "medium",
+                       f"Position {pos}: invisible U+{ord(ch):04X} {unicodedata.name(ch, '')}", **info)
+        elif ch.isascii():
+            continue
+        elif skeleton(ch).isascii() and skeleton(ch) != ch:
             report.add("confusable_char", "low",
                        f"Position {pos}: '{ch}' U+{ord(ch):04X} ({script_of(ch)}) looks like '{skeleton(ch)}'",
-                       position=pos, char=ch, codepoint=f"U+{ord(ch):04X}",
-                       script=script_of(ch), looks_like=skeleton(ch))
+                       **info, looks_like=skeleton(ch))
+        elif not is_allowed(ch) and ch != " ":
+            report.add("restricted_char", "low",
+                       f"Position {pos}: '{ch}' U+{ord(ch):04X} is outside the UTS #39 identifier profile",
+                       **info)
 
 
 def check_brands_host(host: str, brands: list[dict], report: Report) -> None:
@@ -139,8 +160,9 @@ def check_brands_host(host: str, brands: list[dict], report: Report) -> None:
         name = brand["name"]
         hit = next((d for d in brand["domains"] if skeleton(d) == rd_skel), None)
         if hit:
-            report.add("brand_homograph", "critical", f"Impersonates {name}: renders like '{hit}'",
-                       brand=name, official=hit)
+            kind = confusable_type(label, registrable(hit)[1])
+            report.add("brand_homograph", "critical", f"Impersonates {name}: renders like '{hit}'{_typed(kind)}",
+                       brand=name, official=hit, confusable_type=kind)
             continue
         for kw in brand["keywords"]:
             kw_skel = skeleton(kw)
@@ -149,8 +171,10 @@ def check_brands_host(host: str, brands: list[dict], report: Report) -> None:
                     report.add("brand_unofficial", "medium", f"Uses the {name} name on an unofficial domain '{rd}'",
                                brand=name)
                 else:
-                    report.add("brand_homograph", "high", f"Name '{label}' renders like {name} keyword '{kw}'",
-                               brand=name, keyword=kw)
+                    kind = confusable_type(label, kw)
+                    report.add("brand_homograph", "high",
+                               f"Name '{label}' renders like {name} keyword '{kw}'{_typed(kind)}",
+                               brand=name, keyword=kw, confusable_type=kind)
             elif len(kw) >= MIN_FUZZY_LEN and levenshtein(label_skel, kw_skel) == 1:
                 report.add("brand_typosquat", "medium", f"'{label}' is one edit away from {name} keyword '{kw}'",
                            brand=name, keyword=kw)
@@ -167,8 +191,10 @@ def check_brands_name(name: str, brands: list[dict], report: Report) -> None:
         for brand in brands:
             for kw in brand["keywords"]:
                 if word.lower() != kw and skeleton(word) == skeleton(kw):
-                    report.add("brand_homograph", "high", f"'{word}' renders like {brand['name']} keyword '{kw}'",
-                               brand=brand["name"], keyword=kw)
+                    kind = confusable_type(word, kw)
+                    report.add("brand_homograph", "high",
+                               f"'{word}' renders like {brand['name']} keyword '{kw}'{_typed(kind)}",
+                               brand=brand["name"], keyword=kw, confusable_type=kind)
 
 
 def analyze(raw: str, brands_path: str | None = None) -> Report:

@@ -1,51 +1,73 @@
 # homoglyph-detector
 
-Detect look-alike (homoglyph / IDN homograph) domains, emails, URLs and names — offline, zero dependencies, based on the Unicode [UTS #39](https://www.unicode.org/reports/tr39/) confusables data.
+Detect look-alike (homoglyph / IDN homograph) domains, emails, URLs and names — offline, zero dependencies.
+
+**Technique: Unicode [UTS #39](https://www.unicode.org/reports/tr39/) Confusable Detection** — skeletons, confusable classification (single / mixed / whole-script), restriction levels, mixed numbers and hidden characters, implemented from the standard on the official Unicode 18 data files.
 
 ```
 $ homoglyph-detector "pаypal.com" xn--80ak6aa92e.com rnicrosoft.com tiếngviệt.vn
 
 🚨 MALICIOUS  pаypal.com  [domain]
     skeleton: paypal.corn
-    - [medium] 'pаypal' mixes scripts: Cyrillic, Latin
-    - [medium] 'pаypal' renders like ASCII 'paypal'
+    level   : Minimally Restrictive
+    - [medium] 'pаypal' mixes scripts: Cyrillic, Latin (level: Minimally Restrictive)
+    - [medium] 'pаypal' renders like ASCII 'paypal' (mixed-script confusable)
     - [low] Position 1: 'а' U+0430 (Cyrillic) looks like 'a'
-    - [critical] Impersonates PayPal: renders like 'paypal.com'
+    - [critical] Impersonates PayPal: renders like 'paypal.com' (mixed-script confusable)
 
 🚨 MALICIOUS  xn--80ak6aa92e.com  [domain]
     decoded : аррӏе.com
+    skeleton: apple.corn
+    level   : Single Script
     ...
-    - [critical] Impersonates Apple: renders like 'apple.com'
+    - [critical] Impersonates Apple: renders like 'apple.com' (whole-script confusable)
 
 🚨 MALICIOUS  rnicrosoft.com  [domain]
     skeleton: rnicrosoft.corn
-    - [critical] Impersonates Microsoft: renders like 'microsoft.com'
+    level   : ASCII-Only
+    - [critical] Impersonates Microsoft: renders like 'microsoft.com' (single-script confusable)
 
 ✅ SAFE       tiếngviệt.vn  [domain]
+    skeleton: tiếngviệt.vn
+    level   : Single Script
 ```
 
 ## Why
 
-Attackers register domains that *look* like a brand: `pаypal.com` (Cyrillic `а`), `аррӏе.com` (every letter Cyrillic), `rnicrosoft.com` (`rn` ≈ `m`), `paypa1.com`. Browsers already show mixed-script domains as `xn--…`, but **whole-script** look-alikes and pure-ASCII tricks still get through, and filters that compare strings byte-by-byte miss all of them.
+Attackers register domains that *look* like a brand: `pаypal.com` (Cyrillic `а`), `аррӏе.com` (every letter Cyrillic), `rnicrosoft.com` (`rn` ≈ `m`), `paypa1.com`, `pay​pal.com` (hidden zero-width space). Browsers already show mixed-script domains as `xn--…`, but **whole-script** look-alikes, pure-ASCII tricks and invisible characters still get through, and filters that compare strings byte-by-byte miss all of them.
 
 ATT&CK: [T1583.001 Acquire Infrastructure: Domains](https://attack.mitre.org/techniques/T1583/001/), used for [T1566 Phishing](https://attack.mitre.org/techniques/T1566/).
+
+## Technique: Unicode UTS #39 Confusable Detection
+
+[UTS #39 *Unicode Security Mechanisms*](https://www.unicode.org/reports/tr39/) is the standard browsers, registries and ICU's SpoofChecker use against look-alike text. This project implements its detection mechanisms directly, in [`unicode_data.py`](src/homoglyph_detector/unicode_data.py):
+
+| UTS #39 | What it does | Function | Example |
+|---|---|---|---|
+| §4 Confusable Detection — *skeleton* | NFD → drop default-ignorables → map each char to its prototype from `confusables.txt` → NFD. Two strings are confusable when their skeletons are equal. | `skeleton()` | `skeleton("pаypal") == skeleton("paypa1") == skeleton("paypal")` |
+| §4 — *single-script confusables* | Confusable, and the two strings together still fit one script | `confusable_type()` | `rnicrosoft` ↔ `microsoft` |
+| §4 — *mixed-script confusables* | Confusable, but they need more than one script | `confusable_type()` | `pаypal` ↔ `paypal` |
+| §4 — *whole-script confusables* | Mixed-script confusables where **each** string is single-script — the hardest kind to spot, browsers show it decoded | `confusable_type()` | `аррӏе` (Cyrillic) ↔ `apple` |
+| §5.1 Mixed-Script Detection | *Resolved script set*: intersection of every character's Script_Extensions, augmented for CJK (Han + Hiragana = Japanese). Empty = mixed-script. | `resolved_script_set()`, `is_single_script()` | `東京とうきょう` is single-script (Japanese) |
+| §5.2 Restriction Levels | ASCII-Only → Single Script → Highly → Moderately → Minimally Restrictive → Unrestricted, using the General Security Profile (`IdentifierStatus.txt`) | `restriction_level()` | `abcلعربية` = Moderately, `pаypal` = Minimally, `pay​pal` = Unrestricted |
+| §5.3 Mixed-Number Detection | Decimal digits from different numbering systems | `numbering_systems()` | `ab1٣` (ASCII 1 + Arabic-Indic 3) |
+| §5.4 Optional Detection | Invisible characters and the same nonspacing mark stacked twice (*hidden overlays*) | `is_invisible()`, `repeated_marks()` | `pay​pal`, `café́` |
+
+On top of the standard, the analyzer adds what a SOC needs: punycode decoding with invalid-IDN detection, brand matching on skeletons with an allow-list of official domains, a severity per finding and a verdict.
 
 ## How it works
 
 1. **Parse** the input: domain, email (`user@host`), URL (`https://host/...`) or free-text name.
 2. **Decode punycode** (`xn--…`). Labels that decode to nothing, to plain ASCII or to invisible/control characters are flagged as invalid IDNs.
-3. **Character checks** per label:
-   - *mixed script* (e.g. Latin + Cyrillic), allowing normal combinations such as Han + Hiragana;
-   - *whole-script look-alike*: a non-ASCII label whose skeleton is plain ASCII (`аррӏе` → `apple`);
-   - each confusable character, with position, code point and script;
-   - compatibility forms such as fullwidth `ｐａｙｐａｌ`.
-4. **Skeleton** (UTS #39): `NFD → map every char to its prototype → NFD`, then lower-cased because domains are case-insensitive. Two strings that look the same get the same skeleton. Note the skeleton itself can look odd — `m` maps to `rn`, so `paypal.com` → `paypal.corn` — that is expected.
-5. **Brand matching** against `data/brands.json`, comparing skeletons on *both* sides:
+3. **UTS #39 checks** per domain label / word: restriction level and mixed scripts, whole-label look-alike of ASCII (with its confusable type), mixed numbers, hidden overlays. Then per character: invisible characters, confusable characters (position, code point, script), characters outside the identifier profile, and compatibility forms such as fullwidth `ｐａｙｐａｌ`.
+4. **Brand matching** against `data/brands.json`, comparing skeletons on *both* sides:
    - official domain or subdomain → allow-listed;
    - registrable domain has the same skeleton as an official domain → **critical**;
    - name label has the same skeleton as a brand keyword → high (homograph) / medium (brand name on an unofficial domain);
    - one edit away from a keyword, or keyword inside the host → medium.
-6. **Verdict** = worst finding: `SAFE` (info/low), `SUSPICIOUS` (medium), `MALICIOUS` (high/critical).
+5. **Verdict** = worst finding: `SAFE` (info/low), `SUSPICIOUS` (medium), `MALICIOUS` (high/critical).
+
+The skeleton is lower-cased because domains are case-insensitive, so `0` (prototype `O`) collides with `o`. It can look odd — `m` maps to `rn`, so `paypal.com` → `paypal.corn` — that is expected.
 
 Vietnamese text is a first-class test case: `tiếngviệt.vn` and `Nguyễn Văn A` are Latin with diacritics and must not be flagged.
 
@@ -67,12 +89,14 @@ Exit code: `0` all safe, `1` something suspicious, `2` something malicious — h
 As a library:
 
 ```python
-from homoglyph_detector import analyze, skeleton
+from homoglyph_detector import analyze, skeleton, confusable_type, restriction_level
 
 report = analyze("pаypal.com")
-report.verdict            # 'MALICIOUS'
-report.to_dict()          # JSON-ready
-skeleton("pаypal") == skeleton("paypal")   # True
+report.verdict                     # 'MALICIOUS'
+report.restriction_level           # 'Minimally Restrictive'
+report.to_dict()                   # JSON-ready
+confusable_type("аррӏе", "apple")  # 'whole-script'
+restriction_level("東京とうきょう")  # 'Single Script'
 ```
 
 ## How is this different from dnstwist?
@@ -83,22 +107,24 @@ skeleton("pаypal") == skeleton("paypal")   # True
 
 ```
 src/homoglyph_detector/
-  unicode_data.py   skeleton() and script_of() from the Unicode data files
-  analyzer.py       parsing, checks, brand matching, verdict
+  unicode_data.py   UTS #39: skeleton, scripts, restriction levels, confusable types
+  analyzer.py       parsing, punycode, checks, brand matching, verdict
   cli.py            command line
   data/
-    confusables.txt  UTS #39 confusables, Unicode 18.0.0
-    Scripts.txt      Unicode script property, Unicode 18.0.0
-    brands.json      brands to protect — edit freely
-tests/              pytest suite (malicious / suspicious / safe cases)
+    confusables.txt       UTS #39 confusable mappings
+    IdentifierStatus.txt  UTS #39 General Security Profile
+    Scripts.txt           Script property
+    ScriptExtensions.txt  Script_Extensions property
+    ScriptAliases.txt     script code → name (the 'sc' lines of PropertyValueAliases.txt)
+    brands.json           brands to protect — edit freely
+tests/              pytest suite (malicious / suspicious / safe cases, one test per UTS #39 mechanism)
 ```
 
 ## Roadmap
 
-- [x] v0.1 — punycode, skeleton, mixed/whole-script, brand matching with allow-list, CLI, JSON, tests, CI
+- [x] v0.1 — punycode, skeleton, brand matching with allow-list, CLI, JSON, tests, CI
+- [x] v0.2 — full UTS #39 confusable detection: Script_Extensions, resolved script sets, restriction levels, single/mixed/whole-script confusable types, mixed numbers, invisible characters, hidden overlays
 - [ ] Real public-suffix handling (`tldextract`) instead of the built-in guess for `*.com.vn`-style TLDs
-- [ ] Flag invisible characters (zero-width space/joiner) anywhere in the input
-- [ ] Use Script_Extensions for characters shared between scripts
 - [ ] HTML report for batch runs
 - [ ] `.eml` mode: check From / Reply-To / Return-Path and every link in a phishing email
 - [ ] Optional online checks: DNS resolution, domain age (RDAP), VirusTotal — off by default
@@ -106,4 +132,4 @@ tests/              pytest suite (malicious / suspicious / safe cases)
 
 ## Data & license
 
-Code: MIT (see `LICENSE`). `confusables.txt` and `Scripts.txt` are © Unicode, Inc., distributed under the [Unicode License v3](https://www.unicode.org/license.txt). To update them, replace the two files with the latest versions from `https://www.unicode.org/Public/security/latest/confusables.txt` and `https://www.unicode.org/Public/UCD/latest/ucd/Scripts.txt`.
+Code: MIT (see `LICENSE`). The files in `src/homoglyph_detector/data/` except `brands.json` are © Unicode, Inc., distributed under the [Unicode License v3](https://www.unicode.org/license.txt) — Unicode 18.0.0. To update them, replace them with the latest versions from `https://www.unicode.org/Public/security/latest/` (`confusables.txt`, `IdentifierStatus.txt`) and `https://www.unicode.org/Public/UCD/latest/ucd/` (`Scripts.txt`, `ScriptExtensions.txt`, and the `sc` lines of `PropertyValueAliases.txt`).
