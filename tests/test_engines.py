@@ -7,7 +7,8 @@ import pytest
 from homoglyph_detector import analyze
 from homoglyph_detector.analyzer import run_engines
 from homoglyph_detector.context import prepare
-from homoglyph_detector.engines import ENGINES, EngineResult, load_brands
+from homoglyph_detector.brands import load_brands
+from homoglyph_detector.engines import ENGINES, EngineResult
 from homoglyph_detector.scoring import calibration, probability, verdict
 
 ROOT = Path(__file__).resolve().parents[1]

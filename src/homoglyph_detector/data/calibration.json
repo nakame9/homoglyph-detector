@@ -11,6 +11,11 @@
     "suspicious": 0.5,
     "malicious": 0.9
   },
+  "brands": {
+    "name": "homoglyph-detector default brands",
+    "version": "1.0.0",
+    "sha256": "64a12b0daa8484deeb650b5e6bf736f5ed35a7b430e27ab5157593842dad41e7"
+  },
   "dataset": {
     "file": "benchmark/dataset.jsonl",
     "sha256": "ca8e79c179839d3c95ff84b078f075af8c433fe7647aea832329cbaed667bda0",

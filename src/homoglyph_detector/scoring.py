@@ -9,12 +9,12 @@ import json
 import math
 from functools import cache
 
-from .unicode_data import DATA
+from .integrity import read_verified
 
 
 @cache
 def calibration() -> dict:
-    return json.loads((DATA / "calibration.json").read_text("utf-8"))
+    return json.loads(read_verified("calibration.json"))
 
 
 def probability(scores: dict[str, float]) -> float:

@@ -4,6 +4,7 @@ Detect look-alike (homoglyph / IDN homograph) domains, emails, URLs and names �
 
 **Techniques**
 - **Multi-layer detection engine** — five independent engines (Unicode, IDNA, brand, combosquat, visual) each return a score and their evidence; a fusion layer turns them into a **calibrated probability**, fitted on a 15,805-domain benchmark instead of hand-set rules.
+- **Brand Intelligence Database** — protected brands live in versioned, validated JSON databases, not in the code; the bundled one is pinned by SHA-256, your own can be merged and pinned, and every data file is verified before use (tampered data → no verdict, exit code 3).
 - **Unicode [UTS #39](https://www.unicode.org/reports/tr39/) Confusable Detection** — skeletons, single / mixed / whole-script confusables, restriction levels, mixed numbers, bidi controls and default-ignorable characters, on the official Unicode 18 data files.
 - **ASCII Visual Confusable Detection** — look-alikes made only of ordinary characters: single (`5hopee`, `paypai`) and multi-character substitutions (`vvhatsapp`, `clropbox`, `nnicrosoft`) with a visual similarity score.
 - **IDNA2008 validation** ([RFC 5890–5893](https://www.rfc-editor.org/rfc/rfc5891)) with [UTS #46](https://www.unicode.org/reports/tr46/) lookup mapping via [`idna`](https://pypi.org/project/idna/), and **Public Suffix List** parsing via [`publicsuffixlist`](https://pypi.org/project/publicsuffixlist/).
@@ -89,6 +90,54 @@ ROC-AUC 0.9302, Brier score 0.0585, expected calibration error 0.0609.
 **Limits, measured:** a domain with no evidence still gets ~13/100 — the share of attacks in the benchmark that leave no trace (the probabilities follow the benchmark's mix of about one attack per two benign domains; real traffic has far fewer, so read the score as a ranking and the thresholds as review cut-offs). One-edit typos of a short brand name are rated high even for real words (`apply.com`, `ymail.com`), and brand-owned domains missing from `brands.json` show up as combosquats. Accented look-alikes of *unprotected* domains are out of reach (about half detected) because accents are normal in Vietnamese and European names.
 
 `CI` re-runs the calibration and fails if `calibration.json` no longer matches the committed engines and benchmark; tests also check the dataset hash and minimum quality (ROC-AUC ≥ 0.9, precision ≥ 0.98 at the malicious threshold).
+
+## Brand Intelligence Database
+
+Which brands to protect is data, not code. [`brands.py`](src/homoglyph_detector/brands.py) loads **brand databases** — JSON files with a schema, a version and provenance — and merges them:
+
+```json
+{
+  "schema": 1,
+  "name": "ACME Bank brands",
+  "version": "1.2.0",
+  "updated": "2026-10-31",
+  "brands": [
+    {"id": "acmebank", "name": "ACME Bank", "category": "banking", "country": "VN",
+     "domains": ["acmebank.vn", "acme-bank.com.vn"], "keywords": ["acmebank"]}
+  ]
+}
+```
+
+| Layer | Where | Trust |
+|---|---|---|
+| bundled | [`data/brands.json`](src/homoglyph_detector/data/brands.json) — 13 global and Vietnamese brands, version 1.0.0 | SHA-256 pinned in `data/MANIFEST.json` |
+| environment | `HOMOGLYPH_BRANDS=/etc/acme/brands.json` (several separated by `:`, `;` on Windows) | pinned if written as `path#sha256=HEX` |
+| command line | `--brands FILE[#sha256=HEX]`, repeatable | same |
+
+Later layers override earlier ones by brand `id` (bundled < environment < command line), so an organisation can add its own brands or extend a bundled one without editing the package. A template is in [`examples/org_brands.json`](examples/org_brands.json):
+
+```bash
+homoglyph-detector acrnebank.vn --brands "examples/org_brands.json#sha256=$(sha256sum examples/org_brands.json | cut -d' ' -f1)"
+homoglyph-detector --verify --brands examples/org_brands.json     # integrity of all data + every database used
+```
+
+**Validation** — a database is refused (exit code 3, no verdict) when it would weaken detection:
+- an official domain that is a **public suffix** (`github.io`, `com.vn`): allow-listing it would trust every site under it;
+- a domain claimed by two brands, across all loaded databases — an organisation database cannot quietly take over `paypal.com`;
+- domains that are not lower-case valid IDNA2008 names, keywords that are not lower-case ASCII (the visual engine compares against them), duplicate ids, a missing or malformed `version` / `updated` / `schema`.
+
+**Integrity verification** — [`integrity.py`](src/homoglyph_detector/integrity.py) checks every bundled data file (brand database, Unicode tables, calibration) against the SHA-256 in `data/MANIFEST.json` before reading it. A modified or unlisted file stops the tool (exit code 3) rather than letting a poisoned allow-list or table decide the verdict. An external database is checked against its pin when one is given; an unpinned one is used with a warning that prints the digest to pin.
+
+**Versioning** — every database carries a semantic `version` and an `updated` date. [`scripts/seal_data.py`](scripts/seal_data.py) re-pins the data after a reviewed change and **refuses to seal a changed `brands.json` whose version did not go up**; CI runs `seal_data.py --check`. Every report names the databases it used, so a verdict can be traced to the exact data:
+
+```json
+"brand_db": [
+  {"name": "homoglyph-detector default brands", "version": "1.0.0", "updated": "2026-10-31",
+   "sha256": "64a12b0d...", "verification": "manifest", "source": "bundled"}
+]
+```
+
+The calibration records the brand database it was fitted on (a test checks it is the bundled one), so changing the bundled brands means re-running the benchmark.
 
 ## Technique: Unicode UTS #39 Confusable Detection
 
@@ -185,11 +234,13 @@ homoglyph-detector paypa1.com "user@pаypal.com" "https://аpple.com/login"
 homoglyph-detector -f examples/sample_domains.txt
 cat domains.txt | homoglyph-detector -f -
 homoglyph-detector g00gle.com --json
-homoglyph-detector suspicious.com --brands my_brands.json
+homoglyph-detector suspicious.com --brands my_brands.json#sha256=<digest>   # add your brands
+homoglyph-detector --verify                                               # check data integrity
+homoglyph-detector --version                                              # tool, Unicode and brand database versions
 python -m homoglyph_detector ...   # same thing
 ```
 
-Exit code: `0` all safe, `1` something suspicious, `2` something malicious — handy in scripts and CI.
+Exit code: `0` all safe, `1` something suspicious, `2` something malicious, `3` data failed integrity or validation (no verdict) — handy in scripts and CI.
 
 As a library:
 
@@ -215,6 +266,8 @@ visual_similarity("vvhatsapp", "whatsapp")  # VisualMatch(score=0.989, distance=
 
 ```
 src/homoglyph_detector/
+  brands.py         brand intelligence database: load, validate, pin, merge
+  integrity.py      SHA-256 verification of every bundled data file against MANIFEST.json
   context.py        shared preprocessing: parse, NFC, IDNA A-label/U-label, Public Suffix List
   engines.py        the five independent detection engines
   scoring.py        calibrated fusion: probability, risk score, verdict
@@ -222,9 +275,10 @@ src/homoglyph_detector/
   unicode_data.py   UTS #39: skeleton, scripts, restriction levels, confusable types, properties
   visual.py         ASCII visual confusables: substitution table and similarity scoring
   cli.py            command line
-  data/             official Unicode data files (see above) + brands.json (edit freely)
+  data/             official Unicode data files, brands.json, calibration.json, MANIFEST.json (pins)
 scripts/
-  update_unicode_data.py   refresh the Unicode data files from unicode.org
+  update_unicode_data.py   refresh the Unicode data files from unicode.org (then seals them)
+  seal_data.py             pin data files in MANIFEST.json; refuses unversioned brand changes
 benchmark/
   build_dataset.py         labelled dataset from independent sources (dnstwist, OpenDNS top 10k)
   dataset.jsonl            the benchmark (pure ASCII, JSON-escaped)
@@ -234,6 +288,7 @@ tests/
   test_analyzer.py         malicious / suspicious / safe cases, one test per UTS #39 mechanism
   test_unicode_data.py     compatibility checks for the bundled Unicode data
   test_visual.py           ASCII look-alikes, typos vs look-alikes, table consistency
+  test_brands.py           brand databases: validation, pinning, merging, tampering, versioning
   test_engines.py          engine independence, calibrated output, monotonicity, calibration vs dataset
 .github/workflows/
   ci.yml                   tests on every push
@@ -248,6 +303,7 @@ tests/
 - [x] v0.4 — IDNA2008 validation (strict + UTS #46), A-label/U-label round-trip, length / bidi / contextual rules, Public Suffix List with private suffixes
 - [x] v0.5 — ASCII visual confusable detection: character and multi-character substitutions, visual similarity scoring, WhatsApp and Dropbox brands
 - [x] v0.6 — multi-layer detection engine: five independent engines, calibrated logistic fusion, benchmark from dnstwist + OpenDNS top 10k, reproducible calibration checked in CI
+- [x] v0.7 — brand intelligence database: versioned JSON databases with schema validation, organisation databases merged by id, SHA-256 pinning, integrity verification of all data (manifest), seal tool enforcing version bumps
 - [ ] HTML report for batch runs
 - [ ] `.eml` mode: check From / Reply-To / Return-Path and every link in a phishing email
 - [ ] Optional online checks: DNS resolution, domain age (RDAP), VirusTotal — off by default
@@ -255,4 +311,4 @@ tests/
 
 ## Data & license
 
-Code: MIT (see `LICENSE`). The files in `src/homoglyph_detector/data/` except `brands.json` are © Unicode, Inc., distributed under the [Unicode License v3](https://www.unicode.org/license.txt) — Unicode 18.0.0. Refresh them with `python scripts/update_unicode_data.py`. The IDNA tables come with `idna` and the Public Suffix List with `publicsuffixlist` (a new release follows every PSL change): refresh both with `pip install -U idna publicsuffixlist`; a test checks that `idna` uses the same Unicode version as the bundled data.
+Code: MIT (see `LICENSE`). The files in `src/homoglyph_detector/data/` except `brands.json`, `calibration.json` and `MANIFEST.json` are © Unicode, Inc., distributed under the [Unicode License v3](https://www.unicode.org/license.txt) — Unicode 18.0.0. Refresh them with `python scripts/update_unicode_data.py`. The IDNA tables come with `idna` and the Public Suffix List with `publicsuffixlist` (a new release follows every PSL change): refresh both with `pip install -U idna publicsuffixlist`; a test checks that `idna` uses the same Unicode version as the bundled data.

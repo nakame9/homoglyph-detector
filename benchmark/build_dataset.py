@@ -26,7 +26,8 @@ import idna
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from homoglyph_detector.context import registrable  # noqa: E402
-from homoglyph_detector.engines import is_official, load_brands  # noqa: E402
+from homoglyph_detector.brands import load_brands  # noqa: E402
+from homoglyph_detector.engines import is_official  # noqa: E402
 
 OUT = Path(__file__).resolve().parent / "dataset.jsonl"
 OPENDNS = "https://raw.githubusercontent.com/opendns/public-domain-lists/master/opendns-top-domains.txt"

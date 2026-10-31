@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "name": "Example organisation brands",
+  "version": "1.0.0",
+  "updated": "2026-10-31",
+  "description": "Template for your own brand database. Load it with --brands examples/org_brands.json (add #sha256=<digest> to pin it) or the HOMOGLYPH_BRANDS environment variable.",
+  "brands": [
+    {
+      "id": "acmebank",
+      "name": "ACME Bank",
+      "category": "banking",
+      "country": "VN",
+      "domains": [
+        "acmebank.vn",
+        "acme-bank.com.vn"
+      ],
+      "keywords": [
+        "acmebank"
+      ]
+    }
+  ]
+}

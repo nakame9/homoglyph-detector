@@ -1,17 +1,22 @@
 {
+  "schema": 1,
+  "name": "homoglyph-detector default brands",
+  "version": "1.0.0",
+  "updated": "2026-10-31",
+  "description": "Brands protected out of the box. Add your own with --brands or HOMOGLYPH_BRANDS (same format); bump 'version' on every change and run scripts/seal_data.py.",
   "brands": [
-    {"name": "Apple", "domains": ["apple.com", "icloud.com"], "keywords": ["apple", "icloud"]},
-    {"name": "PayPal", "domains": ["paypal.com"], "keywords": ["paypal"]},
-    {"name": "Microsoft", "domains": ["microsoft.com", "microsoftonline.com", "office.com", "live.com", "outlook.com"], "keywords": ["microsoft", "outlook", "office365"]},
-    {"name": "Google", "domains": ["google.com", "google.com.vn", "gmail.com", "youtube.com"], "keywords": ["google", "gmail", "youtube"]},
-    {"name": "Facebook", "domains": ["facebook.com", "fb.com", "messenger.com"], "keywords": ["facebook", "messenger"]},
-    {"name": "Amazon", "domains": ["amazon.com"], "keywords": ["amazon"]},
-    {"name": "WhatsApp", "domains": ["whatsapp.com", "whatsapp.net", "wa.me"], "keywords": ["whatsapp"]},
-    {"name": "Dropbox", "domains": ["dropbox.com"], "keywords": ["dropbox"]},
-    {"name": "Vietcombank", "domains": ["vietcombank.com.vn"], "keywords": ["vietcombank"]},
-    {"name": "Techcombank", "domains": ["techcombank.com.vn", "techcombank.com"], "keywords": ["techcombank"]},
-    {"name": "MoMo", "domains": ["momo.vn"], "keywords": ["momo"]},
-    {"name": "Shopee", "domains": ["shopee.vn", "shopee.com"], "keywords": ["shopee"]},
-    {"name": "Zalo", "domains": ["zalo.me", "zalo.vn"], "keywords": ["zalo"]}
+    {"id": "apple", "name": "Apple", "category": "technology", "country": "global", "domains": ["apple.com", "icloud.com"], "keywords": ["apple", "icloud"]},
+    {"id": "paypal", "name": "PayPal", "category": "payments", "country": "global", "domains": ["paypal.com"], "keywords": ["paypal"]},
+    {"id": "microsoft", "name": "Microsoft", "category": "technology", "country": "global", "domains": ["microsoft.com", "microsoftonline.com", "office.com", "live.com", "outlook.com"], "keywords": ["microsoft", "outlook", "office365"]},
+    {"id": "google", "name": "Google", "category": "technology", "country": "global", "domains": ["google.com", "google.com.vn", "gmail.com", "youtube.com"], "keywords": ["google", "gmail", "youtube"]},
+    {"id": "facebook", "name": "Facebook", "category": "social", "country": "global", "domains": ["facebook.com", "fb.com", "messenger.com"], "keywords": ["facebook", "messenger"]},
+    {"id": "amazon", "name": "Amazon", "category": "e-commerce", "country": "global", "domains": ["amazon.com"], "keywords": ["amazon"]},
+    {"id": "whatsapp", "name": "WhatsApp", "category": "messaging", "country": "global", "domains": ["whatsapp.com", "whatsapp.net", "wa.me"], "keywords": ["whatsapp"]},
+    {"id": "dropbox", "name": "Dropbox", "category": "cloud-storage", "country": "global", "domains": ["dropbox.com"], "keywords": ["dropbox"]},
+    {"id": "vietcombank", "name": "Vietcombank", "category": "banking", "country": "VN", "domains": ["vietcombank.com.vn"], "keywords": ["vietcombank"]},
+    {"id": "techcombank", "name": "Techcombank", "category": "banking", "country": "VN", "domains": ["techcombank.com.vn", "techcombank.com"], "keywords": ["techcombank"]},
+    {"id": "momo", "name": "MoMo", "category": "payments", "country": "VN", "domains": ["momo.vn"], "keywords": ["momo"]},
+    {"id": "shopee", "name": "Shopee", "category": "e-commerce", "country": "VN", "domains": ["shopee.vn", "shopee.com"], "keywords": ["shopee"]},
+    {"id": "zalo", "name": "Zalo", "category": "messaging", "country": "VN", "domains": ["zalo.me", "zalo.vn"], "keywords": ["zalo"]}
   ]
 }

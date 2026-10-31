@@ -12,8 +12,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install -e ".[dev]"
+      - run: python scripts/seal_data.py --check   # every data file pinned in MANIFEST.json
       - run: pytest -q
       - run: homoglyph-detector -f examples/sample_domains.txt || [ $? -eq 2 ]
       - name: Calibration must match the committed engines and benchmark
         if: matrix.python-version == '3.13'
-        run: python benchmark/calibrate.py && git diff --exit-code src/homoglyph_detector/data/calibration.json
+        run: python benchmark/calibrate.py && git diff --exit-code src/homoglyph_detector/data/

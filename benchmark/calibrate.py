@@ -13,6 +13,8 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
+import subprocess
 import sys
 from collections import defaultdict
 from datetime import date
@@ -21,6 +23,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 from homoglyph_detector.analyzer import run_engines  # noqa: E402
+from homoglyph_detector.brands import bundled  # noqa: E402
 from homoglyph_detector.cli import visible  # noqa: E402
 from homoglyph_detector.engines import ENGINES  # noqa: E402
 
@@ -120,6 +123,7 @@ def reliability(y: list[int], p: list[float], bins: int = 10) -> tuple[list[tupl
 
 
 def main() -> int:
+    os.environ.pop("HOMOGLYPH_BRANDS", None)   # calibrate on the bundled brand database only
     raw = DATASET.read_bytes()
     rows = [json.loads(line) for line in raw.decode("ascii").splitlines()]
     names = list(ENGINES)
@@ -153,6 +157,7 @@ def main() -> int:
         "weights": {n: round(wi, 4) for n, wi in zip(names, w[1:])},
         "bias": round(w[0], 4),
         "thresholds": THRESHOLDS,
+        "brands": {k: v for k, v in bundled().info().items() if k in ("name", "version", "sha256")},
         "dataset": {"file": "benchmark/dataset.jsonl", "sha256": hashlib.sha256(raw).hexdigest(),
                     "rows": len(rows), "attacks": sum(r["label"] for r in rows),
                     "train_rows": len(train), "test_rows": len(test)},
@@ -210,6 +215,7 @@ def main() -> int:
         "- ASCII typos of brands that are not in `brands.json` are out of scope (nothing to compare with).", "",
     ]
     RESULTS.write_text("\n".join(lines), encoding="utf-8")
+    subprocess.run([sys.executable, str(ROOT / "scripts" / "seal_data.py")], check=True, stdout=subprocess.DEVNULL)
     print(json.dumps({"weights": model["weights"], "bias": model["bias"], **metrics}, indent=2))
     return 0
 

@@ -10,16 +10,13 @@ No engine reads another engine's output; scoring.py fuses their scores.
 """
 from __future__ import annotations
 
-import json
 import unicodedata
 from dataclasses import dataclass, field
-from functools import cache
-from pathlib import Path
 
 import idna
 
 from .context import Context, registrable
-from .unicode_data import (DATA, LEVELS, confusable_type, is_allowed, is_bidi_control, is_default_ignorable,
+from .unicode_data import (LEVELS, confusable_type, is_allowed, is_bidi_control, is_default_ignorable,
                            is_single_script, numbering_systems, repeated_marks, restriction_level, script_of,
                            scripts_in, skeleton)
 from .visual import MAX_VISUAL_DISTANCE, visual_similarity
@@ -58,12 +55,6 @@ class EngineResult:
             clean *= 1 - weight
         self.score = round(1 - clean, 4)
         return self
-
-
-@cache
-def load_brands(path: str | None = None) -> list[dict]:
-    text = Path(path).read_text("utf-8") if path else (DATA / "brands.json").read_text("utf-8")
-    return json.loads(text)["brands"]
 
 
 def is_official(host: str, brands: list[dict]) -> bool:

@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "files": {
+    "BidiControl.txt": {
+      "sha256": "5fd8c31b0ff2c4ca5b496c3bb45e4fee2d5fd26ae92b1c23a807e276f0058a4b",
+      "version": "18.0.0",
+      "bytes": 678
+    },
+    "DefaultIgnorable.txt": {
+      "sha256": "42297a2d2ce665e0fd658bcebfdf470c345f3ac6b5fcded6008a10a137b2e7b1",
+      "version": "18.0.0",
+      "bytes": 2846
+    },
+    "IdentifierStatus.txt": {
+      "sha256": "5863c7d99ca18f213c41c7318aa5528bebfb6d32ec0f1d5944e37192c119aebd",
+      "version": "18.0.0",
+      "bytes": 148042
+    },
+    "ScriptAliases.txt": {
+      "sha256": "c77442c4f0ee7715966f0ccfc5049a71f14d26b1dbbaddbae571ba2908fc1f95",
+      "version": "18.0.0",
+      "bytes": 9312
+    },
+    "ScriptExtensions.txt": {
+      "sha256": "5c9d34a922f687726f2a8bcf57d49f905987e51f1b21b58c95a00fbe255cec23",
+      "version": "18.0.0",
+      "bytes": 21145
+    },
+    "Scripts.txt": {
+      "sha256": "0071fd81b6aeae25f6e8bce8efec3066a6476a91b49bdb2f52dc76e817862a6a",
+      "version": "18.0.0",
+      "bytes": 196089
+    },
+    "brands.json": {
+      "sha256": "64a12b0daa8484deeb650b5e6bf736f5ed35a7b430e27ab5157593842dad41e7",
+      "version": "1.0.0",
+      "bytes": 2410
+    },
+    "calibration.json": {
+      "sha256": "3b9b5bfcd0740da4aed140ffa11dda369a6a55c7246fe1a0e6e2995b9845ef6c",
+      "version": null,
+      "bytes": 1516
+    },
+    "confusables.txt": {
+      "sha256": "6ed3ee967c9dfdf6677d563c9985182fbc50a2efb7d6059cd57b2e2ce18f5b92",
+      "version": "18.0.0",
+      "bytes": 763128
+    }
+  }
+}

@@ -7,12 +7,14 @@
 
 Every file is downloaded first and must report the same Unicode version; nothing is
 written otherwise, so a failed or mixed-version download never leaves partial data.
-Run the test suite afterwards: tests/test_unicode_data.py is the compatibility check.
+The new files are then sealed in data/MANIFEST.json (scripts/seal_data.py). Run the test suite
+afterwards: tests/test_unicode_data.py is the compatibility check.
 """
 from __future__ import annotations
 
 import argparse
 import re
+import subprocess
 import sys
 import urllib.request
 from pathlib import Path
@@ -72,6 +74,7 @@ def main(argv: list[str] | None = None) -> int:
     for name, text in downloaded.items():
         (DATA / name).write_text(text, encoding="utf-8")
     print(f"wrote {len(downloaded)} files for Unicode {versions['confusables.txt']} to {DATA}")
+    subprocess.run([sys.executable, str(Path(__file__).with_name("seal_data.py"))], check=True)
     return 0
 
 

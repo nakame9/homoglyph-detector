@@ -8,10 +8,10 @@ import bisect
 import re
 import unicodedata
 from functools import cache
-from importlib.resources import files
 from typing import Iterable
 
-DATA = files("homoglyph_detector") / "data"
+from .integrity import DATA, read_verified  # noqa: F401  (DATA re-exported)
+
 IGNORED_SCRIPTS = {"Common", "Inherited"}  # digits, '-', '.', combining marks: fit any script
 
 # §5.1 augmented script sets: CJK writing systems combine several scripts.
@@ -33,7 +33,7 @@ LEVELS = ["ASCII-Only", "Single Script", "Highly Restrictive", "Moderately Restr
 
 
 def _data_lines(name: str):
-    for line in (DATA / name).read_text(encoding="utf-8").splitlines():
+    for line in read_verified(name).splitlines():
         line = line.split("#", 1)[0].strip()
         if line:
             yield [field.strip() for field in line.split(";")]
@@ -94,10 +94,9 @@ def is_bidi_control(ch: str) -> bool:
 def data_versions() -> dict[str, str | None]:
     """Unicode version each bundled data file declares in its header."""
     versions = {}
-    for path in DATA.iterdir():
-        if path.name.endswith(".txt"):
-            match = re.search(r"Version: (\d+\.\d+\.\d+)|-(\d+\.\d+\.\d+)\.txt", path.read_text("utf-8")[:1000])
-            versions[path.name] = match and (match[1] or match[2])
+    for name in sorted(p.name for p in DATA.iterdir() if p.name.endswith(".txt")):
+        match = re.search(r"Version: (\d+\.\d+\.\d+)|-(\d+\.\d+\.\d+)\.txt", read_verified(name)[:1000])
+        versions[name] = match and (match[1] or match[2])
     return versions
 
 
