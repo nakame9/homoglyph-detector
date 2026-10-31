@@ -1,0 +1,15 @@
+{
+  "brands": [
+    {"name": "Apple", "domains": ["apple.com", "icloud.com"], "keywords": ["apple", "icloud"]},
+    {"name": "PayPal", "domains": ["paypal.com"], "keywords": ["paypal"]},
+    {"name": "Microsoft", "domains": ["microsoft.com", "microsoftonline.com", "office.com", "live.com", "outlook.com"], "keywords": ["microsoft", "outlook", "office365"]},
+    {"name": "Google", "domains": ["google.com", "google.com.vn", "gmail.com", "youtube.com"], "keywords": ["google", "gmail", "youtube"]},
+    {"name": "Facebook", "domains": ["facebook.com", "fb.com", "messenger.com"], "keywords": ["facebook", "messenger"]},
+    {"name": "Amazon", "domains": ["amazon.com"], "keywords": ["amazon"]},
+    {"name": "Vietcombank", "domains": ["vietcombank.com.vn"], "keywords": ["vietcombank"]},
+    {"name": "Techcombank", "domains": ["techcombank.com.vn", "techcombank.com"], "keywords": ["techcombank"]},
+    {"name": "MoMo", "domains": ["momo.vn"], "keywords": ["momo"]},
+    {"name": "Shopee", "domains": ["shopee.vn", "shopee.com"], "keywords": ["shopee"]},
+    {"name": "Zalo", "domains": ["zalo.me", "zalo.vn"], "keywords": ["zalo"]}
+  ]
+}

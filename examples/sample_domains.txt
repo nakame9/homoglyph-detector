@@ -1,0 +1,12 @@
+# One input per line; lines starting with # are skipped.
+paypal.com
+pаypal.com
+xn--80ak6aa92e.com
+rnicrosoft.com
+g00gle.com
+paypal-login.com
+vietcornbank.com.vn
+user@pаypal.com
+https://аpple.com/login
+tiếngviệt.vn
+сайт.рф
