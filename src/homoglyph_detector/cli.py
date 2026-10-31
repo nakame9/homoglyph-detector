@@ -22,6 +22,8 @@ def render(report: Report) -> str:
     lines = [f"{ICON[report.verdict]} {report.verdict:<10} {visible(report.input)}  [{report.input_type}]"]
     if report.target != report.input:
         lines.append(f"    decoded : {visible(report.target)}")
+    if report.a_label and report.a_label not in (report.target, report.input.strip().lower()):
+        lines.append(f"    a-label : {report.a_label}")
     lines.append(f"    skeleton: {report.skeleton}")
     lines.append(f"    level   : {report.restriction_level}")
     lines += [f"    - [{f.severity}] {visible(f.message)}" for f in report.findings]

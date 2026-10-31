@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from homoglyph_detector import analyze, script_of, skeleton
+from homoglyph_detector.analyzer import registrable
 from homoglyph_detector.unicode_data import (confusable_type, is_bidi_control, is_default_ignorable,
                                              restriction_level)
 from homoglyph_detector.cli import main
@@ -27,7 +28,7 @@ def kinds(report):
     "vietcornbank.com.vn",             # Vietnamese bank, multi-level TLD
     "user@p\u0430ypal.com",            # email
     "https://\u0430pple.com/login",    # URL
-    "\uff50\uff41\uff59\uff50\uff41\uff4c.com",  # fullwidth ｐａｙｐａｌ
+    "p\u0430ypal.github.io",          # homograph site on a hosting platform (PSL private suffix)
 ])
 def test_malicious(raw):
     assert analyze(raw).verdict == "MALICIOUS"
@@ -38,8 +39,7 @@ def test_malicious(raw):
     ("gooogle.com", "brand_typosquat"),
     ("ex\u0430mple.com", "mixed_script"),
     ("paypal.net", "brand_unofficial"),
-    ("xn--a.com", "punycode"),         # decodes to nothing
-    ("xn--zz-.com", "punycode"),       # decodes to plain ASCII: not a real IDN
+    ("\uff50\uff41\uff59\uff50\uff41\uff4c.com", "idna_mapped"),  # fullwidth: browsers resolve the real paypal.com
 ])
 def test_suspicious(raw, kind):
     report = analyze(raw)
@@ -87,6 +87,11 @@ def test_cli_text_output_shows_hidden_characters(capsys):
     assert "invoice<U+202E>fdp.exe" in out and "\u202e" not in out
 
 
+def test_cli_shows_a_label(capsys):
+    main([APPLE_CYRILLIC + ".com"])
+    assert f"a-label : {APPLE_PUNYCODE}.com" in capsys.readouterr().out
+
+
 def test_cli_json_output(capsys):
     main(["p\u0430ypal.com", "--json"])
     [report] = json.loads(capsys.readouterr().out)
@@ -129,7 +134,9 @@ def test_report_carries_uts39_details():
 
 def test_default_ignorable_is_stripped_and_flagged():
     report = analyze("pay\u200bpal.com")
-    assert report.verdict == "MALICIOUS" and "default_ignorable" in kinds(report)
+    # UTS #46 drops the zero-width space, so this resolves to the real paypal.com: obfuscated, not fake.
+    assert report.verdict == "SUSPICIOUS" and report.a_label == "paypal.com"
+    assert {"default_ignorable", "idna_mapped"} <= kinds(report)
 
 
 @pytest.mark.parametrize("raw", [
@@ -162,3 +169,53 @@ def test_mixed_numbers():
 
 def test_hidden_overlay():
     assert "hidden_overlay" in kinds(analyze("cafe\u0301\u0301.com"))  # same accent stacked twice
+
+
+# --- IDNA2008 + Public Suffix List --------------------------------------------
+
+@pytest.mark.parametrize("raw, kind", [
+    ("abc\u05d0.com", "idna_bidi"),                    # Hebrew letter in a left-to-right label (RFC 5893)
+    ("a\u200db.com", "idna_context"),                  # ZWJ outside its allowed context (RFC 5892 CONTEXTJ)
+    ("xn--a.com", "idna_disallowed"),                  # punycode decodes, but to a control character
+    ("xn--zz-.com", "idna_invalid"),                   # punycode decodes, but is not a valid A-label
+    ("ab--c.com", "idna_invalid"),                     # hyphens in positions 3-4 are reserved
+    ("x" * 64 + ".com", "idna_length"),                # label longer than 63 octets
+    (".".join(["a" * 63] * 4) + ".com", "idna_length"),  # domain longer than 253 octets
+])
+def test_idna2008_rejects(raw, kind):
+    report = analyze(raw)
+    assert kind in kinds(report) and report.a_label == "" and report.verdict != "SAFE"
+
+
+def test_a_label_u_label_conversion():
+    assert analyze(APPLE_CYRILLIC + ".com").a_label == APPLE_PUNYCODE + ".com"
+    report = analyze(APPLE_PUNYCODE.upper() + ".COM")
+    assert report.target == APPLE_CYRILLIC + ".com" and report.a_label == APPLE_PUNYCODE + ".com"
+
+
+def test_ascii_case_is_not_a_finding():
+    report = analyze("PayPal.COM")
+    assert report.verdict == "SAFE" and kinds(report) == {"allowlisted"}
+
+
+def test_not_nfc_input_is_normalised_not_rejected():
+    report = analyze("e\u0301x.com")   # e + combining acute accent
+    assert "not_nfc" in kinds(report) and report.a_label == "xn--x-9fa.com" and report.verdict == "SAFE"
+
+
+def test_round_trip_mismatch_is_reported(monkeypatch):
+    import idna
+    real_decode = idna.decode
+    monkeypatch.setattr(idna, "decode", lambda text: real_decode(text) + "x")   # a lossy decoder
+    assert "idna_roundtrip" in kinds(analyze("paypal.com"))
+
+
+@pytest.mark.parametrize("host, expected", [
+    ("login.paypal.com", ("paypal.com", "paypal")),
+    ("www.vietcombank.com.vn", ("vietcombank.com.vn", "vietcombank")),
+    ("www.google.co.uk", ("google.co.uk", "google")),
+    ("paypal.github.io", ("paypal.github.io", "paypal")),   # private suffix: every site is separate
+    ("\u0441\u0430\u0439\u0442.\u0440\u0444", ("\u0441\u0430\u0439\u0442.\u0440\u0444", "\u0441\u0430\u0439\u0442")),
+])
+def test_public_suffix_list(host, expected):
+    assert registrable(host) == expected

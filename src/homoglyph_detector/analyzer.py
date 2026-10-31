@@ -1,13 +1,16 @@
 """Turn a domain / email / URL / name into findings and a verdict."""
 from __future__ import annotations
 
-import codecs
 import json
+import re
 import unicodedata
 from dataclasses import asdict, dataclass, field
 from functools import cache
 from pathlib import Path
 from urllib.parse import urlsplit
+
+import idna
+from publicsuffixlist import PublicSuffixList
 
 from .unicode_data import (DATA, LEVELS, confusable_type, is_allowed, is_bidi_control, is_default_ignorable,
                            is_single_script,
@@ -17,8 +20,6 @@ from .unicode_data import (DATA, LEVELS, confusable_type, is_allowed, is_bidi_co
 SEVERITY_RANK = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
 VERDICT = {0: "SAFE", 1: "SAFE", 2: "SUSPICIOUS", 3: "MALICIOUS", 4: "MALICIOUS"}
 
-# shortcut: tiny public-suffix guess, swap in tldextract/PSL when multi-level TLDs matter.
-SECOND_LEVELS = {"com", "net", "org", "edu", "gov", "co", "ac", "or", "ne", "info", "biz"}
 MIN_FUZZY_LEN = 5  # shorter brand keywords produce too many fuzzy false positives
 
 
@@ -34,8 +35,9 @@ class Finding:
 class Report:
     input: str
     input_type: str
-    target: str            # what was analysed after decoding (host or name)
+    target: str            # what a reader sees: the name, or the host with A-labels shown as U-labels
     skeleton: str
+    a_label: str = ""      # the domain as DNS sees it (IDNA2008 A-labels); empty if not a valid domain
     verdict: str = "SAFE"
     restriction_level: str = "ASCII-Only"   # UTS #39 §5.2, least restrictive part wins
     findings: list[Finding] = field(default_factory=list)
@@ -57,7 +59,8 @@ def classify(raw: str) -> tuple[str, str, str]:
     """Return (input_type, host_or_name, email_local_part)."""
     raw = unicodedata.normalize("NFC", raw.strip())
     if "://" in raw:
-        return "url", (urlsplit(raw).hostname or ""), ""
+        # .hostname would lower-case non-ASCII too; only drop user-info and port.
+        return "url", re.sub(r":\d*$", "", urlsplit(raw).netloc.rpartition("@")[2]), ""
     if "@" in raw and " " not in raw:
         local, _, host = raw.rpartition("@")
         return "email", host, local
@@ -66,31 +69,66 @@ def classify(raw: str) -> tuple[str, str, str]:
     return "name", raw, ""
 
 
-def decode_host(host: str, report: Report) -> str:
+def shown_host(host: str, report: Report) -> str:
+    """The host as a reader sees it: valid A-labels displayed as their U-labels."""
     labels = []
-    for label in host.lower().rstrip(".").split("."):
+    for label in host.split("."):
         if label.startswith("xn--"):
             try:
-                decoded = codecs.decode(label[4:].encode("ascii"), "punycode")
-            except (UnicodeError, ValueError):
-                decoded = ""
-            # A real IDN label has non-ASCII and no control/invisible/unassigned (C*) chars.
-            if not decoded or decoded.isascii() or any(unicodedata.category(c)[0] == "C" for c in decoded):
-                report.add("punycode", "medium", f"Invalid punycode label '{label}' (not a real IDN)")
-                labels.append(label)
-                continue
-            report.add("punycode", "low", f"Punycode '{label}' decodes to '{decoded}'")
-            label = decoded
+                decoded = idna.decode(label)
+            except idna.IDNAError:
+                pass  # reported by idna_check
+            else:
+                report.add("punycode", "low", f"A-label '{label}' is the U-label '{decoded}'")
+                label = decoded
         labels.append(label)
     return ".".join(labels)
 
 
+def _idna_error(error: idna.IDNAError) -> tuple[str, str]:
+    if isinstance(error, idna.IDNABidiError):
+        return "idna_bidi", "breaks the IDNA bidi rule (RFC 5893)"
+    if isinstance(error, idna.InvalidCodepointContext):
+        return "idna_context", "breaks an IDNA contextual rule (RFC 5892 CONTEXTJ/CONTEXTO)"
+    if isinstance(error, idna.InvalidCodepoint):
+        return "idna_disallowed", "contains a code point IDNA2008 does not allow"
+    if "too long" in str(error):
+        return "idna_length", "exceeds DNS length limits (63 octets per label, 253 per domain)"
+    return "idna_invalid", "is not a valid IDNA2008 domain name"
+
+
+def idna_check(host: str, report: Report) -> str:
+    """IDNA2008 validation + A-label/U-label conversion. Returns the U-label domain that would
+    actually be resolved, or "" when no resolver would accept the input."""
+    try:
+        report.a_label = idna.encode(host).decode("ascii")                 # strict RFC 5891, no mapping
+    except idna.IDNAError as strict:
+        try:
+            report.a_label = idna.encode(host, uts46=True).decode("ascii")  # browser lookup mapping
+        except idna.IDNAError as error:
+            kind, why = _idna_error(error)
+            report.add(kind, "medium", f"'{host}' {why}: {error}")
+            return ""
+        report.add("idna_mapped", "low", f"Not valid IDNA2008 as written ({strict}); browsers map it to "
+                   f"'{idna.decode(report.a_label)}'", mapped=idna.decode(report.a_label))
+    u_label = idna.decode(report.a_label)
+    if idna.encode(u_label).decode("ascii") != report.a_label:   # A -> U -> A must be lossless
+        report.add("idna_roundtrip", "medium",
+                   f"'{report.a_label}' does not round-trip through its U-label '{u_label}'")
+    return u_label
+
+
+@cache
+def _psl() -> PublicSuffixList:
+    return PublicSuffixList()  # bundled list incl. private suffixes (github.io, blogspot.com, ...)
+
+
 def registrable(host: str) -> tuple[str, str]:
-    """('paypal.com', 'paypal') from 'login.paypal.com'."""
-    labels = host.split(".")
-    n = 3 if len(labels) >= 3 and len(labels[-1]) == 2 and labels[-2] in SECOND_LEVELS else 2
-    rd = ".".join(labels[-n:])
-    return rd, labels[-n] if len(labels) >= n else labels[0]
+    """Public Suffix List: ('paypal.com', 'paypal') from 'login.paypal.com',
+    ('vietcombank.com.vn', 'vietcombank'), ('x.github.io', 'x')."""
+    rd = _psl().privatesuffix(host) or host
+    suffix = _psl().publicsuffix(rd)
+    return rd, (rd[: -len(suffix) - 1] if suffix and rd != suffix else rd.split(".")[0])
 
 
 def levenshtein(a: str, b: str) -> int:
@@ -206,17 +244,21 @@ def analyze(raw: str, brands_path: str | None = None) -> Report:
     brands = load_brands(brands_path)
     input_type, target, local = classify(raw)
     report = Report(input=raw, input_type=input_type, target=target, skeleton="")
+    if unicodedata.normalize("NFC", raw.strip()) != raw.strip():
+        report.add("not_nfc", "low", "Input was not in Unicode NFC; normalised to NFC (same meaning)")
 
     if input_type == "name":
         check_characters(target, report)
         check_brands_name(target, brands, report)
     else:
-        target = report.target = decode_host(target, report)
+        host = "".join(ch.lower() if ch.isascii() else ch for ch in target).rstrip(".")  # DNS ignores ASCII case
+        target = report.target = shown_host(host, report)
+        resolved = idna_check(host, report) if host else ""
         check_characters(target, report)
         if local:
             check_characters(local, report)
-        if target:
-            check_brands_host(target, brands, report)
+        if host:
+            check_brands_host(resolved or target, brands, report)
 
     report.skeleton = skeleton(target)
     worst = max((SEVERITY_RANK[f.severity] for f in report.findings), default=0)

@@ -49,3 +49,10 @@ def test_known_skeletons():
     assert skeleton("p\u0430ypal") == skeleton("paypal")
     assert skeleton("\u0441\u0440\u0430") == skeleton("cpa")   # Cyrillic сра vs Latin cpa
     assert skeleton("rn") == skeleton("m")
+
+
+def test_idna_tables_match_bundled_unicode_data():
+    import idna
+    (data_version,) = set(data_versions().values())
+    assert idna.idnadata.__version__.split(".")[:2] == data_version.split(".")[:2], (
+        f"idna uses Unicode {idna.idnadata.__version__}, bundled data is {data_version}: upgrade one of them")

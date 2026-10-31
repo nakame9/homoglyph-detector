@@ -1,13 +1,16 @@
 # homoglyph-detector
 
-Detect look-alike (homoglyph / IDN homograph) domains, emails, URLs and names — offline, zero dependencies.
+Detect look-alike (homoglyph / IDN homograph) domains, emails, URLs and names — offline, two small pure-Python dependencies.
 
-**Technique: Unicode [UTS #39](https://www.unicode.org/reports/tr39/) Confusable Detection** — skeletons, confusable classification (single / mixed / whole-script), restriction levels, mixed numbers and hidden characters, implemented from the standard on the official Unicode 18 data files.
+**Techniques**
+- **Unicode [UTS #39](https://www.unicode.org/reports/tr39/) Confusable Detection** — skeletons, single / mixed / whole-script confusables, restriction levels, mixed numbers, bidi controls and default-ignorable characters, on the official Unicode 18 data files.
+- **IDNA2008 validation** ([RFC 5890–5893](https://www.rfc-editor.org/rfc/rfc5891)) with [UTS #46](https://www.unicode.org/reports/tr46/) lookup mapping via [`idna`](https://pypi.org/project/idna/), and **Public Suffix List** parsing via [`publicsuffixlist`](https://pypi.org/project/publicsuffixlist/).
 
 ```
-$ homoglyph-detector "pаypal.com" xn--80ak6aa92e.com rnicrosoft.com tiếngviệt.vn
+$ homoglyph-detector "pаypal.com" xn--80ak6aa92e.com rnicrosoft.com "ｐａｙｐａｌ.com" tiếngviệt.vn
 
 🚨 MALICIOUS  pаypal.com  [domain]
+    a-label : xn--pypal-4ve.com
     skeleton: paypal.corn
     level   : Minimally Restrictive
     - [medium] 'pаypal' mixes scripts: Cyrillic, Latin (level: Minimally Restrictive)
@@ -19,18 +22,27 @@ $ homoglyph-detector "pаypal.com" xn--80ak6aa92e.com rnicrosoft.com tiếngvi�
     decoded : аррӏе.com
     skeleton: apple.corn
     level   : Single Script
+    - [low] A-label 'xn--80ak6aa92e' is the U-label 'аррӏе'
     ...
     - [critical] Impersonates Apple: renders like 'apple.com' (whole-script confusable)
 
 🚨 MALICIOUS  rnicrosoft.com  [domain]
-    skeleton: rnicrosoft.corn
     level   : ASCII-Only
     - [critical] Impersonates Microsoft: renders like 'microsoft.com' (single-script confusable)
 
+⚠️  SUSPICIOUS ｐａｙｐａｌ.com  [domain]
+    a-label : paypal.com
+    - [low] Not valid IDNA2008 as written (Codepoint U+FF50 ... not allowed); browsers map it to 'paypal.com'
+    - [medium] Contains compatibility characters (e.g. fullwidth) that normalise to other text
+    ...
+    - [info] 'paypal.com' is an official brand domain
+
 ✅ SAFE       tiếngviệt.vn  [domain]
-    skeleton: tiếngviệt.vn
+    a-label : xn--tingvit-5t4cyc.vn
     level   : Single Script
 ```
+
+The fullwidth case shows why the pipeline separates *what the reader sees* from *what is resolved*: a browser maps `ｐａｙｐａｌ.com` to the real `paypal.com`, so it is obfuscation (suspicious), not a fake domain (malicious).
 
 ## Why
 
@@ -84,17 +96,25 @@ pytest                                                   # then the compatibilit
 
 **Self-check** — a test scans this repository with the tool's own bidi / default-ignorable detection, so no Trojan-Source-style character can slip into the code or docs.
 
-## How it works
+## Technique: IDNA2008 validation and Public Suffix List
 
-1. **Parse** the input: domain, email (`user@host`), URL (`https://host/...`) or free-text name.
-2. **Decode punycode** (`xn--…`). Labels that decode to nothing, to plain ASCII or to invisible/control characters are flagged as invalid IDNs.
-3. **UTS #39 checks** per domain label / word: restriction level and mixed scripts, whole-label look-alike of ASCII (with its confusable type), mixed numbers, hidden overlays. Then per character: bidi controls (high), default-ignorable characters, confusable characters (position, code point, script), characters outside the identifier profile, and compatibility forms such as fullwidth `ｐａｙｐａｌ`.
-4. **Brand matching** against `data/brands.json`, comparing skeletons on *both* sides:
-   - official domain or subdomain → allow-listed;
-   - registrable domain has the same skeleton as an official domain → **critical**;
-   - name label has the same skeleton as a brand keyword → high (homograph) / medium (brand name on an unofficial domain);
-   - one edit away from a keyword, or keyword inside the host → medium.
-5. **Verdict** = worst finding: `SAFE` (info/low), `SUSPICIOUS` (medium), `MALICIOUS` (high/critical).
+Every host (from a domain, an email address or a URL) goes through this pipeline in [`analyzer.py`](src/homoglyph_detector/analyzer.py):
+
+| # | Step | How | Finding kinds |
+|---|---|---|---|
+| 1 | Raw domain input | host taken from the domain / `user@host` / URL authority (without lower-casing non-ASCII) | |
+| 2 | Unicode normalization | **NFC only** (canonical equivalence, same meaning) and ASCII case folding (DNS is ASCII-case-insensitive). No NFKC or ad-hoc mapping. | `not_nfc` |
+| 3 | IDNA2008 validation | `idna.encode()` strict ([RFC 5891](https://www.rfc-editor.org/rfc/rfc5891)): code point classes ([RFC 5892](https://www.rfc-editor.org/rfc/rfc5892)), CONTEXTJ / CONTEXTO rules, the bidi rule ([RFC 5893](https://www.rfc-editor.org/rfc/rfc5893)), hyphen rules, label ≤ 63 and domain ≤ 253 octets. If strict fails, [UTS #46](https://www.unicode.org/reports/tr46/) mapping tells what a browser would resolve instead. | `idna_bidi`, `idna_context`, `idna_disallowed`, `idna_length`, `idna_invalid`, `idna_mapped` |
+| 4 | A-label / U-label conversion | `xn--` labels are shown as U-labels only if `idna` accepts them, so a successful Punycode decode alone never counts as a valid IDN. A-label → U-label → A-label must round-trip. | `punycode`, `idna_roundtrip` |
+| 5 | Public Suffix List parsing | `publicsuffixlist` (bundled list, ICANN **and private** section) finds the registrable domain: `login.vietcombank.com.vn` → `vietcombank.com.vn`, `pаypal.github.io` → `pаypal.github.io` (on hosting platforms each site is its own domain) | |
+| 6 | Unicode skeleton comparison | UTS #39 checks on the host as the reader sees it, then skeleton brand matching on the domain that is actually resolved (see the UTS #39 section) | `mixed_script`, `whole_lookalike`, `brand_*`, ... |
+| 7 | Risk scoring | every finding has a severity; verdict = worst: `SAFE` (info/low), `SUSPICIOUS` (medium), `MALICIOUS` (high/critical); CLI exit code 0/1/2 | |
+
+Brand matching, step 6, in detail — comparing skeletons on *both* sides against `data/brands.json`:
+- official domain or subdomain → allow-listed;
+- registrable domain has the same skeleton as an official domain → **critical**;
+- site name has the same skeleton as a brand keyword → high (homograph) / medium (brand name on an unofficial domain);
+- one edit away from a keyword, or keyword inside the host → medium.
 
 The skeleton is lower-cased because domains are case-insensitive, so `0` (prototype `O`) collides with `o`. It can look odd — `m` maps to `rn`, so `paypal.com` → `paypal.corn` — that is expected.
 
@@ -104,6 +124,7 @@ Vietnamese text is a first-class test case: `tiếngviệt.vn` and `Nguyễn Vă
 
 ```bash
 pip install -e .            # or: pip install -e ".[dev]" for pytest
+                            # dependencies: idna, publicsuffixlist (pure Python, no network at runtime)
 
 homoglyph-detector paypa1.com "user@pаypal.com" "https://аpple.com/login"
 homoglyph-detector -f examples/sample_domains.txt
@@ -155,7 +176,7 @@ tests/
 - [x] v0.1 — punycode, skeleton, brand matching with allow-list, CLI, JSON, tests, CI
 - [x] v0.2 — full UTS #39 confusable detection: Script_Extensions, resolved script sets, restriction levels, single/mixed/whole-script confusable types, mixed numbers, invisible characters, hidden overlays
 - [x] v0.3 — official Default_Ignorable and Bidi_Control data, bidi control detection, update script with version check, data compatibility tests, monthly data workflow, safe report output
-- [ ] Real public-suffix handling (`tldextract`) instead of the built-in guess for `*.com.vn`-style TLDs
+- [x] v0.4 — IDNA2008 validation (strict + UTS #46), A-label/U-label round-trip, length / bidi / contextual rules, Public Suffix List with private suffixes
 - [ ] HTML report for batch runs
 - [ ] `.eml` mode: check From / Reply-To / Return-Path and every link in a phishing email
 - [ ] Optional online checks: DNS resolution, domain age (RDAP), VirusTotal — off by default
@@ -163,4 +184,4 @@ tests/
 
 ## Data & license
 
-Code: MIT (see `LICENSE`). The files in `src/homoglyph_detector/data/` except `brands.json` are © Unicode, Inc., distributed under the [Unicode License v3](https://www.unicode.org/license.txt) — Unicode 18.0.0. Refresh them with `python scripts/update_unicode_data.py`.
+Code: MIT (see `LICENSE`). The files in `src/homoglyph_detector/data/` except `brands.json` are © Unicode, Inc., distributed under the [Unicode License v3](https://www.unicode.org/license.txt) — Unicode 18.0.0. Refresh them with `python scripts/update_unicode_data.py`. The IDNA tables come with `idna` and the Public Suffix List with `publicsuffixlist` (a new release follows every PSL change): refresh both with `pip install -U idna publicsuffixlist`; a test checks that `idna` uses the same Unicode version as the bundled data.
