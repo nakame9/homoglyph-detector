@@ -3,53 +3,92 @@
 Detect look-alike (homoglyph / IDN homograph) domains, emails, URLs and names — offline, two small pure-Python dependencies.
 
 **Techniques**
+- **Multi-layer detection engine** — five independent engines (Unicode, IDNA, brand, combosquat, visual) each return a score and their evidence; a fusion layer turns them into a **calibrated probability**, fitted on a 15,805-domain benchmark instead of hand-set rules.
 - **Unicode [UTS #39](https://www.unicode.org/reports/tr39/) Confusable Detection** — skeletons, single / mixed / whole-script confusables, restriction levels, mixed numbers, bidi controls and default-ignorable characters, on the official Unicode 18 data files.
 - **ASCII Visual Confusable Detection** — look-alikes made only of ordinary characters: single (`5hopee`, `paypai`) and multi-character substitutions (`vvhatsapp`, `clropbox`, `nnicrosoft`) with a visual similarity score.
 - **IDNA2008 validation** ([RFC 5890–5893](https://www.rfc-editor.org/rfc/rfc5891)) with [UTS #46](https://www.unicode.org/reports/tr46/) lookup mapping via [`idna`](https://pypi.org/project/idna/), and **Public Suffix List** parsing via [`publicsuffixlist`](https://pypi.org/project/publicsuffixlist/).
 
 ```
-$ homoglyph-detector "pаypal.com" xn--80ak6aa92e.com rnicrosoft.com "ｐａｙｐａｌ.com" tiếngviệt.vn
+$ homoglyph-detector "pаypal.com" 5hopee.vn paypal-login.com "tiếngviệt.vn"
 
 🚨 MALICIOUS  pаypal.com  [domain]
     a-label : xn--pypal-4ve.com
     skeleton: paypal.corn
     level   : Minimally Restrictive
-    - [medium] 'pаypal' mixes scripts: Cyrillic, Latin (level: Minimally Restrictive)
-    - [medium] 'pаypal' renders like ASCII 'paypal' (mixed-script confusable)
-    - [low] Position 1: 'а' U+0430 (Cyrillic) looks like 'a'
-    - [critical] Impersonates PayPal: renders like 'paypal.com' (mixed-script confusable)
+    risk    : 100/100   engines: unicode 0.75  idna 0.00  brand 0.95  combosquat 0.00  visual 0.00
+    - [unicode/medium] 'pаypal' mixes scripts: Cyrillic, Latin (level: Minimally Restrictive)
+    - [unicode/medium] 'pаypal' renders like ASCII 'paypal' (mixed-script confusable)
+    - [unicode/info] Position 1: 'а' U+0430 (Cyrillic) looks like 'a'
+    - [brand/critical] Impersonates PayPal: renders like 'paypal.com' (mixed-script confusable)
 
-🚨 MALICIOUS  xn--80ak6aa92e.com  [domain]
-    decoded : аррӏе.com
-    skeleton: apple.corn
-    level   : Single Script
-    - [low] A-label 'xn--80ak6aa92e' is the U-label 'аррӏе'
-    ...
-    - [critical] Impersonates Apple: renders like 'apple.com' (whole-script confusable)
-
-🚨 MALICIOUS  rnicrosoft.com  [domain]
+🚨 MALICIOUS  5hopee.vn  [domain]
+    skeleton: 5hopee.vn
     level   : ASCII-Only
-    - [critical] Impersonates Microsoft: renders like 'microsoft.com' (single-script confusable)
+    risk    : 100/100   engines: unicode 0.00  idna 0.00  brand 0.50  combosquat 0.00  visual 0.70
+    - [brand/medium] '5hopee' is one edit away from Shopee keyword 'shopee'
+    - [visual/high] '5hopee' looks like Shopee keyword 'shopee' (visual similarity 0.95: 5->s)
 
-⚠️  SUSPICIOUS ｐａｙｐａｌ.com  [domain]
-    a-label : paypal.com
-    - [low] Not valid IDNA2008 as written (Codepoint U+FF50 ... not allowed); browsers map it to 'paypal.com'
-    - [medium] Contains compatibility characters (e.g. fullwidth) that normalise to other text
-    ...
-    - [info] 'paypal.com' is an official brand domain
+⚠️  SUSPICIOUS paypal-login.com  [domain]
+    skeleton: paypal-login.corn
+    level   : ASCII-Only
+    risk    : 81/100   engines: unicode 0.00  idna 0.00  brand 0.00  combosquat 0.50  visual 0.00
+    - [combosquat/medium] Contains PayPal keyword 'paypal' on unofficial domain 'paypal-login.com'
 
 ✅ SAFE       tiếngviệt.vn  [domain]
     a-label : xn--tingvit-5t4cyc.vn
+    skeleton: tiếngviệt.vn
     level   : Single Script
+    risk    : 13/100   engines: unicode 0.00  idna 0.00  brand 0.00  combosquat 0.00  visual 0.00
 ```
 
-The fullwidth case shows why the pipeline separates *what the reader sees* from *what is resolved*: a browser maps `ｐａｙｐａｌ.com` to the real `paypal.com`, so it is obfuscation (suspicious), not a fake domain (malicious).
+Every result carries a calibrated risk (0–100), the raw score of each engine and the evidence behind it, tagged with the engine that produced it — not just a yes/no.
 
 ## Why
 
 Attackers register domains that *look* like a brand: `pаypal.com` (Cyrillic `а`), `аррӏе.com` (every letter Cyrillic), `rnicrosoft.com` (`rn` ≈ `m`), `paypa1.com`, `pay<U+200B>pal.com` (hidden zero-width space). Browsers already show mixed-script domains as `xn--…`, but **whole-script** look-alikes, pure-ASCII tricks and invisible characters still get through, and filters that compare strings byte-by-byte miss all of them.
 
 ATT&CK: [T1583.001 Acquire Infrastructure: Domains](https://attack.mitre.org/techniques/T1583/001/), used for [T1566 Phishing](https://attack.mitre.org/techniques/T1566/).
+
+## Detection engine: multi-layer, calibrated by benchmark
+
+```
+input ─► prepare (context.py): parse, NFC, IDNA A-label/U-label, Public Suffix List   ← transforms only
+           ├─► unicode     UTS #39 scripts, restriction level, bidi / invisible characters ─┐
+           ├─► idna        IDNA2008 validity, UTS #46 mapping, round-trip                  │ each: score 0..1
+           ├─► brand       skeleton homographs, one-edit typosquats of protected brands    ├ + findings
+           ├─► combosquat  brand name on an unofficial domain (paypal-login, google.ca)    │
+           └─► visual      ASCII / accent look-alikes, continuous visual similarity        ─┘
+         ─► fusion (scoring.py): p = sigmoid(bias + Σ weight·score)  ─►  risk 0-100, verdict, evidence
+```
+
+- **Independent engines** ([`engines.py`](src/homoglyph_detector/engines.py)): each reads only the shared context, never another engine's output, and can be run on its own; a test checks that every engine gives the same result alone as inside the pipeline. Scores are a noisy-OR of an engine's findings, counting repeats of one kind once (six confusable letters are one piece of evidence, not six); the visual engine reports its best similarity directly.
+- **Calibrated fusion** ([`scoring.py`](src/homoglyph_detector/scoring.py)): a logistic regression whose weights, bias and thresholds come from [`calibration.json`](src/homoglyph_detector/data/calibration.json), fitted by [`benchmark/calibrate.py`](benchmark/calibrate.py). Weights are constrained ≥ 0, so more evidence never lowers the risk. Verdict: `SUSPICIOUS` at p ≥ 0.5 (more likely than not), `MALICIOUS` at p ≥ 0.9 (9 in 10).
+- **Fitted weights:** unicode 17.0816, idna 0.0, brand 11.5037, combosquat 6.6264, visual 7.798, bias -1.8926. The idna engine gets weight 0: an invalid domain cannot be visited, so it explains rather than predicts; its findings stay in the report.
+
+### Benchmark
+
+[`benchmark/build_dataset.py`](benchmark/build_dataset.py) builds 15,805 labelled domains from sources independent of this tool: **10,065 benign** (the [OpenDNS top 10,000](https://github.com/opendns/public-domain-lists) plus Vietnamese sites, legitimate IDNs in both forms and real words close to brands) and **5,740 attacks** (every [dnstwist](https://github.com/elceef/dnstwist) fuzzer on each protected brand domain, including combosquats, IDN homoglyphs of 150 unprotected popular domains, and a curated set of bidi / invisible / fullwidth tricks). The split keeps all permutations of one domain on the same side, so the test set is made of domains the model never saw.
+
+Results on the test split (4,799 rows) — full report with per-category detection, a reliability table and the hardest errors in [`benchmark/RESULTS.md`](benchmark/RESULTS.md):
+
+| | precision | recall | F1 | false positive rate |
+|---|---|---|---|---|
+| calibrated, p ≥ 0.5 | 0.9667 | 0.8698 | 0.9157 | 0.016 |
+| calibrated, p ≥ 0.9 | 0.9926 | 0.6395 | 0.7778 | 0.0026 |
+| severity rules, no calibration | 0.9624 | 0.7522 | 0.8444 | 0.0156 |
+
+ROC-AUC 0.9302, Brier score 0.0585, expected calibration error 0.0609.
+
+**What the benchmark caught** — each found by reading the errors, fixed in the engines, then re-measured:
+1. *Data leakage:* every attack in DNS (`xn--`) form and no benign one, so the first model learned "punycode = attack" (idna weight 21.8). Fix: punycode conversion is `info`, and benign IDNs are included in both forms.
+2. *Bug:* typosquat distance was measured on skeletons, where `amazon` becomes `arnazon`, hiding `aazon.com`; transposition typos (`amaozn`) had **0 %** recall. Fix: optimal-string-alignment distance on the raw and skeleton forms, also against official domain names (`office` from office.com).
+3. *Conflated evidence:* brand-owned sites (`amazon.co.uk`, `google-analytics.com`) and real combosquats shared one score. Fix: a separate **combosquat** engine, with dnstwist dictionary combosquats in the data, so its weight is learned on its own.
+4. *Missed homoglyphs:* `amažoṉ`, `gmăįl` use accented Latin letters that UTS #39 does not call confusable (homoglyph recall 63 %). Fix: the visual engine also reads the skeleton without accents, at a cost per dropped accent (now ~90 %).
+5. *Count bias:* a legitimate Russian IDN scored 1.00 because each of its six Cyrillic letters counted as evidence. Fix: repeated evidence counts once, and single confusable letters are `info`; the evidence is at label level.
+
+**Limits, measured:** a domain with no evidence still gets ~13/100 — the share of attacks in the benchmark that leave no trace (the probabilities follow the benchmark's mix of about one attack per two benign domains; real traffic has far fewer, so read the score as a ranking and the thresholds as review cut-offs). One-edit typos of a short brand name are rated high even for real words (`apply.com`, `ymail.com`), and brand-owned domains missing from `brands.json` show up as combosquats. Accented look-alikes of *unprotected* domains are out of reach (about half detected) because accents are normal in Vietnamese and European names.
+
+`CI` re-runs the calibration and fails if `calibration.json` no longer matches the committed engines and benchmark; tests also check the dataset hash and minimum quality (ROC-AUC ≥ 0.9, precision ≥ 0.98 at the malicious threshold).
 
 ## Technique: Unicode UTS #39 Confusable Detection
 
@@ -124,7 +163,7 @@ Every host (from a domain, an email address or a URL) goes through this pipeline
 | 4 | A-label / U-label conversion | `xn--` labels are shown as U-labels only if `idna` accepts them, so a successful Punycode decode alone never counts as a valid IDN. A-label → U-label → A-label must round-trip. | `punycode`, `idna_roundtrip` |
 | 5 | Public Suffix List parsing | `publicsuffixlist` (bundled list, ICANN **and private** section) finds the registrable domain: `login.vietcombank.com.vn` → `vietcombank.com.vn`, `pаypal.github.io` → `pаypal.github.io` (on hosting platforms each site is its own domain) | |
 | 6 | Unicode skeleton comparison | UTS #39 checks on the host as the reader sees it, then skeleton brand matching on the domain that is actually resolved (see the UTS #39 section) | `mixed_script`, `whole_lookalike`, `brand_*`, ... |
-| 7 | Risk scoring | every finding has a severity; verdict = worst: `SAFE` (info/low), `SUSPICIOUS` (medium), `MALICIOUS` (high/critical); CLI exit code 0/1/2 | |
+| 7 | Risk scoring | the five engine scores go through the calibrated fusion layer (see *Detection engine*): probability, risk 0–100, verdict; CLI exit code 0/1/2 | |
 
 Brand matching, step 6, in detail — comparing skeletons on *both* sides against `data/brands.json`:
 - official domain or subdomain → allow-listed;
@@ -139,7 +178,7 @@ Vietnamese text is a first-class test case: `tiếngviệt.vn` and `Nguyễn Vă
 ## Install & use
 
 ```bash
-pip install -e .            # or: pip install -e ".[dev]" for pytest
+pip install -e .            # or: pip install -e ".[dev]" for pytest, ".[bench]" to rebuild the benchmark
                             # dependencies: idna, publicsuffixlist (pure Python, no network at runtime)
 
 homoglyph-detector paypa1.com "user@pаypal.com" "https://аpple.com/login"
@@ -159,6 +198,8 @@ from homoglyph_detector import analyze, skeleton, confusable_type, restriction_l
 
 report = analyze("pаypal.com")
 report.verdict                     # 'MALICIOUS'
+report.risk_score                  # 100 (calibrated probability x 100)
+report.engine_scores               # {'unicode': 0.75, 'idna': 0.0, 'brand': 0.95, 'combosquat': 0.0, 'visual': 0.0}
 report.restriction_level           # 'Minimally Restrictive'
 report.to_dict()                   # JSON-ready
 confusable_type("аррӏе", "apple")  # 'whole-script'
@@ -168,23 +209,32 @@ visual_similarity("vvhatsapp", "whatsapp")  # VisualMatch(score=0.989, distance=
 
 ## How is this different from dnstwist?
 
-[dnstwist](https://github.com/elceef/dnstwist) *generates* look-alike permutations of **your** domain so you can monitor them. This tool goes the other way: it takes **any** input — a sender address, a URL from a log, a username — and tells you whether it imitates something. The two complement each other.
+[dnstwist](https://github.com/elceef/dnstwist) *generates* look-alike permutations of **your** domain so you can monitor them. This tool goes the other way: it takes **any** input — a sender address, a URL from a log, a username — and tells you whether it imitates something. The two complement each other, and dnstwist is what generates the attacks in this project's benchmark, so the detector is measured against a tool it was not written with.
 
 ## Project layout
 
 ```
 src/homoglyph_detector/
+  context.py        shared preprocessing: parse, NFC, IDNA A-label/U-label, Public Suffix List
+  engines.py        the five independent detection engines
+  scoring.py        calibrated fusion: probability, risk score, verdict
+  analyzer.py       orchestrator: prepare -> engines -> fusion -> Report
   unicode_data.py   UTS #39: skeleton, scripts, restriction levels, confusable types, properties
   visual.py         ASCII visual confusables: substitution table and similarity scoring
-  analyzer.py       parsing, punycode, checks, brand matching, verdict
   cli.py            command line
   data/             official Unicode data files (see above) + brands.json (edit freely)
 scripts/
   update_unicode_data.py   refresh the Unicode data files from unicode.org
+benchmark/
+  build_dataset.py         labelled dataset from independent sources (dnstwist, OpenDNS top 10k)
+  dataset.jsonl            the benchmark (pure ASCII, JSON-escaped)
+  calibrate.py             fit the fusion layer, write calibration.json and RESULTS.md
+  RESULTS.md               test-split metrics, reliability, per-category detection, hardest errors
 tests/
   test_analyzer.py         malicious / suspicious / safe cases, one test per UTS #39 mechanism
   test_unicode_data.py     compatibility checks for the bundled Unicode data
   test_visual.py           ASCII look-alikes, typos vs look-alikes, table consistency
+  test_engines.py          engine independence, calibrated output, monotonicity, calibration vs dataset
 .github/workflows/
   ci.yml                   tests on every push
   unicode-data.yml         monthly check for new Unicode data
@@ -197,6 +247,7 @@ tests/
 - [x] v0.3 — official Default_Ignorable and Bidi_Control data, bidi control detection, update script with version check, data compatibility tests, monthly data workflow, safe report output
 - [x] v0.4 — IDNA2008 validation (strict + UTS #46), A-label/U-label round-trip, length / bidi / contextual rules, Public Suffix List with private suffixes
 - [x] v0.5 — ASCII visual confusable detection: character and multi-character substitutions, visual similarity scoring, WhatsApp and Dropbox brands
+- [x] v0.6 — multi-layer detection engine: five independent engines, calibrated logistic fusion, benchmark from dnstwist + OpenDNS top 10k, reproducible calibration checked in CI
 - [ ] HTML report for batch runs
 - [ ] `.eml` mode: check From / Reply-To / Return-Path and every link in a phishing email
 - [ ] Optional online checks: DNS resolution, domain age (RDAP), VirusTotal — off by default

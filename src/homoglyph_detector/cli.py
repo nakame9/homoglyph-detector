@@ -26,7 +26,9 @@ def render(report: Report) -> str:
         lines.append(f"    a-label : {report.a_label}")
     lines.append(f"    skeleton: {report.skeleton}")
     lines.append(f"    level   : {report.restriction_level}")
-    lines += [f"    - [{f.severity}] {visible(f.message)}" for f in report.findings]
+    engines = "  ".join(f"{name} {score:.2f}" for name, score in report.engine_scores.items())
+    lines.append(f"    risk    : {report.risk_score}/100   engines: {engines}")
+    lines += [f"    - [{f.engine}/{f.severity}] {visible(f.message)}" for f in report.findings]
     return "\n".join(lines)
 
 

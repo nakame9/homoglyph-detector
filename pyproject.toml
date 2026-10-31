@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "homoglyph-detector"
-version = "0.5.0"
+version = "0.6.0"
 description = "Detect homoglyph / IDN homograph look-alikes in domains, emails, URLs and names (UTS #39)."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -14,6 +14,7 @@ keywords = ["homoglyph", "homograph", "idn", "phishing", "unicode", "uts39", "id
 
 [project.optional-dependencies]
 dev = ["pytest>=7"]
+bench = ["dnstwist>=20250130"]   # only to rebuild benchmark/dataset.jsonl
 
 [project.scripts]
 homoglyph-detector = "homoglyph_detector.cli:main"

@@ -1,6 +1,6 @@
 """ASCII visual confusable detection: look-alikes made only of domain characters (a-z 0-9 -).
 
-A. character substitution        5hopee   ~ shopee    (5 -> s)
+A. character substitution        5hopee   ~ shopee    (5 -> s), gmăįl ~ gmail (accents dropped)
 B. multi-character substitution  vvhatsapp ~ whatsapp (vv -> w), clropbox ~ dropbox (cl -> d)
 C. visual similarity scoring     weighted edit distance where a look-alike substitution
                                  costs (1 - similarity) and any other edit costs 1.
@@ -12,13 +12,15 @@ tests/test_visual.py checks it never overlaps the official data.
 from __future__ import annotations
 
 import string
+import unicodedata
 from functools import cache
 from typing import NamedTuple
 
-from .unicode_data import _confusables
+from .unicode_data import _confusables, skeleton
 
 DOMAIN_CHARS = set(string.ascii_lowercase + string.digits + "-")
 MAX_VISUAL_DISTANCE = 0.5  # at most "half a character" of visible difference
+ACCENT_COST = 0.2          # an accent on a familiar letter (ž, ă, ľ) is easy to miss, like the i/l pair
 
 # similarity in (0, 1): 1 would mean identical, so cost = 1 - similarity
 NEAR = {
@@ -51,7 +53,14 @@ def _costs() -> dict[tuple[str, str], float]:
 
 
 def visual_similarity(a: str, b: str) -> VisualMatch:
-    """How alike two lower-case ASCII strings look (weighted Levenshtein with multi-char pairs)."""
+    """How alike text `a` looks to the lower-case ASCII reference `b` (weighted Levenshtein with
+    multi-character pairs). Non-ASCII `a` is read as a hurried reader would: its UTS #39 skeleton
+    without accents, each dropped accent costing ACCENT_COST."""
+    accents = 0
+    if not a.isascii():
+        skel = skeleton(a)
+        a = "".join(ch for ch in skel if unicodedata.category(ch) != "Mn")
+        accents = len(skel) - len(a)
     costs = _costs()
     multi = [(x, y, c) for (x, y), c in costs.items() if len(x) > 1 or len(y) > 1]
     inf = float("inf")
@@ -80,5 +89,6 @@ def visual_similarity(a: str, b: str) -> VisualMatch:
         i, j, edit = back[i][j]
         if edit:
             edits.append(edit)
-    distance = round(dist[len(a)][len(b)], 3)
-    return VisualMatch(round(1 - distance / max(len(a), len(b), 1), 3), distance, edits[::-1])
+    distance = round(dist[len(a)][len(b)] + ACCENT_COST * accents, 3)
+    edits = [f"{accents} accent(s)"] * bool(accents) + edits[::-1]
+    return VisualMatch(round(max(0.0, 1 - distance / max(len(a), len(b), 1)), 3), distance, edits)

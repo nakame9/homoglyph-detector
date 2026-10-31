@@ -1,0 +1,61 @@
+{
+  "weights": {
+    "unicode": 17.0816,
+    "idna": 0.0,
+    "brand": 11.5037,
+    "combosquat": 6.6264,
+    "visual": 7.798
+  },
+  "bias": -1.8926,
+  "thresholds": {
+    "suspicious": 0.5,
+    "malicious": 0.9
+  },
+  "dataset": {
+    "file": "benchmark/dataset.jsonl",
+    "sha256": "ca8e79c179839d3c95ff84b078f075af8c433fe7647aea832329cbaed667bda0",
+    "rows": 15805,
+    "attacks": 5740,
+    "train_rows": 11006,
+    "test_rows": 4799
+  },
+  "test_metrics": {
+    "roc_auc": 0.9302,
+    "brier": 0.0585,
+    "ece": 0.0609,
+    "at_suspicious": {
+      "precision": 0.9667,
+      "recall": 0.8698,
+      "f1": 0.9157,
+      "false_positive_rate": 0.016,
+      "false_positives": 50,
+      "false_negatives": 217
+    },
+    "at_malicious": {
+      "precision": 0.9926,
+      "recall": 0.6395,
+      "f1": 0.7778,
+      "false_positive_rate": 0.0026,
+      "false_positives": 8,
+      "false_negatives": 601
+    }
+  },
+  "baseline_test_metrics": {
+    "suspicious_or_worse": {
+      "precision": 0.9624,
+      "recall": 0.7522,
+      "f1": 0.8444,
+      "false_positive_rate": 0.0156,
+      "false_positives": 49,
+      "false_negatives": 413
+    },
+    "malicious": {
+      "precision": 1.0,
+      "recall": 0.0714,
+      "f1": 0.1333,
+      "false_positive_rate": 0.0,
+      "false_positives": 0,
+      "false_negatives": 1548
+    }
+  }
+}
