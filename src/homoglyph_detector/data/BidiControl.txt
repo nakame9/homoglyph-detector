@@ -1,0 +1,12 @@
+# PropList-18.0.0.txt
+# Date: 2026-08-07, 16:20:14 GMT
+# © 2026 Unicode®, Inc.
+# Unicode and the Unicode Logo are registered trademarks of Unicode, Inc. in the U.S. and other countries.
+# For terms of use and license, see https://www.unicode.org/terms_of_use.html
+# Only the 'Bidi_Control' entries of PropList.txt, extracted by
+# scripts/update_unicode_data.py.
+
+061C          ; Bidi_Control # Cf       ARABIC LETTER MARK
+200E..200F    ; Bidi_Control # Cf   [2] LEFT-TO-RIGHT MARK..RIGHT-TO-LEFT MARK
+202A..202E    ; Bidi_Control # Cf   [5] LEFT-TO-RIGHT EMBEDDING..RIGHT-TO-LEFT OVERRIDE
+2066..2069    ; Bidi_Control # Cf   [4] LEFT-TO-RIGHT ISOLATE..POP DIRECTIONAL ISOLATE

@@ -5,6 +5,7 @@ Section numbers refer to https://www.unicode.org/reports/tr39/
 from __future__ import annotations
 
 import bisect
+import re
 import unicodedata
 from functools import cache
 from importlib.resources import files
@@ -80,11 +81,24 @@ def is_allowed(ch: str) -> bool:
     return _lookup("IdentifierStatus.txt", ch) == "Allowed"
 
 
-def is_invisible(ch: str) -> bool:
-    # shortcut: approximates Default_Ignorable_Code_Point (format chars + variation selectors);
-    # load DerivedCoreProperties.txt if exotic ignorables (e.g. Hangul fillers) ever matter.
-    cp = ord(ch)
-    return unicodedata.category(ch) == "Cf" or 0xFE00 <= cp <= 0xFE0F or 0xE0100 <= cp <= 0xE01EF
+def is_default_ignorable(ch: str) -> bool:
+    """Default_Ignorable_Code_Point: renders as nothing (zero-width space, soft hyphen, ...)."""
+    return _lookup("DefaultIgnorable.txt", ch) is not None
+
+
+def is_bidi_control(ch: str) -> bool:
+    """Bidi_Control: reorders how surrounding text is displayed (e.g. U+202E RLO)."""
+    return _lookup("BidiControl.txt", ch) is not None
+
+
+def data_versions() -> dict[str, str | None]:
+    """Unicode version each bundled data file declares in its header."""
+    versions = {}
+    for path in DATA.iterdir():
+        if path.name.endswith(".txt"):
+            match = re.search(r"Version: (\d+\.\d+\.\d+)|-(\d+\.\d+\.\d+)\.txt", path.read_text("utf-8")[:1000])
+            versions[path.name] = match and (match[1] or match[2])
+    return versions
 
 
 def skeleton(text: str) -> str:
@@ -94,7 +108,7 @@ def skeleton(text: str) -> str:
     '0' (-> 'O') collide with 'o' as a human reader would expect.
     """
     table = _confusables()
-    mapped = "".join(table.get(ch, ch) for ch in unicodedata.normalize("NFD", text) if not is_invisible(ch))
+    mapped = "".join(table.get(ch, ch) for ch in unicodedata.normalize("NFD", text) if not is_default_ignorable(ch))
     return unicodedata.normalize("NFD", mapped).lower()
 
 

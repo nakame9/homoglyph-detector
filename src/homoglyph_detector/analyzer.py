@@ -9,7 +9,8 @@ from functools import cache
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from .unicode_data import (DATA, LEVELS, confusable_type, is_allowed, is_invisible, is_single_script,
+from .unicode_data import (DATA, LEVELS, confusable_type, is_allowed, is_bidi_control, is_default_ignorable,
+                           is_single_script,
                            numbering_systems, repeated_marks, restriction_level, script_of, scripts_in,
                            skeleton)
 
@@ -135,8 +136,12 @@ def check_characters(text: str, report: Report) -> None:
 
     for pos, ch in enumerate(text):
         info = dict(position=pos, char=ch, codepoint=f"U+{ord(ch):04X}", script=script_of(ch))
-        if is_invisible(ch):
-            report.add("invisible_char", "medium",
+        if is_bidi_control(ch):
+            report.add("bidi_control", "high",
+                       f"Position {pos}: bidi control U+{ord(ch):04X} {unicodedata.name(ch, '')} "
+                       "can reorder how the text is displayed", **info)
+        elif is_default_ignorable(ch):
+            report.add("default_ignorable", "medium",
                        f"Position {pos}: invisible U+{ord(ch):04X} {unicodedata.name(ch, '')}", **info)
         elif ch.isascii():
             continue

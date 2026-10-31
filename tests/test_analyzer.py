@@ -1,13 +1,15 @@
 import codecs
 import json
+from pathlib import Path
 
 import pytest
 
 from homoglyph_detector import analyze, script_of, skeleton
-from homoglyph_detector.unicode_data import confusable_type, restriction_level
+from homoglyph_detector.unicode_data import (confusable_type, is_bidi_control, is_default_ignorable,
+                                             restriction_level)
 from homoglyph_detector.cli import main
 
-APPLE_CYRILLIC = "аррӏе"  # аррӏе — every letter is Cyrillic
+APPLE_CYRILLIC = "\u0430\u0440\u0440\u04cf\u0435"  # аррӏе — every letter is Cyrillic
 APPLE_PUNYCODE = "xn--" + codecs.encode(APPLE_CYRILLIC, "punycode").decode()
 
 
@@ -16,16 +18,16 @@ def kinds(report):
 
 
 @pytest.mark.parametrize("raw", [
-    "pаypal.com",                 # one Cyrillic 'а'
+    "p\u0430ypal.com",                 # one Cyrillic 'а'
     APPLE_CYRILLIC + ".com",           # whole-script confusable
     APPLE_PUNYCODE + ".com",           # same, as the browser/DNS sees it
     "rnicrosoft.com",                  # 'rn' -> 'm', pure ASCII
     "g00gle.com",                      # '0' -> 'o'
     "paypa1.com",                      # '1' -> 'l'
     "vietcornbank.com.vn",             # Vietnamese bank, multi-level TLD
-    "user@pаypal.com",            # email
-    "https://аpple.com/login",    # URL
-    "ｐａｙｐａｌ.com",  # fullwidth ｐａｙｐａｌ
+    "user@p\u0430ypal.com",            # email
+    "https://\u0430pple.com/login",    # URL
+    "\uff50\uff41\uff59\uff50\uff41\uff4c.com",  # fullwidth ｐａｙｐａｌ
 ])
 def test_malicious(raw):
     assert analyze(raw).verdict == "MALICIOUS"
@@ -34,7 +36,7 @@ def test_malicious(raw):
 @pytest.mark.parametrize("raw, kind", [
     ("paypal-login.com", "brand_in_host"),
     ("gooogle.com", "brand_typosquat"),
-    ("exаmple.com", "mixed_script"),
+    ("ex\u0430mple.com", "mixed_script"),
     ("paypal.net", "brand_unofficial"),
     ("xn--a.com", "punycode"),         # decodes to nothing
     ("xn--zz-.com", "punycode"),       # decodes to plain ASCII: not a real IDN
@@ -47,10 +49,10 @@ def test_suspicious(raw, kind):
 
 @pytest.mark.parametrize("raw", [
     "paypal.com", "www.paypal.com", "vietcombank.com.vn", "google.com.vn", "example.com",
-    "tiếngviệt.vn",          # tiếngviệt.vn — Vietnamese diacritics are not homoglyphs
-    "сайт.рф",  # сайт.рф — legit all-Cyrillic domain
-    "Nguyễn Văn A",          # Vietnamese name
-    "東京とうきょ.jp",  # Han + Hiragana is normal Japanese
+    "ti\u1ebfngvi\u1ec7t.vn",          # tiếngviệt.vn — Vietnamese diacritics are not homoglyphs
+    "\u0441\u0430\u0439\u0442.\u0440\u0444",  # сайт.рф — legit all-Cyrillic domain
+    "Nguy\u1ec5n V\u0103n A",          # Vietnamese name
+    "\u6771\u4eac\u3068\u3046\u304d\u3087.jp",  # Han + Hiragana is normal Japanese
 ])
 def test_safe(raw):
     report = analyze(raw)
@@ -59,28 +61,34 @@ def test_safe(raw):
 
 
 def test_reports_the_fake_character():
-    finding = next(f for f in analyze("pаypal.com").findings if f.kind == "confusable_char")
-    assert finding.detail == {"position": 1, "char": "а", "codepoint": "U+0430",
+    finding = next(f for f in analyze("p\u0430ypal.com").findings if f.kind == "confusable_char")
+    assert finding.detail == {"position": 1, "char": "\u0430", "codepoint": "U+0430",
                               "script": "Cyrillic", "looks_like": "a"}
 
 
 def test_name_homograph():
-    assert analyze("Gооgle support").verdict == "MALICIOUS"  # Cyrillic о's
+    assert analyze("G\u043e\u043egle support").verdict == "MALICIOUS"  # Cyrillic о's
 
 
 def test_unicode_data():
-    assert script_of("a") == "Latin" and script_of("а") == "Cyrillic" and script_of("1") == "Common"
-    assert skeleton("pаypal") == skeleton("paypal") == skeleton("paypa1")
+    assert script_of("a") == "Latin" and script_of("\u0430") == "Cyrillic" and script_of("1") == "Common"
+    assert skeleton("p\u0430ypal") == skeleton("paypal") == skeleton("paypa1")
 
 
 def test_cli_exit_codes():
     assert main(["example.com"]) == 0
     assert main(["gooogle.com"]) == 1
-    assert main(["example.com", "pаypal.com"]) == 2
+    assert main(["example.com", "p\u0430ypal.com"]) == 2
+
+
+def test_cli_text_output_shows_hidden_characters(capsys):
+    main(["invoice\u202efdp.exe"])
+    out = capsys.readouterr().out
+    assert "invoice<U+202E>fdp.exe" in out and "\u202e" not in out
 
 
 def test_cli_json_output(capsys):
-    main(["pаypal.com", "--json"])
+    main(["p\u0430ypal.com", "--json"])
     [report] = json.loads(capsys.readouterr().out)
     assert report["verdict"] == "MALICIOUS" and report["skeleton"] == skeleton("paypal.com")
 
@@ -89,12 +97,12 @@ def test_cli_json_output(capsys):
 
 @pytest.mark.parametrize("text, level", [
     ("paypal", "ASCII-Only"),
-    ("сайт", "Single Script"),                 # сайт
-    ("東京とうきょ", "Single Script"),     # 東京とうきょう (Japanese)
-    ("abcとうきょ", "Highly Restrictive"),         # Latin + Hiragana
-    ("abcلعربية", "Moderately Restrictive"),  # Latin + Arabic
-    ("pаypal", "Minimally Restrictive"),                     # Latin + Cyrillic
-    ("pay​pal", "Unrestricted"),                              # zero-width space
+    ("\u0441\u0430\u0439\u0442", "Single Script"),                 # сайт
+    ("\u6771\u4eac\u3068\u3046\u304d\u3087", "Single Script"),     # 東京とうきょう (Japanese)
+    ("abc\u3068\u3046\u304d\u3087", "Highly Restrictive"),         # Latin + Hiragana
+    ("abc\u0644\u0639\u0631\u0628\u064a\u0629", "Moderately Restrictive"),  # Latin + Arabic
+    ("p\u0430ypal", "Minimally Restrictive"),                     # Latin + Cyrillic
+    ("pay\u200bpal", "Unrestricted"),                              # zero-width space
 ])
 def test_restriction_level(text, level):
     assert restriction_level(text) == level
@@ -102,7 +110,7 @@ def test_restriction_level(text, level):
 
 @pytest.mark.parametrize("x, y, kind", [
     ("rnicrosoft", "microsoft", "single-script"),
-    ("pаypal", "paypal", "mixed-script"),
+    ("p\u0430ypal", "paypal", "mixed-script"),
     (APPLE_CYRILLIC, "apple", "whole-script"),
     ("paypal", "paypal", None),
     ("abc", "xyz", None),
@@ -116,17 +124,41 @@ def test_report_carries_uts39_details():
     assert report.restriction_level == "Single Script"
     brand = next(f for f in report.findings if f.kind == "brand_homograph")
     assert brand.detail["confusable_type"] == "whole-script"
-    assert analyze("pаypal.com").restriction_level == "Minimally Restrictive"
+    assert analyze("p\u0430ypal.com").restriction_level == "Minimally Restrictive"
 
 
-def test_invisible_character_is_stripped_and_flagged():
-    report = analyze("pay​pal.com")
-    assert report.verdict == "MALICIOUS" and "invisible_char" in kinds(report)
+def test_default_ignorable_is_stripped_and_flagged():
+    report = analyze("pay\u200bpal.com")
+    assert report.verdict == "MALICIOUS" and "default_ignorable" in kinds(report)
+
+
+@pytest.mark.parametrize("raw", [
+    "\u202emoc.lapyap",          # RLO: displays as paypal.com
+    "invoice\u202efdp.exe",      # RLO: displays as invoiceexe.pdf
+    "user@\u2066paypal.com",     # isolate inside an address
+])
+def test_bidi_control(raw):
+    report = analyze(raw)
+    assert report.verdict == "MALICIOUS" and "bidi_control" in kinds(report)
+    assert "default_ignorable" not in kinds(report)   # reported once, as the more specific kind
+
+
+def test_repository_has_no_hidden_characters():
+    """Dogfooding: no Trojan-Source-style bidi or invisible characters in our own files."""
+    root = Path(__file__).resolve().parents[1]
+    files = [p for p in root.rglob("*") if p.suffix in {".py", ".md", ".toml", ".yml", ".json"}
+             and ".git" not in p.parts and "data" not in p.parts]
+    assert len(files) > 5
+    for path in files:
+        for line_no, line in enumerate(path.read_text("utf-8").splitlines(), 1):
+            hidden = [f"U+{ord(ch):04X}" for ch in line
+                      if is_bidi_control(ch) or (is_default_ignorable(ch) and not 0xFE00 <= ord(ch) <= 0xFE0F)]
+            assert not hidden, f"{path.relative_to(root)}:{line_no} contains {hidden}"
 
 
 def test_mixed_numbers():
-    assert "mixed_numbers" in kinds(analyze("ab1٣.com"))   # ASCII 1 + Arabic-Indic 3
+    assert "mixed_numbers" in kinds(analyze("ab1\u0663.com"))   # ASCII 1 + Arabic-Indic 3
 
 
 def test_hidden_overlay():
-    assert "hidden_overlay" in kinds(analyze("café́.com"))  # same accent stacked twice
+    assert "hidden_overlay" in kinds(analyze("cafe\u0301\u0301.com"))  # same accent stacked twice

@@ -1,0 +1,19 @@
+name: Unicode data
+# Monthly: pull the latest official Unicode data, run the compatibility tests, and fail
+# (so GitHub e-mails you) when a new release is out. Update locally with the same script.
+on:
+  schedule:
+    - cron: "17 3 1 * *"
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python scripts/update_unicode_data.py
+      - run: pip install -e ".[dev]" && pytest -q
+      - name: Fail if the bundled data is out of date
+        run: git diff --stat --exit-code src/homoglyph_detector/data || { echo "::warning::New Unicode data available - run scripts/update_unicode_data.py"; exit 1; }
