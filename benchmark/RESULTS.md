@@ -1,6 +1,6 @@
 # Kết quả benchmark
 
-Sinh tự động bởi `benchmark/calibrate.py` ngày 2026-10-31. Bộ dữ liệu: `benchmark/dataset.jsonl` (15805 dòng, 5740 tấn công), tạo bởi `benchmark/build_dataset.py`.
+Sinh tự động bởi `benchmark/calibrate.py` ngày 2026-11-03. Bộ dữ liệu: `benchmark/dataset.jsonl` (15805 dòng, 5740 tấn công), tạo bởi `benchmark/build_dataset.py`.
 Train 11006 / test 4799 dòng, tách theo domain gốc. **Mọi con số đều đo trên tập test.**
 
 ## Mô hình hợp nhất (fusion)
@@ -76,7 +76,7 @@ Muốn tự đặt ngân sách báo nhầm: chọn một dòng (`--max-fpr`). C�
 
 | p50 | p95 | p99 | lớn nhất | trung bình | thông lượng | lần gọi đầu (nạp dữ liệu) |
 |---|---|---|---|---|---|---|
-| 4.34 ms | 10.20 ms | 14.11 ms | 28.98 ms | 5.04 ms | 198 domain/giây | 96 ms |
+| 5.14 ms | 11.90 ms | 17.04 ms | 32.21 ms | 5.92 ms | 169 domain/giây | 130 ms |
 
 ## Độ tin cậy của xác suất (reliability)
 

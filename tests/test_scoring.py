@@ -90,3 +90,34 @@ def test_cli_policies(capsys):
                 ["x.com", "--profile", "banking", "--max-fpr", "0.1,0.01"]):
         with pytest.raises(SystemExit):
             main(bad)
+
+
+# --- base-rate (prior-shift) correction --------------------------------------------
+
+def test_base_rate_correction_is_bayes_prior_shift():
+    from homoglyph_detector.scoring import at_base_rate
+    prior = calibration()["dataset"]["train_prior"]
+    for p in (0.01, 0.3, 0.5, 0.81, 0.99):
+        assert abs(at_base_rate(p, prior) - p) < 1e-9          # same base rate: unchanged
+        lower, higher = at_base_rate(p, 0.001), at_base_rate(p, 0.5)
+        assert lower < p < higher or (prior >= 0.5 and lower < p)
+    probs = [0.1, 0.5, 0.81, 0.95]                             # the ranking never changes
+    assert [at_base_rate(p, 0.001) for p in probs] == sorted(at_base_rate(p, 0.001) for p in probs)
+    with pytest.raises(ValueError):
+        at_base_rate(0.5, 0.0)
+
+
+def test_base_rate_changes_probability_not_verdict():
+    plain = analyze("paypal-login.com")
+    rare = analyze("paypal-login.com", base_rate=0.001)
+    assert plain.probability_at_base_rate is None and rare.base_rate == 0.001
+    assert rare.verdict == plain.verdict and rare.probability == plain.probability
+    assert rare.probability_at_base_rate < 0.05 < plain.probability     # a combosquat alone is weak evidence
+    assert analyze("5hopee.vn", base_rate=0.001).probability_at_base_rate > 0.9   # a visual look-alike is not
+
+
+def test_cli_base_rate(capsys):
+    assert main(["paypal-login.com", "--base-rate", "0.001"]) == 1
+    assert "at base rate 0.001" in capsys.readouterr().out
+    with pytest.raises(SystemExit):
+        main(["x.com", "--base-rate", "2"])

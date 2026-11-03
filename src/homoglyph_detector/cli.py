@@ -33,6 +33,8 @@ def render(report: Report) -> str:
     lines.append(f"    level   : {report.restriction_level}")
     engines = "  ".join(f"{name} {score:.2f}" for name, score in report.engine_scores.items())
     lines.append(f"    risk    : {report.risk_score}/100   engines: {engines}")
+    if report.base_rate is not None:
+        lines.append(f"    at base rate {report.base_rate:g}: P(attack) = {report.probability_at_base_rate:.4f}")
     lines.append(f"    profile : {report.profile} (SUSPICIOUS >= {report.thresholds['suspicious']:.2f}, "
                  f"MALICIOUS >= {report.thresholds['malicious']:.2f})")
     lines += [f"    - [{f.engine}/{f.severity}] {visible(f.message)}" for f in report.findings]
@@ -58,6 +60,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-fpr", metavar="S,M",
                         help="your own alert budget instead of a profile: the false positive rates accepted "
                              "for SUSPICIOUS and MALICIOUS, e.g. 0.01,0.001")
+    parser.add_argument("--base-rate", type=float, metavar="R",
+                        help="share of attacks in your traffic (e.g. 0.001): also reports the probability "
+                             "corrected to it; the verdict still follows the profile")
     parser.add_argument("--profiles", action="store_true", help="list the risk profiles with their measured rates")
     parser.add_argument("--verify", action="store_true",
                         help="verify the integrity of all bundled data and brand databases, then exit")
@@ -124,7 +129,9 @@ def _run(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
         if db.verification == "unpinned":
             print(f"homoglyph-detector: warning: brand database {db.source} is not pinned; "
                   f"add '#sha256={db.sha256}' to trust exactly this version", file=sys.stderr)
-    reports = [analyze(item, brand_files, policy) for item in inputs]
+    if args.base_rate is not None and not 0 < args.base_rate < 1:
+        parser.error("--base-rate must be strictly between 0 and 1")
+    reports = [analyze(item, brand_files, policy, args.base_rate) for item in inputs]
     if args.json:
         print(json.dumps([r.to_dict() for r in reports], ensure_ascii=False, indent=2))
     else:

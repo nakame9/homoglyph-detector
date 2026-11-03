@@ -78,6 +78,24 @@ def custom_profile(max_fpr_suspicious: float, max_fpr_malicious: float) -> dict:
             "malicious": threshold_for_fpr(max_fpr_malicious)}
 
 
+def at_base_rate(p: float, base_rate: float) -> float:
+    """Re-express a benchmark-calibrated probability for an environment where `base_rate` of the
+    inputs are attacks (Bayes prior-shift correction: odds x new prior odds / training prior odds).
+
+    The fusion learned on a benchmark with about one attack per three inputs; a mail gateway may see
+    one per thousand. The ranking and the false positive rate of a threshold do not change, but the
+    chance that a flagged input is really an attack does. Valid only if the engines' evidence behaves
+    on your traffic as on the benchmark (see benchmark/REAL_WORLD.md).
+    """
+    if not 0 < base_rate < 1:
+        raise ValueError(f"base rate must be strictly between 0 and 1, got {base_rate}")
+    prior = calibration()["dataset"]["train_prior"]
+    if p in (0.0, 1.0):
+        return p
+    odds = p / (1 - p) * (base_rate / (1 - base_rate)) / (prior / (1 - prior))
+    return odds / (1 + odds)
+
+
 def verdict(p: float, policy: dict | None = None) -> str:
     policy = policy or profile()
     return "MALICIOUS" if p >= policy["malicious"] else "SUSPICIOUS" if p >= policy["suspicious"] else "SAFE"

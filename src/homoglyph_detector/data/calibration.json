@@ -101,7 +101,8 @@
     "rows": 15805,
     "attacks": 5740,
     "train_rows": 11006,
-    "test_rows": 4799
+    "test_rows": 4799,
+    "train_prior": 0.370071
   },
   "test_metrics": {
     "roc_auc": 0.9302,

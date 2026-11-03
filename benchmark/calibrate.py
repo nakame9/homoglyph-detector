@@ -266,7 +266,9 @@ def main() -> int:
         "brands": {k: v for k, v in bundled().info().items() if k in ("name", "version", "sha256")},
         "dataset": {"file": "benchmark/dataset.jsonl", "sha256": hashlib.sha256(raw).hexdigest(),
                     "rows": len(rows), "attacks": sum(r["label"] for r in rows),
-                    "train_rows": len(train), "test_rows": len(test)},
+                    "train_rows": len(train), "test_rows": len(test),
+                    # share of attacks the fusion was fitted on: its probabilities assume this base rate
+                    "train_prior": round(sum(r["label"] for r in train) / len(train), 6)},
         "test_metrics": metrics,
         "operating_points": list(grid.values()),   # test-split rates for common alert budgets
         "operating_curve": curve,                  # train split: used by --max-fpr
