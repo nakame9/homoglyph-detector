@@ -78,6 +78,10 @@ Các điểm vận hành hiện có (ngưỡng chọn trên tập train, số li
 | 0.002 | 0.84 | 0.64 | 26 |
 | 0.02 | 0.27 | 0.87 | 160 |
 
+## Quy tắc visual-only
+
+Ở mọi profile, MALICIOUS cần ít nhất một bằng chứng không dựa trên độ giống hình ảnh. Domain chỉ trông giống thương hiệu kiểu ASCII (`rnicrosoft.com`, `5hopee.vn`, `vvhatsapp.com`) tối đa là SUSPICIOUS, kể cả ở profile `banking`; với ngân hàng, SUSPICIOUS nên dẫn tới xác thực bổ sung. Lý do và chi phí đo được: [ba loại bằng chứng](ky-thuat.md#5-ba-loại-bằng-chứng-và-quy-tắc-visual-only).
+
 ## Xác suất theo tỷ lệ tấn công của bạn
 
 `risk_score` và `probability` đúng với tỷ lệ tấn công của benchmark (khoảng 37%). Khi biết tỷ lệ tấn công trong lưu lượng của mình, dùng `--base-rate`:

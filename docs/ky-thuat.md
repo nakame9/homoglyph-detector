@@ -5,6 +5,7 @@ Mục lục:
 2. [ASCII Visual Confusable Detection](#2-ascii-visual-confusable-detection) — engine `visual`
 3. [IDNA2008 và Public Suffix List](#3-idna2008-và-public-suffix-list) — `context.py`, engine `idna`
 4. [Typosquat và combosquat](#4-typosquat-và-combosquat) — engine `brand`, `combosquat`
+5. [Ba loại bằng chứng và quy tắc visual-only](#5-ba-loại-bằng-chứng-và-quy-tắc-visual-only) — `scoring.py`
 
 Bối cảnh tấn công: kẻ gian đăng ký tên miền *trông giống* thương hiệu, như `pаypal.com` (chữ `а` Cyrillic), `аррӏе.com` (toàn bộ là chữ Cyrillic), `rnicrosoft.com` (`rn` ≈ `m`), `5hopee.vn` hay `pay<U+200B>pal.com` (có ký tự vô hình). MITRE ATT&CK: [T1583.001 Acquire Infrastructure: Domains](https://attack.mitre.org/techniques/T1583/001/), dùng cho [T1566 Phishing](https://attack.mitre.org/techniques/T1566/).
 
@@ -51,6 +52,7 @@ Nhiều tên miền lừa đảo không dùng Unicode. UTS #39 chỉ liệt kê 
 - **Gõ sai không phải giả mạo hình ảnh:** thay ký tự ngoài bảng tốn trọn 1, nên `paypak`, `shoppe` (khoảng cách 1.0) chỉ là typosquat. Khoảng cách ≤ 0.5 (tối đa "nửa ký tự" khác biệt) được báo `brand_visual`.
 - So sánh cả từng phần tách theo dấu `-` (`paypai-login.com`) và tên hiển thị (`5hopee Official`).
 - Điểm liên tục `1 − khoảng cách` là đầu vào của fusion; ngưỡng thật do benchmark quyết định.
+- **Chỉ là tín hiệu hỗ trợ:** độ giống hình ảnh phụ thuộc font, cỡ chữ, kerning và trình hiển thị, nên một mình nó không bao giờ dẫn tới MALICIOUS (xem [mục 5](#5-ba-loại-bằng-chứng-và-quy-tắc-visual-only)).
 
 ---
 
@@ -86,3 +88,37 @@ Engine `idna` có trọng số 0 sau hiệu chỉnh: một chuỗi không hợp 
 Tách combosquat thành engine riêng là một phát hiện từ benchmark: domain thật của chính thương hiệu (`amazon.co.uk`, `google-analytics.com`) và combosquat lừa đảo có cùng dạng, nên cần một trọng số riêng học từ dữ liệu.
 
 **So với dnstwist:** [dnstwist](https://github.com/elceef/dnstwist) *sinh* biến thể của domain **của bạn** để theo dõi. Công cụ này làm chiều ngược lại: nhận **bất kỳ** đầu vào nào (địa chỉ người gửi, URL trong log, tên người dùng) và cho biết nó có giả mạo ai không. dnstwist cũng chính là nguồn sinh tấn công cho benchmark của dự án.
+
+---
+
+## 5. Ba loại bằng chứng và quy tắc visual-only
+
+Không phải bằng chứng nào cũng tin cậy như nhau. `a` Cyrillic trong `pаypal` là một ký tự của hệ chữ khác, được thiết kế giống hệt `a` Latin trong mọi font, và không ai gõ nhầm ra nó. Còn `rn` trông như `m` chỉ trong một số font, ở cỡ chữ nhỏ, với kerning hẹp. Vì vậy mỗi bằng chứng (`Finding.evidence`) thuộc một loại:
+
+| Loại | Ý nghĩa | Nguồn | Ví dụ |
+|---|---|---|---|
+| `unicode_confusable` | có bằng chứng từ dữ liệu Unicode: ký tự hệ chữ khác trông giống, ký tự vô hình, ký tự đảo chiều, trộn script | engine `unicode` | `pаypal`, `pay<U+200B>pal`, `<U+202E>moc.lapyap` |
+| `visual_similarity` | có độ tương đồng hình ảnh trong font thông dụng; **phụ thuộc font** | engine `visual` | `vvhatsapp`, `5hopee`, `clropbox`, `gmăįl` |
+| `brand_impersonation` | có dấu hiệu giả mạo một thương hiệu được bảo vệ, kèm **cơ sở** (`detail.basis`) | engine `brand`, `combosquat` | xem bảng dưới |
+| `protocol` | vi phạm IDNA / mã hóa, không phải độ giống | engine `idna` | `xn--a.com`, `faß.de` |
+
+Cơ sở của bằng chứng thương hiệu:
+
+| `basis` | Khi nào | Ví dụ |
+|---|---|---|
+| `unicode` | trùng skeleton với thương hiệu nhờ ký tự không phải ASCII | `pаypal.com`, `ɑpple.com` |
+| `visual` | trùng nhờ cặp ASCII trông giống. **Kể cả `rn`/`m`, `0`/`o`, `1`/`l`** dù có trong `confusables.txt`: chúng là ký tự ASCII thông thường, mức giống phụ thuộc font | `rnicrosoft.com`, `g00gle.com`, `5hopee.vn` |
+| `spelling` | cách đúng một lần sửa nhưng không trông giống (lỗi chính tả) | `paypak.com`, `gooogle.com` |
+| `name` | dùng nguyên tên thương hiệu trên domain không chính thức | `paypal-login.com`, `google.ca` |
+
+**Quy tắc:** visual similarity là tín hiệu hỗ trợ chấm điểm, không tự quyết định kết luận. MALICIOUS cần ít nhất một bằng chứng mức medium trở lên **không dựa trên hình ảnh** (Unicode, thương hiệu có cơ sở `unicode` / `spelling` / `name`, hoặc IDNA). Nếu không có, kết luận bị giới hạn ở **SUSPICIOUS**, và báo cáo ghi lý do trong `verdict_note`. Quy tắc áp dụng ở mọi profile, kể cả `banking`. Xác suất và điểm rủi ro không đổi, chỉ kết luận bị giới hạn.
+
+```
+$ homoglyph-detector rnicrosoft.com
+⚠️  SUSPICIOUS rnicrosoft.com  [domain]
+    ...
+    evidence: unicode -,  visual high,  brand critical (basis: visual),  idna -
+    note    : capped at SUSPICIOUS: the only evidence is visual similarity, which depends on font and rendering
+```
+
+**Chi phí và lợi ích, đã đo:** trên tập test của benchmark tổng hợp, recall ở mức MALICIOUS (profile default) giảm từ 63,5% xuống 55,9% (các ca bị hạ vẫn là SUSPICIOUS, không bị bỏ lọt), còn FPR ở mức MALICIOUS không đổi (0,26%), vì domain hợp lệ trong benchmark hầu như không trông giống thương hiệu kiểu ASCII. Tác động trên web thật ở [`benchmark/REAL_WORLD.md`](../benchmark/REAL_WORLD.md) (mục 2). Golden corpus: 24/142 ca chuyển từ MALICIOUS sang SUSPICIOUS, đều là giả mạo ASCII, không ca nào thành SAFE.

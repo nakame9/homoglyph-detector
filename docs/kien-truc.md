@@ -24,6 +24,7 @@ fusion               scoring.py      p = sigmoid(bias + Σ trọng_số × đi�
    ▼
 chính sách           scoring.py      profile (default / banking / browser) hoặc --max-fpr
                                      -> hai ngưỡng -> SAFE / SUSPICIOUS / MALICIOUS
+                                     quy tắc visual-only: MALICIOUS cần bằng chứng ngoài độ giống hình ảnh
    │
    ▼
 Report               analyzer.py     xác suất, risk 0–100, verdict, điểm từng engine,
@@ -111,7 +112,7 @@ Quy tắc chung: **mọi thay đổi làm đổi điểm của engine đều ph�
 
 **EngineResult** (`engines/base.py`): `score` từ 0 đến 1, danh sách `findings`, và `facts` (thông tin không tính điểm, ví dụ restriction level). Điểm là noisy-OR của các bằng chứng; nhiều bằng chứng cùng loại chỉ tính một lần.
 
-**Finding**: `engine`, `kind`, `severity` (`info` / `low` / `medium` / `high` / `critical`), `message` và `detail`.
+**Finding**: `engine`, `kind`, `severity` (`info` / `low` / `medium` / `high` / `critical`), `message`, `detail` và `evidence` (`unicode_confusable` / `visual_similarity` / `brand_impersonation` / `protocol`). Bằng chứng thương hiệu có `detail.basis` (`unicode` / `visual` / `spelling` / `name`). Xem [ba loại bằng chứng](ky-thuat.md#5-ba-loại-bằng-chứng-và-quy-tắc-visual-only).
 
 **Report** (`analyzer.py`), cũng là kết quả JSON:
 
@@ -120,6 +121,8 @@ Quy tắc chung: **mọi thay đổi làm đổi điểm của engine đều ph�
 | `verdict` | `SAFE`, `SUSPICIOUS`, `MALICIOUS` |
 | `probability`, `risk_score` | xác suất đã hiệu chỉnh, và cùng giá trị đó theo thang 0–100 (giống nhau ở mọi môi trường) |
 | `profile`, `thresholds` | chính sách rủi ro đã dùng và hai ngưỡng của nó (khác nhau theo môi trường) |
+| `evidence` | mức mạnh nhất của từng loại bằng chứng, và `brand_basis` |
+| `verdict_note` | lý do kết luận khác với ngưỡng xác suất, ví dụ bị giới hạn ở SUSPICIOUS vì chỉ có bằng chứng hình ảnh |
 | `engine_scores` | điểm thô của từng engine |
 | `findings` | bằng chứng, gắn tên engine tạo ra nó |
 | `target`, `a_label`, `skeleton`, `restriction_level` | thông tin phân tích |
