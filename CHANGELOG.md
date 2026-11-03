@@ -2,6 +2,14 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/), đánh số theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [0.12.0] - 2026-11-03
+### Thay đổi
+- **Visual similarity không còn tự quyết định MALICIOUS.** MALICIOUS cần ít nhất một bằng chứng mức medium trở lên không dựa trên hình ảnh; nếu không, kết luận dừng ở SUSPICIOUS (`Report.verdict_note`). Áp dụng ở mọi profile.
+- Cặp ASCII trong `confusables.txt` (`rn`/`m`, `0`/`o`, `1`/`l`) được xếp là bằng chứng hình ảnh (phụ thuộc font), không phải bằng chứng Unicode. `rnicrosoft.com`, `g00gle.com`, `5hopee.vn`, `vvhatsapp.com` chuyển từ MALICIOUS sang SUSPICIOUS.
+### Thêm
+- Mỗi finding có `evidence` (`unicode_confusable`, `visual_similarity`, `brand_impersonation`, `protocol`); bằng chứng thương hiệu có `detail.basis` (`unicode`, `visual`, `spelling`, `name`). `Report.evidence` tóm tắt theo loại; CLI in dòng `evidence` và `note`.
+- Đo chi phí và lợi ích: benchmark tổng hợp (recall MALICIOUS default 63,5% → 55,9%, FPR không đổi) và web thật (báo nhầm MALICIOUS banking 122 → 119 trên 41.620 domain, 2–3 / 9.377 phishing trong phạm vi hạ xuống SUSPICIOUS).
+
 ## [0.11.0] - 2026-11-03
 ### Thêm
 - Đánh giá thực tế (`benchmark/real_world.py`, `benchmark/REAL_WORLD.md`): 271.231 host phishing thật từ lịch sử OpenPhish (10/2024 → 11/2026), 41.620 domain hợp lệ quốc tế từ Chrome UX Report top 1 triệu, temporal validation (mốc 01/05/2026), leave-one-technique-out, 203 biến thể adversarial từ 11 kỹ thuật mới, Brier / ECE / reliability diagram.

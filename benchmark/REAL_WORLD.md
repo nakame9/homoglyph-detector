@@ -49,6 +49,19 @@ Ví dụ bỏ lọt trong phạm vi thương hiệu: `advpedroza.lovable.app`, `
 | IDN TLD | 516 | 0,0% | 0,0% | 0,0% |
 | Việt Nam | 208 | 0,0% | 0,0% | 0,0% |
 
+**Quy tắc visual-only trên web thật**: số domain hợp lệ bị kết luận MALICIOUS khi không và có quy tắc (MALICIOUS cần bằng chứng ngoài độ giống hình ảnh), và số phishing thật trong phạm vi vẫn đạt MALICIOUS:
+
+| profile | hợp lệ MALICIOUS: không quy tắc | có quy tắc | phishing trong phạm vi MALICIOUS: không | có |
+|---|---|---|---|---|
+| default | 0,0% (9/41.620) | 0,0% (9/41.620) | 0,9% (83/9.377) | 0,9% (81/9.377) |
+| banking | 0,3% (122/41.620) | 0,3% (119/41.620) | 98,0% (9.191/9.377) | 98,0% (9.188/9.377) |
+| browser | 0,0% (2/41.620) | 0,0% (2/41.620) | 0,9% (83/9.377) | 0,9% (81/9.377) |
+
+- domain hợp lệ không còn bị MALICIOUS nhờ quy tắc, profile `default`: không có.
+- domain hợp lệ không còn bị MALICIOUS nhờ quy tắc, profile `banking`: `mono-stil.ru`, `order.nomo.co.jp`, `www.goog1e3241.com`.
+- domain hợp lệ không còn bị MALICIOUS nhờ quy tắc, profile `browser`: không có.
+
+
 Engine gây báo nhầm (profile default): combosquat 111, brand 9, visual 2.
 
 Báo nhầm còn lại ở profile browser: `connectivitycheck.platform.hicloud.com`, `admin.cloud.microsoft`, `akku1gk96.accounts.cloud.sap`, `sw-beta.xcloud.mn`, `hcm-eu10.hr.cloud.sap`, `adt93pwjq.accounts.cloud.sap`, `psr1.eu.fieldglass.cloud.sap`, `www.email.it`, `dnp.eoffice.go.th`.

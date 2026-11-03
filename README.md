@@ -8,6 +8,7 @@ Phát hiện tên miền, email, URL và tên hiển thị **giả mạo bằng 
 
 ## Tính năng
 
+- **Ba loại bằng chứng tách bạch** — mỗi bằng chứng là Unicode confusable, visual similarity hoặc brand impersonation (kèm cơ sở: `unicode` / `visual` / `spelling` / `name`). Độ giống hình ảnh phụ thuộc font nên chỉ hỗ trợ chấm điểm: **một mình nó không bao giờ dẫn tới MALICIOUS**.
 - **Detection engine nhiều lớp** — 5 engine độc lập (unicode, idna, brand, combosquat, visual), mỗi engine trả điểm và bằng chứng; tầng hợp nhất cho ra **xác suất đã hiệu chỉnh** trên benchmark 15.805 tên miền, không đặt điểm bằng tay.
 - **Unicode UTS #39** — skeleton, single / mixed / whole-script confusable, restriction level, ký tự ẩn, ký tự đảo chiều (bidi), trên dữ liệu Unicode 18 chính thức.
 - **ASCII Visual Confusable** — thay ký tự (`5`→`s`), thay cụm ký tự (`vv`→`w`, `cl`→`d`), chữ có dấu, kèm điểm độ giống hình ảnh.
@@ -26,17 +27,20 @@ $ homoglyph-detector "pаypal.com" 5hopee.vn paypal-login.com "tiếngviệt.vn"
     level   : Minimally Restrictive
     risk    : 100/100   engines: unicode 0.75  idna 0.00  brand 0.95  combosquat 0.00  visual 0.00
     profile : default (SUSPICIOUS >= 0.50, MALICIOUS >= 0.90)
+    evidence: unicode medium,  visual -,  brand critical (basis: unicode),  idna -
     - [unicode/medium] 'pаypal' mixes scripts: Cyrillic, Latin (level: Minimally Restrictive)
     - [unicode/medium] 'pаypal' renders like ASCII 'paypal' (mixed-script confusable)
     - [unicode/info] Position 1: 'а' U+0430 (Cyrillic) looks like 'a'
-    - [brand/critical] Impersonates PayPal: renders like 'paypal.com' (mixed-script confusable)
+    - [brand/critical, unicode] Impersonates PayPal: renders like 'paypal.com' (mixed-script confusable)
 
-🚨 MALICIOUS  5hopee.vn  [domain]
+⚠️  SUSPICIOUS 5hopee.vn  [domain]
     skeleton: 5hopee.vn
     level   : ASCII-Only
     risk    : 100/100   engines: unicode 0.00  idna 0.00  brand 0.50  combosquat 0.00  visual 0.70
     profile : default (SUSPICIOUS >= 0.50, MALICIOUS >= 0.90)
-    - [brand/medium] '5hopee' is one edit away from Shopee keyword 'shopee'
+    evidence: unicode -,  visual high,  brand medium (basis: visual),  idna -
+    note    : capped at SUSPICIOUS: the only evidence is visual similarity, which depends on font and rendering
+    - [brand/medium, visual] '5hopee' is one edit away from Shopee keyword 'shopee'
     - [visual/high] '5hopee' looks like Shopee keyword 'shopee' (visual similarity 0.95: 5->s)
 
 ⚠️  SUSPICIOUS paypal-login.com  [domain]
@@ -44,7 +48,8 @@ $ homoglyph-detector "pаypal.com" 5hopee.vn paypal-login.com "tiếngviệt.vn"
     level   : ASCII-Only
     risk    : 81/100   engines: unicode 0.00  idna 0.00  brand 0.00  combosquat 0.50  visual 0.00
     profile : default (SUSPICIOUS >= 0.50, MALICIOUS >= 0.90)
-    - [combosquat/medium] Contains PayPal keyword 'paypal' on unofficial domain 'paypal-login.com'
+    evidence: unicode -,  visual -,  brand medium (basis: name),  idna -
+    - [combosquat/medium, name] Contains PayPal keyword 'paypal' on unofficial domain 'paypal-login.com'
 
 ✅ SAFE       tiếngviệt.vn  [domain]
     a-label : xn--tingvit-5t4cyc.vn
@@ -52,9 +57,10 @@ $ homoglyph-detector "pаypal.com" 5hopee.vn paypal-login.com "tiếngviệt.vn"
     level   : Single Script
     risk    : 13/100   engines: unicode 0.00  idna 0.00  brand 0.00  combosquat 0.00  visual 0.00
     profile : default (SUSPICIOUS >= 0.50, MALICIOUS >= 0.90)
+    evidence: unicode -,  visual -,  brand -,  idna -
 ```
 
-Mỗi kết quả có điểm rủi ro 0–100, điểm của từng engine, bằng chứng gắn tên engine tạo ra nó, và profile đã dùng để ra kết luận, không chỉ đúng / sai.
+Mỗi kết quả có điểm rủi ro 0–100, điểm của từng engine, bằng chứng theo loại (Unicode / hình ảnh / thương hiệu, kèm cơ sở), profile đã dùng, và lý do khi kết luận bị giới hạn: `5hopee.vn` chỉ trông giống `shopee` nên dừng ở SUSPICIOUS, còn `pаypal.com` có bằng chứng Unicode nên là MALICIOUS.
 
 ## Cài đặt
 
@@ -95,7 +101,7 @@ homoglyph-detector --version                                            # phiên
 |---|---|
 | 0 | tất cả SAFE |
 | 1 | có SUSPICIOUS |
-| 2 | có MALICIOUS |
+| 2 | có MALICIOUS (cần bằng chứng ngoài độ giống hình ảnh) |
 | 3 | dữ liệu không qua kiểm tra toàn vẹn / hợp lệ, không đưa ra kết luận |
 
 Dùng như thư viện:
@@ -160,7 +166,7 @@ Ngưỡng là của profile `default`; mỗi môi trường chọn điểm vận
 | Tài liệu | Nội dung |
 |---|---|
 | [docs/kien-truc.md](docs/kien-truc.md) | luồng xử lý, bản đồ thư mục, muốn sửa gì thì mở file nào, các trường kết quả |
-| [docs/ky-thuat.md](docs/ky-thuat.md) | UTS #39, ASCII visual, IDNA2008 + PSL, typosquat / combosquat |
+| [docs/ky-thuat.md](docs/ky-thuat.md) | UTS #39, ASCII visual, IDNA2008 + PSL, typosquat / combosquat, ba loại bằng chứng và quy tắc visual-only |
 | [docs/brand-database.md](docs/brand-database.md) | định dạng brand database, các lớp, kiểm tra hợp lệ, toàn vẹn, version, dữ liệu Unicode |
 | [docs/benchmark.md](docs/benchmark.md) | benchmark tổng hợp và **đánh giá thực tế** (phishing thật, temporal, adversarial, calibration), giới hạn |
 | [benchmark/REAL_WORLD.md](benchmark/REAL_WORLD.md) | báo cáo đánh giá thực tế đầy đủ (tự sinh) |

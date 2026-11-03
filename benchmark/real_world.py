@@ -373,9 +373,12 @@ def main() -> int:
                      f"{rate(sum(mal(h, True) for h in benign), len(benign))} | "
                      f"{rate(sum(mal(h, False) for h in in_scope_hosts), len(in_scope_hosts))} | "
                      f"{rate(sum(mal(h, True) for h in in_scope_hosts), len(in_scope_hosts))} |")
-    visual_fp = sorted(h for h in benign if flagged(p0[h], "malicious") and not INDEPENDENT[h])
-    lines += ["", "Domain hợp lệ không còn bị MALICIOUS nhờ quy tắc (profile default): " +
-              (", ".join(f"`{h}`" for h in visual_fp[:15]) or "không có") + ".", ""]
+    lines.append("")
+    for n in ("default", "banking", "browser"):
+        spared = sorted(h for h in benign if flagged(p0[h], "malicious", n) and not INDEPENDENT[h])
+        lines.append(f"- domain hợp lệ không còn bị MALICIOUS nhờ quy tắc, profile `{n}`: " +
+                     (", ".join(f"`{h}`" for h in spared[:10]) or "không có") + ".")
+    lines.append("")
     lines += ["", "Engine gây báo nhầm (profile default): " + ", ".join(f"{n} {num(c)}" for n, c in kinds.most_common()) + ".",
               "", "Báo nhầm còn lại ở profile browser: " + ", ".join(f"`{h}`" for h in fp[:15]) + ".", ""]
 
