@@ -124,8 +124,15 @@ def _score(host: str) -> list[float]:
     return [results[n].score for n in NAMES]
 
 
+def engine_digest() -> str:
+    """Scores depend on the engines and their data: a cache is only valid for one version of both."""
+    package = ROOT / "src" / "homoglyph_detector"
+    files = sorted(package.rglob("*.py")) + [package / "data" / "MANIFEST.json"]
+    return hashlib.sha256(b"".join(f.read_bytes() for f in files)).hexdigest()[:16]
+
+
 def score_all(hosts: list[str]) -> dict[str, list[float]]:
-    cache = CACHE / "scores.jsonl"
+    cache = CACHE / f"scores-{engine_digest()}.jsonl"
     known = {}
     if cache.exists():
         for line in cache.read_text("utf-8").splitlines():
@@ -151,12 +158,20 @@ def production_weights() -> list[float]:
     return [model["bias"], *(model["weights"][n] for n in NAMES)]
 
 
+def num(n: int) -> str:
+    return f"{n:,}".replace(",", ".")          # Vietnamese thousands separator
+
+
 def pct(x: float) -> str:
-    return f"{100 * x:.1f}%".replace(".", ",")
+    return f"{100 * x:.1f}%".replace(".", ",")  # Vietnamese decimal comma
+
+
+def dec(x: float, digits: int = 3) -> str:
+    return f"{x:.{digits}f}".replace(".", ",")
 
 
 def rate(hits: int, total: int) -> str:
-    return f"{pct(hits / total)} ({hits:,}/{total:,})".replace(",", ".") if total else "–"
+    return f"{pct(hits / total)} ({num(hits)}/{num(total)})" if total else "–"
 
 
 def flagged(p: float, level: str = "suspicious", name: str = "default") -> bool:
@@ -287,8 +302,8 @@ def main() -> int:
     first = min(phish_first.values())
     last = max(phish_first.values())
     fmt = lambda t: datetime.fromtimestamp(t, timezone.utc).strftime("%Y-%m-%d")  # noqa: E731
-    lines += [f"{len(phish_first):,} host phishing khác nhau, xuất hiện từ {fmt(first)} đến {fmt(last)}; "
-              f"{len(benign_pool):,} host hợp lệ.".replace(",", "."), ""]
+    lines += [f"{num(len(phish_first))} host phishing khác nhau, xuất hiện từ {fmt(first)} đến {fmt(last)}; "
+              f"{num(len(benign_pool))} host hợp lệ.", ""]
 
     scores = score_all(phish + benign)
     p0 = {h: prob(w0, scores[h]) for h in scores}
@@ -300,11 +315,10 @@ def main() -> int:
               "**Phạm vi** (quy tắc minh bạch, không dùng engine): host có chứa từ khóa của một thương hiệu được bảo vệ "
               "sau khi bỏ dấu chấm / gạch, hoặc host dùng IDN (`xn--` / Unicode).", "",
               "| | số host | tỷ lệ |", "|---|---|---|",
-              f"| toàn bộ phishing | {len(phish_first):,} | 100% |".replace(",", "."),
-              f"| trong phạm vi: nhắc thương hiệu được bảo vệ | {counts['brand']:,} | "
-              f"{pct(counts['brand'] / len(phish_first))} |".replace(",", ".", 1),
-              f"| trong phạm vi: IDN | {counts['idn']:,} | {pct(counts['idn'] / len(phish_first))} |".replace(",", ".", 1),
-              f"| ngoài phạm vi | {counts[None]:,} | {pct(counts[None] / len(phish_first))} |".replace(",", ".", 1), "",
+              f"| toàn bộ phishing | {num(len(phish_first))} | 100% |",
+              f"| trong phạm vi: nhắc thương hiệu được bảo vệ | {num(counts['brand'])} | {pct(counts['brand'] / len(phish_first))} |",
+              f"| trong phạm vi: IDN | {num(counts['idn'])} | {pct(counts['idn'] / len(phish_first))} |",
+              f"| ngoài phạm vi | {num(counts[None])} | {pct(counts[None] / len(phish_first))} |", "",
               "Tỷ lệ gắn cờ (SUSPICIOUS trở lên) theo profile:", "",
               "| tập | default | banking | browser |", "|---|---|---|---|"]
     groups = {"toàn bộ (mẫu ngẫu nhiên)": uniform, "trong phạm vi: thương hiệu": [h for h in in_scope_hosts if scope[h] == "brand"],
@@ -318,33 +332,39 @@ def main() -> int:
         if flagged(p0[h]):
             by_engine[NAMES[max(range(len(NAMES)), key=lambda i: scores[h][i] * w0[i + 1])]] += 1
     missed = [h for h in groups["trong phạm vi: thương hiệu"] if not flagged(p0[h])]
-    lines += ["", "Engine đóng góp nhiều nhất cho các phát hiện trong phạm vi: " +
-              ", ".join(f"{n} {c:,}".replace(",", ".") for n, c in by_engine.most_common()) + ".", "",
+    lines += ["", "**Đọc đúng con số \"trong phạm vi: thương hiệu\":** quy tắc phạm vi (host chứa từ khóa) gần trùng với "
+              "logic của engine combosquat, nên recall ở profile default/banking gần như **tự chứng minh**, và quy tắc còn bắt "
+              "nhầm chuỗi con (`gonzalo` chứa `zalo`). Con số có thông tin là cột `browser`, profile bỏ qua combosquat đứng "
+              "một mình: nó cho biết bao nhiêu phishing thật nhắc thương hiệu là **giả mạo trông giống** (homoglyph, typo, hình ảnh) "
+              "thay vì chỉ ghép tên thương hiệu.", "",
+              "Engine đóng góp nhiều nhất cho các phát hiện trong phạm vi: " +
+              ", ".join(f"{n} {num(c)}" for n, c in by_engine.most_common()) + ".", "",
               "Ví dụ bỏ lọt trong phạm vi thương hiệu: " + ", ".join(f"`{h}`" for h in sorted(missed)[:12]) + ".", ""]
 
     # 2. benign by region
     lines += ["## 2. Báo nhầm trên domain hợp lệ quốc tế và đa ngôn ngữ", "",
-              f"{len(benign):,} host hợp lệ: mẫu ngẫu nhiên {BENIGN_SAMPLE:,} từ CrUX top 1 triệu (phân bố thật theo quốc gia) "
-              f"cộng toàn bộ {len(idn_benign):,} IDN trong đó.".replace(",", "."), "",
+              f"{num(len(benign))} host hợp lệ: mẫu ngẫu nhiên {num(BENIGN_SAMPLE)} từ CrUX top 1 triệu (phân bố thật theo quốc gia) "
+              f"cộng toàn bộ {num(len(idn_benign))} IDN trong đó.", "",
               "| nhóm | số host | FPR default | FPR banking | FPR browser |", "|---|---|---|---|---|"]
     by_region = defaultdict(list)
     for h in benign:
         by_region[region(h)].append(h)
     by_region["IDN (mọi đuôi)"] = idn_benign
     for label, hosts in sorted(by_region.items(), key=lambda kv: -len(kv[1])):
-        lines.append(f"| {label} | {len(hosts):,} | ".replace(",", ".") + " | ".join(
+        lines.append(f"| {label} | {num(len(hosts))} | " + " | ".join(
             pct(sum(flagged(p0[h], name=n) for h in hosts) / len(hosts)) for n in ("default", "banking", "browser")) + " |")
     fp = sorted((h for h in benign if flagged(p0[h], name="browser")), key=lambda h: -p0[h])
     kinds = Counter()
     for h in benign:
         if flagged(p0[h]):
             kinds[NAMES[max(range(len(NAMES)), key=lambda i: scores[h][i] * w0[i + 1])]] += 1
-    lines += ["", "Engine gây báo nhầm (profile default): " + ", ".join(f"{n} {c:,}".replace(",", ".") for n, c in kinds.most_common()) + ".",
+    lines += ["", "Engine gây báo nhầm (profile default): " + ", ".join(f"{n} {num(c)}" for n, c in kinds.most_common()) + ".",
               "", "Báo nhầm còn lại ở profile browser: " + ", ".join(f"`{h}`" for h in fp[:15]) + ".", ""]
 
     # 3. temporal validation
     cut = CUTOFF.timestamp()
     split = lambda h: int(hashlib.sha256(h.encode()).hexdigest(), 16) % 10 >= 7  # noqa: E731
+    uniform_set = set(uniform)
     train = [(h, 1) for h in phish if phish_first[h] < cut] + [(h, 0) for h in benign if not split(h)]
     test = [(h, 1) for h in phish if phish_first[h] >= cut] + [(h, 0) for h in benign if split(h)]
     rand_rows = [(h, 1) for h in phish] + [(h, 0) for h in benign]
@@ -354,7 +374,8 @@ def main() -> int:
     w_rand = fit([[1.0, *scores[h]] for h, _ in rand_train], [y for _, y in rand_train])
 
     def evaluate(w, rows, scope_only=False):
-        rows = [(h, y) for h, y in rows if not y or not scope_only or scope[h]]
+        # 'toàn bộ': attacks from the uniform sample only (real mix); 'trong phạm vi': every in-scope attack
+        rows = [(h, y) for h, y in rows if not y or (scope[h] if scope_only else h in uniform_set)]
         y = [yy for _, yy in rows]
         p = [prob(w, scores[h]) for h, _ in rows]
         r1, _ = recall_at_fpr(y, p, 0.01)
@@ -363,7 +384,8 @@ def main() -> int:
 
     lines += ["## 3. Kiểm định theo thời gian (temporal validation)", "",
               f"Train: phishing xuất hiện trước {CUTOFF:%Y-%m-%d}; test: phishing xuất hiện từ ngày đó "
-              f"({sum(y for _, y in test):,} host); domain hợp lệ tách 70/30 cố định. ".replace(",", ".") +
+              f"({num(sum(y for h, y in test if h in uniform_set))} host trong mẫu ngẫu nhiên, "
+              f"{num(sum(y for h, y in test if y and scope[h]))} host trong phạm vi); domain hợp lệ tách 70/30 cố định. " +
               "So với cách tách ngẫu nhiên (trộn quá khứ và tương lai) để thấy mức lạc quan do rò rỉ thời gian. "
               "Recall ở FPR 1% / 0,1% với ngưỡng chọn trên chính tập test.", "",
               "| mô hình | đánh giá trên | ROC-AUC | recall @ FPR 1% | recall @ FPR 0,1% | Brier | ECE |",
@@ -372,8 +394,8 @@ def main() -> int:
                            ("fit tách ngẫu nhiên", w_rand, rand_test)]:
         for scope_only in (False, True):
             auc, r1, r01, b, e = evaluate(w, rows, scope_only)
-            lines.append(f"| {label} | {'trong phạm vi' if scope_only else 'toàn bộ'} | {auc:.3f} | {pct(r1)} | "
-                         f"{pct(r01)} | {b:.4f} | {e:.4f} |")
+            lines.append(f"| {label} | {'trong phạm vi' if scope_only else 'toàn bộ'} | {dec(auc)} | {pct(r1)} | "
+                         f"{pct(r01)} | {dec(b, 4)} | {dec(e, 4)} |")
     monthly = defaultdict(list)
     for h in in_scope_hosts:
         monthly[datetime.fromtimestamp(phish_first[h], timezone.utc).strftime("%Y-%m")].append(flagged(p0[h]))
@@ -419,31 +441,32 @@ def main() -> int:
     syn_test = [(s, y) for (s, y, _), r in zip(syn_rows, synthetic)
                 if int(hashlib.sha256(r["group"].encode()).hexdigest(), 16) % 10 >= 7]
     y_syn, p_syn = [y for _, y in syn_test], [prob(w0, s) for s, _ in syn_test]
-    y_real, p_real = [y for _, y in test], [prob(w0, scores[h]) for h, _ in test]
+    real_test = [(h, y) for h, y in test if not y or h in uniform_set]   # the real mix of phishing
+    y_real, p_real = [y for _, y in real_test], [prob(w0, scores[h]) for h, _ in real_test]
     real_prior = sum(y_real) / len(y_real)
     p_adj = [at_base_rate(p, real_prior) for p in p_real]
-    p_time = [prob(w_time, scores[h]) for h, _ in test]
+    p_time = [prob(w_time, scores[h]) for h, _ in real_test]
     curves = {"benchmark tổng hợp, tập test": (y_syn, p_syn), "phishing thật sau mốc, production": (y_real, p_real),
-              f"như trên, hiệu chỉnh base rate {real_prior:.2f}": (y_real, p_adj), "phishing thật, fit trên quá khứ": (y_real, p_time)}
+              f"như trên, hiệu chỉnh base rate {dec(real_prior, 2)}": (y_real, p_adj), "phishing thật, fit trên quá khứ": (y_real, p_time)}
     reliability_figure(curves)
     lines += ["## 5. Hiệu chỉnh xác suất (calibration)", "",
               "![Reliability diagram](../docs/img/reliability.svg)", "",
               "| đánh giá | tỷ lệ tấn công | Brier | ECE |", "|---|---|---|---|"]
     for label, (y, p) in curves.items():
-        lines.append(f"| {label} | {pct(sum(y) / len(y))} | {brier(y, p):.4f} | {reliability(y, p)[1]:.4f} |")
+        lines.append(f"| {label} | {pct(sum(y) / len(y))} | {dec(brier(y, p), 4)} | {dec(reliability(y, p)[1], 4)} |")
     prior = model["dataset"]["train_prior"]
     lines += ["", f"Xác suất của mô hình production giả định tỷ lệ tấn công {pct(prior)} (tập train của benchmark). "
               "Precision thật khi triển khai, với recall và FPR đo trên phishing thật sau mốc (profile default):", "",
               "| tỷ lệ tấn công trong lưu lượng | precision trong phạm vi | precision toàn bộ |", "|---|---|---|"]
     neg = [h for h, y in test if not y]
     fpr = sum(flagged(p0[h]) for h in neg) / len(neg)
-    pos_all = [h for h, y in test if y]
-    pos_scope = [h for h in pos_all if scope[h]]
+    pos_all = [h for h, y in test if y and h in uniform_set]
+    pos_scope = [h for h, y in test if y and scope[h]]
     rec_all = sum(flagged(p0[h]) for h in pos_all) / len(pos_all)
     rec_scope = sum(flagged(p0[h]) for h in pos_scope) / len(pos_scope)
     for base in (0.1, 0.01, 0.001, 0.0001):
         prec = lambda r: r * base / (r * base + fpr * (1 - base)) if r * base + fpr * (1 - base) else 0  # noqa: E731
-        lines.append(f"| {base:g} | {pct(prec(rec_scope))} | {pct(prec(rec_all))} |")
+        lines.append(f"| {str(base).replace('.', ',')} | {pct(prec(rec_scope))} | {pct(prec(rec_all))} |")
     lines += ["", f"(FPR {pct(fpr)}, recall trong phạm vi {pct(rec_scope)}, toàn bộ {pct(rec_all)}.) "
               "Dùng `--base-rate` để báo cáo xác suất theo tỷ lệ của hệ thống bạn.", ""]
 

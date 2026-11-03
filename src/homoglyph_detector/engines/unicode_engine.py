@@ -33,9 +33,13 @@ def _check_characters(text: str, result: EngineResult, tld_scripts: set[str] = f
             # Chromium's IDN policy: a Cyrillic word that happens to look Latin ('орех') is ordinary under a
             # Cyrillic TLD (.рф) and suspicious elsewhere; brand look-alikes are still caught by the brand engine
             expected = bool(tld_scripts) and scripts_in(part) <= tld_scripts
-            result.add("whole_lookalike", "info" if expected else "medium",
+            # Latin letters with diacritics or ligatures ('mæglerhuset', 'borsaekranı') are ordinary words of
+            # Danish, Turkish, ...; a Latin label that copies a brand ('ɑpple') is still caught by the brand engine
+            latin = scripts_in(part) <= {"Latin"} and unicodedata.normalize("NFKC", part) == part
+            result.add("whole_lookalike", "info" if expected or latin else "medium",
                        f"'{part}' renders like ASCII '{skel}'{typed(kind)}"
-                       + (" (normal under a same-script TLD)" if expected else ""),
+                       + (" (normal under a same-script TLD)" if expected else "")
+                       + (" (ordinary Latin letters)" if latin and not expected else ""),
                        looks_like=skel, confusable_type=kind)
         if len(numbering_systems(part)) > 1:
             result.add("mixed_numbers", "medium", f"'{part}' mixes digits from different number systems")

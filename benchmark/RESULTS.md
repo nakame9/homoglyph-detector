@@ -7,23 +7,23 @@ Train 11006 / test 4799 dòng, tách theo domain gốc. **Mọi con số đều 
 
 | engine | trọng số |
 |---|---|
-| unicode | 17.0816 |
+| unicode | 17.0294 |
 | idna | 0.0 |
-| brand | 11.5037 |
-| combosquat | 6.6264 |
-| visual | 7.798 |
-| *bias* | -1.8926 |
+| brand | 11.4845 |
+| combosquat | 6.6039 |
+| visual | 7.8093 |
+| *bias* | -1.8808 |
 
 ## Mô hình đã hiệu chỉnh so với luật mức độ nghiêm trọng
 
 | | precision | recall | F1 | tỷ lệ báo nhầm |
 |---|---|---|---|---|
-| đã hiệu chỉnh, p >= 0.5 (SUSPICIOUS trở lên) | 0.9667 | 0.8698 | 0.9157 | 0.016 |
-| đã hiệu chỉnh, p >= 0.9 (MALICIOUS) | 0.9926 | 0.6395 | 0.7778 | 0.0026 |
-| luật mức độ, không hiệu chỉnh: SUSPICIOUS trở lên | 0.9624 | 0.7522 | 0.8444 | 0.0156 |
+| đã hiệu chỉnh, p >= 0.5 (SUSPICIOUS trở lên) | 0.9665 | 0.865 | 0.9129 | 0.016 |
+| đã hiệu chỉnh, p >= 0.9 (MALICIOUS) | 0.9925 | 0.6347 | 0.7742 | 0.0026 |
+| luật mức độ, không hiệu chỉnh: SUSPICIOUS trở lên | 0.9622 | 0.7475 | 0.8413 | 0.0156 |
 | luật mức độ, không hiệu chỉnh: MALICIOUS | 1.0 | 0.0714 | 0.1333 | 0.0 |
 
-ROC-AUC **0.9302**, Brier score 0.0585, sai số hiệu chỉnh kỳ vọng (ECE) 0.0609.
+ROC-AUC **0.9277**, Brier score 0.0599, sai số hiệu chỉnh kỳ vọng (ECE) 0.0604.
 
 ## Hồ sơ rủi ro (risk profiles)
 
@@ -31,9 +31,9 @@ Ngưỡng chọn trên tập train theo mục tiêu tỷ lệ báo nhầm, đo l
 
 | profile | ngưỡng SUSPICIOUS | recall | báo nhầm / 10k | ngưỡng MALICIOUS | recall | báo nhầm / 10k |
 |---|---|---|---|---|---|---|
-| default | 0.5000 | 0.8698 | 160.0 | 0.9000 | 0.6395 | 26.0 |
-| banking | 0.2742 | 0.8698 | 160.0 | 0.2742 | 0.8698 | 160.0 |
-| browser | 0.8434 | 0.6407 | 26.0 | 0.9805 | 0.1836 | 6.0 |
+| default | 0.5000 | 0.865 | 160.0 | 0.9000 | 0.6347 | 26.0 |
+| banking | 0.2766 | 0.865 | 160.0 | 0.2766 | 0.865 | 160.0 |
+| browser | 0.8444 | 0.6359 | 26.0 | 0.9805 | 0.1788 | 6.0 |
 
 ## Các điểm vận hành
 
@@ -41,9 +41,9 @@ Muốn tự đặt ngân sách báo nhầm: chọn một dòng (`--max-fpr`). C�
 
 | mục tiêu FPR tối đa (train) | ngưỡng | recall (test) | FPR (test) | báo nhầm / 10k (test) |
 |---|---|---|---|---|
-| 0.0005 | 0.9805 | 0.1836 | 0.0006 | 6.0 |
-| 0.002 | 0.8434 | 0.6407 | 0.0026 | 26.0 |
-| 0.02 | 0.2742 | 0.8698 | 0.016 | 160.0 |
+| 0.0005 | 0.9805 | 0.1788 | 0.0006 | 6.0 |
+| 0.002 | 0.8444 | 0.6359 | 0.0026 | 26.0 |
+| 0.02 | 0.2766 | 0.865 | 0.016 | 160.0 |
 
 ## Golden corpus (10 nhóm test bắt buộc)
 
@@ -66,9 +66,9 @@ Muốn tự đặt ngân sách báo nhầm: chọn một dòng (`--max-fpr`). C�
 
 | profile | recall: golden tấn công | recall: benchmark test | FPR: golden đa ngôn ngữ | FPR: mẫu âm khó (test) | FPR: top 10k (test) |
 |---|---|---|---|---|---|
-| default | 97.1% (67/69) | 87.0% (1450/1667) | 0.0% (0/45) | 22.7% (5/22) | 1.4% (45/3110) |
-| banking | 97.1% (67/69) | 87.0% (1450/1667) | 0.0% (0/45) | 22.7% (5/22) | 1.4% (45/3110) |
-| browser | 91.3% (63/69) | 64.1% (1068/1667) | 0.0% (0/45) | 13.6% (3/22) | 0.2% (5/3110) |
+| default | 97.1% (67/69) | 86.5% (1442/1667) | 0.0% (0/45) | 22.7% (5/22) | 1.4% (45/3110) |
+| banking | 97.1% (67/69) | 86.5% (1442/1667) | 0.0% (0/45) | 22.7% (5/22) | 1.4% (45/3110) |
+| browser | 91.3% (63/69) | 63.6% (1060/1667) | 0.0% (0/45) | 13.6% (3/22) | 0.2% (5/3110) |
 
 ## Độ trễ phát hiện
 
@@ -76,7 +76,7 @@ Muốn tự đặt ngân sách báo nhầm: chọn một dòng (`--max-fpr`). C�
 
 | p50 | p95 | p99 | lớn nhất | trung bình | thông lượng | lần gọi đầu (nạp dữ liệu) |
 |---|---|---|---|---|---|---|
-| 5.14 ms | 11.90 ms | 17.04 ms | 32.21 ms | 5.92 ms | 169 domain/giây | 130 ms |
+| 5.55 ms | 12.86 ms | 19.87 ms | 36.64 ms | 6.38 ms | 157 domain/giây | 141 ms |
 
 ## Độ tin cậy của xác suất (reliability)
 
@@ -84,11 +84,11 @@ Xác suất dự đoán so với tỷ lệ tấn công thật trong từng kho�
 
 | khoảng dự đoán | số dòng | dự đoán trung bình | tỷ lệ tấn công thực tế |
 |---|---|---|---|
-| 0.1-0.2 | 3299 | 0.131 | 0.066 |
-| 0.6-0.7 | 186 | 0.661 | 1.000 |
-| 0.7-0.8 | 6 | 0.773 | 0.833 |
+| 0.1-0.2 | 3307 | 0.132 | 0.068 |
+| 0.6-0.7 | 186 | 0.662 | 1.000 |
+| 0.7-0.8 | 6 | 0.776 | 0.833 |
 | 0.8-0.9 | 234 | 0.806 | 0.825 |
-| 0.9-1.0 | 1074 | 0.983 | 0.993 |
+| 0.9-1.0 | 1066 | 0.983 | 0.992 |
 
 ## Phát hiện theo loại
 
@@ -118,7 +118,7 @@ Tỷ lệ bị gắn cờ SUSPICIOUS trở lên (p >= 0.5). Với tấn công đ
 | curated/whole-script | tấn công | 1 | 100.0% |
 | hard-negative | hợp lệ | 22 | 22.7% |
 | top10k | hợp lệ | 3110 | 1.4% |
-| unprotected/homoglyph | tấn công | 336 | 50.3% |
+| unprotected/homoglyph | tấn công | 336 | 47.9% |
 
 ## Các lỗi khó nhất
 
