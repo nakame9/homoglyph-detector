@@ -50,7 +50,6 @@ KNOWN = [
     ("\u03c3\u03bf\u03c6\u03bf\u03c2.gr", "xn--0xaakcn.gr", "xn--0xaajbq.gr"),  # final sigma: deviation
     ("a\u200db.com",                 "ab.com",            None),                # ZWJ dropped vs refused
     ("i\u2764.ws",                   "xn--i-7iq.ws",      None),                # symbol: allowed only in 2003
-    ("\u023a.com",                   "xn--wma.com",       "xn--cgj.com"),       # capital A with stroke: new case mapping
     ("ti\u1ebfngvi\u1ec7t.vn",       "xn--tingvit-5t4cyc.vn", "xn--tingvit-5t4cyc.vn"),   # agree
     ("\u0441\u0430\u0439\u0442.\u0440\u0444", "xn--80aswg.xn--p1ai", "xn--80aswg.xn--p1ai"),  # agree
 ]
@@ -92,3 +91,14 @@ def test_engine_reports_every_disagreement(label):
     legacy = legacy_a_label(ctx.host)
     disagree = legacy is not None and legacy != (ctx.a_label or None)
     assert ("idna_differential" in {f.kind for f in analyze(label + ".com").findings}) == disagree
+
+
+def test_legacy_codec_for_post_unicode_3_2_letters_depends_on_the_python_build():
+    """'\u023a' (added after Unicode 3.2): CPython's stringprep lowercases it with the running
+    Python's tables in some patch releases (3.10.20, 3.12.3 -> same as browsers) and not in others
+    (3.11.18, 3.13.18 -> a different domain). So never pin the legacy result for such characters;
+    the engine reports whatever the Python it runs on would resolve."""
+    host = "\u023a.com"
+    legacy = legacy_a_label(host)
+    assert legacy in ("xn--wma.com", "xn--cgj.com") and modern(host) == "xn--cgj.com"
+    assert ("idna_differential" in {f.kind for f in analyze(host).findings}) == (legacy != "xn--cgj.com")

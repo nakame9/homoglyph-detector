@@ -43,10 +43,10 @@ Cùng một chuỗi có thể dẫn tới **hai domain khác nhau** tùy phần 
 | `σοφος.gr` (sigma cuối) | `xn--0xaakcn.gr` | `xn--0xaajbq.gr` |
 | `a<ZWJ>b.com` | `ab.com` | từ chối |
 | `i❤.ws` | `xn--i-7iq.ws` | từ chối |
-| `Ⱥ.com` | `xn--wma.com` | `xn--cgj.com` |
+| `Ⱥ.com` | `xn--wma.com` hoặc `xn--cgj.com`, **tùy bản vá CPython** | `xn--cgj.com` |
 
 Engine `idna` báo `idna_differential` cho mọi trường hợp như vậy. Test kiểm tra hai điều:
-1. **Mọi khác biệt đều có nguyên nhân đã biết**, thuộc một trong ba nhóm: ký tự lệch của UTS #46 (ß, ς, ZWJ, ZWNJ), ký tự chưa có trong Unicode 3.2, hoặc ký tự có ánh xạ đổi từ Unicode 3.2. Ban đầu giả thuyết chỉ có nhóm thứ nhất; Hypothesis đã bác bỏ nó bằng các chữ hoa mới như `Ⱥ`, `ẞ`, `Ⱦ`, và giả thuyết đã sửa đứng vững qua 6.000 mẫu.
+1. **Mọi khác biệt đều có nguyên nhân đã biết**, thuộc một trong ba nhóm: ký tự lệch của UTS #46 (ß, ς, ZWJ, ZWNJ), ký tự chưa có trong Unicode 3.2, hoặc ký tự có ánh xạ đổi từ Unicode 3.2. Ban đầu giả thuyết chỉ có nhóm thứ nhất; Hypothesis đã bác bỏ nó bằng các chữ hoa mới như `Ⱥ`, `ẞ`, `Ⱦ`, và giả thuyết đã sửa đứng vững qua 6.000 mẫu. Với các ký tự thêm sau Unicode 3.2, chính codec IDNA2003 của Python cũng cho kết quả khác nhau theo bản vá (3.10.20 và 3.12.3 ra `xn--cgj.com`, 3.11.18 và 3.13.18 ra `xn--wma.com`), nên test không cài cứng kết quả cũ cho các ký tự này; engine báo đúng theo bản Python đang chạy.
 2. **Engine báo đúng mọi khác biệt**, dùng hai bản cài đặt làm "oracle".
 
 ## Golden corpus: 10 nhóm bắt buộc

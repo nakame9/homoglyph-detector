@@ -2,6 +2,13 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/), đánh số theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [0.10.1] - 2026-11-03
+### Sửa
+- Test `test_documented_differences[Ⱥ.com]` thất bại trên Python 3.10.20 và 3.12.3: codec IDNA2003 của CPython cho kết quả khác nhau theo bản vá với ký tự thêm sau Unicode 3.2. Thay bằng test chấp nhận cả hai hành vi và kiểm tra engine báo đúng theo bản đang chạy.
+### Thêm
+- CI chạy đủ Python 3.10, 3.11, 3.12, 3.13 (trước đây chỉ 3.10 và 3.13), và một job cài đúng phiên bản thấp nhất cho phép của mọi phụ thuộc (`uv --resolution lowest-direct`).
+- README ghi bảng phiên bản phụ thuộc đã kiểm chứng và lý do của mức tối thiểu `idna>=3.20`.
+
 ## [0.10.0] - 2026-10-31
 ### Thêm
 - Property-based testing và fuzzing Unicode với Hypothesis (`tests/test_properties.py`); profile `dev` / `ci` / `deep`.

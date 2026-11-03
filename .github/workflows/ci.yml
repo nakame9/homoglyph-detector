@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]   # every version pyproject.toml supports
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -20,3 +20,15 @@ jobs:
       - name: Calibration must match the committed engines and benchmark
         if: matrix.python-version == '3.13'
         run: python benchmark/calibrate.py && git diff --exit-code src/homoglyph_detector/data/
+
+  minimum-versions:
+    # installs the lowest versions pyproject.toml allows, so the declared floors stay true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv venv -p 3.10 && uv pip install --resolution lowest-direct -e ".[dev]"
+      - run: uv pip list | grep -Ei "^(idna|publicsuffixlist|pytest|hypothesis) "
+      - run: .venv/bin/pytest -q
+        env:
+          HYPOTHESIS_PROFILE: ci

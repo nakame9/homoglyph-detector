@@ -64,7 +64,15 @@ cd homoglyph-detector
 pip install -e .                 # thêm ".[dev]" để chạy test (pytest, Hypothesis), ".[bench]" để tạo lại benchmark
 ```
 
-Yêu cầu Python 3.10+. Thư viện phụ thuộc: `idna`, `publicsuffixlist` (không cần mạng khi chạy).
+Yêu cầu Python 3.10+. Thư viện phụ thuộc được khai báo trong `pyproject.toml` và pip tự cài:
+
+| Gói | Phiên bản | Ghi chú |
+|---|---|---|
+| `idna` | ≥ 3.20 | 3.20 là bản đầu tiên có bảng IDNA Unicode 18, khớp dữ liệu UTS #39 đi kèm (3.19 dùng Unicode 17, bị test chặn) |
+| `publicsuffixlist` | ≥ 1.0 | có sẵn PSL, không cần mạng khi chạy |
+| `pytest`, `hypothesis` (`.[dev]`) | ≥ 7, ≥ 6.100 | chỉ để chạy test |
+
+Đã kiểm thử cài sạch trên Python 3.10, 3.11, 3.12, 3.13, với cả phiên bản thư viện mới nhất lẫn thấp nhất cho phép; CI chạy lại cả hai trường hợp ở mỗi lần push.
 
 ## Sử dụng
 
