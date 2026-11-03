@@ -82,7 +82,8 @@ def _snapshot() -> list[dict]:
         default = reports["default"]
         rows.append({"input": case["input"], "a_label": default.a_label,
                      "verdicts": {name: r.verdict for name, r in reports.items()},
-                     "evidence": sorted({f"{f.engine}/{f.kind}" for f in default.findings if f.severity != "info"})})
+                     "evidence": sorted({f"{f.engine}/{f.kind}" + (f"[{f.detail['basis']}]" if "basis" in f.detail else "")
+                                            for f in default.findings if f.severity != "info"})})
     return rows
 
 

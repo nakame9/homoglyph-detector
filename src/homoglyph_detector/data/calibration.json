@@ -28,10 +28,10 @@
           "precision": 0.9665
         },
         "malicious": {
-          "recall": 0.6347,
+          "recall": 0.5591,
           "false_positive_rate": 0.0026,
           "false_alerts_per_10k": 26.0,
-          "precision": 0.9925
+          "precision": 0.9915
         }
       }
     },
@@ -55,10 +55,10 @@
           "precision": 0.9665
         },
         "malicious": {
-          "recall": 0.865,
-          "false_positive_rate": 0.016,
-          "false_alerts_per_10k": 160.0,
-          "precision": 0.9665
+          "recall": 0.6737,
+          "false_positive_rate": 0.0156,
+          "false_alerts_per_10k": 156.0,
+          "precision": 0.9582
         }
       }
     },
@@ -82,10 +82,10 @@
           "precision": 0.9925
         },
         "malicious": {
-          "recall": 0.1788,
+          "recall": 0.1338,
           "false_positive_rate": 0.0006,
           "false_alerts_per_10k": 6.0,
-          "precision": 0.9933
+          "precision": 0.9911
         }
       }
     }
@@ -118,13 +118,13 @@
       "false_negatives": 225
     },
     "at_malicious": {
-      "precision": 0.9925,
-      "recall": 0.6347,
-      "f1": 0.7742,
+      "precision": 0.9915,
+      "recall": 0.5591,
+      "f1": 0.715,
       "false_positive_rate": 0.0026,
-      "false_negative_rate": 0.3653,
+      "false_negative_rate": 0.4409,
       "false_positives": 8,
-      "false_negatives": 609
+      "false_negatives": 735
     }
   },
   "operating_points": [

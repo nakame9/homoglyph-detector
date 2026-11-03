@@ -18,7 +18,7 @@ import time
 import os
 import subprocess
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import date
 from pathlib import Path
 
@@ -28,7 +28,7 @@ from homoglyph_detector.analyzer import run_engines  # noqa: E402
 from homoglyph_detector.brands import bundled  # noqa: E402
 from homoglyph_detector.cli import visible  # noqa: E402
 from homoglyph_detector.engines import ENGINES  # noqa: E402
-from homoglyph_detector.scoring import operating_curve, threshold_for_fpr  # noqa: E402
+from homoglyph_detector.scoring import has_independent_evidence, operating_curve, threshold_for_fpr  # noqa: E402
 
 DATASET = ROOT / "benchmark" / "dataset.jsonl"
 GOLDEN = ROOT / "tests" / "golden" / "corpus.jsonl"
@@ -142,8 +142,9 @@ def percentile(values: list[float], q: float) -> float:
     return ordered[min(len(ordered) - 1, int(q * len(ordered)))]
 
 
-def operating(y: list[int], p: list[float], threshold: float) -> dict:
-    m = confusion(y, [pi >= threshold for pi in p])
+def operating(y: list[int], p: list[float], threshold: float, allowed: list[bool] | None = None) -> dict:
+    """allowed: per row, whether the verdict may reach this level (MALICIOUS needs non-visual evidence)."""
+    m = confusion(y, [pi >= threshold and (allowed is None or a) for pi, a in zip(p, allowed or p)])
     return {"recall": m["recall"], "false_positive_rate": m["false_positive_rate"],
             "false_alerts_per_10k": round(m["false_positive_rate"] * 10_000, 1), "precision": m["precision"]}
 
@@ -208,6 +209,33 @@ def goal_section(profiles: dict, w: list[float], names: list[str], test: list[di
     return lines + [""]
 
 
+def visual_rule_section(profiles: dict, test: list[dict]) -> list[str]:
+    """Cost and effect of capping visual-only evidence at SUSPICIOUS, on the test split."""
+    y = [r["label"] for r in test]
+    lines = ["## Quy tắc visual-only", "",
+             "Độ giống hình ảnh (`rn`/`m`, `0`/`o`, `5`/`s`, `vv`/`w`, bỏ dấu) phụ thuộc font và cách hiển thị, nên chỉ hỗ trợ "
+             "chấm điểm: MALICIOUS cần thêm ít nhất một bằng chứng độc lập (Unicode, chính tả, tên thương hiệu, IDNA). "
+             "Bảng so sánh mức MALICIOUS trên tập test khi không và có quy tắc.", "",
+             "| profile | recall MALICIOUS (không / có quy tắc) | FPR MALICIOUS (không / có) | tấn công bị hạ xuống SUSPICIOUS |",
+             "|---|---|---|---|"]
+    for name, pr in profiles.items():
+        t = pr["malicious"]
+        before = confusion(y, [r["p"] >= t for r in test])
+        after = confusion(y, [r["p"] >= t and r["independent"] for r in test])
+        capped = sum(1 for r in test if r["label"] and r["p"] >= t and not r["independent"])
+        lines.append(f"| {name} | {pct(before['recall'])} / {pct(after['recall'])} | "
+                     f"{pct(before['false_positive_rate'])} / {pct(after['false_positive_rate'])} | {capped} |")
+    capped_cats = Counter(r["category"] for r in test if r["label"] and r["p"] >= profiles["default"]["malicious"]
+                          and not r["independent"])
+    lines += ["", "Các tấn công bị hạ (profile default) vẫn được gắn cờ SUSPICIOUS; theo loại: " +
+              ", ".join(f"{c} {n}" for c, n in capped_cats.most_common()) + ".", ""]
+    return lines
+
+
+def pct(x: float) -> str:
+    return f"{100 * x:.2f}%".replace(".", ",")
+
+
 def main() -> int:
     os.environ.pop("HOMOGLYPH_BRANDS", None)   # calibrate on the bundled brand database only
     raw = DATASET.read_bytes()
@@ -223,6 +251,7 @@ def main() -> int:
         latencies.append((time.perf_counter() - started) * 1000)
         row["scores"] = [results[n].score for n in names]
         row["severity"] = max((SEVERITY_RANK[f.severity] for r in results.values() for f in r.findings), default=0)
+        row["independent"] = has_independent_evidence([f for r in results.values() for f in r.findings])
         row["test"] = int(hashlib.sha256(row["group"].encode()).hexdigest(), 16) % 10 >= 7
     train = [r for r in rows if not r["test"]]
     test = [r for r in rows if r["test"]]
@@ -239,12 +268,13 @@ def main() -> int:
         "brier": round(sum((pi - yi) ** 2 for pi, yi in zip(p, y)) / len(y), 4),
         "ece": round(ece, 4),
         "at_suspicious": confusion(y, [pi >= THRESHOLDS["suspicious"] for pi in p]),
-        "at_malicious": confusion(y, [pi >= THRESHOLDS["malicious"] for pi in p]),
+        "at_malicious": confusion(y, [pi >= THRESHOLDS["malicious"] and r["independent"] for pi, r in zip(p, test)]),
     }
     baseline = {   # verdict from the worst finding severity, no calibration
         "suspicious_or_worse": confusion(y, [r["severity"] >= 2 for r in test]),
         "malicious": confusion(y, [r["severity"] >= 3 for r in test]),
     }
+    indep = [r["independent"] for r in test]
     curve = operating_curve([r["label"] for r in train], [r["p"] for r in train])
     profiles = {}
     for name, spec in PROFILES.items():
@@ -253,7 +283,8 @@ def main() -> int:
         cut["malicious"] = max(cut["malicious"], cut["suspicious"])
         profiles[name] = {"description": spec["description"], **cut,
                           "targets": {level: spec[level] for level in LEVELS},
-                          "test": {level: operating(y, p, cut[level]) for level in LEVELS}}
+                          "test": {level: operating(y, p, cut[level], indep if level == "malicious" else None)
+                                   for level in LEVELS}}
     grid = {}
     for max_fpr in FPR_GRID:
         t = threshold_for_fpr(max_fpr, curve)
@@ -303,7 +334,7 @@ def main() -> int:
             ("luật mức độ, không hiệu chỉnh: MALICIOUS", baseline["malicious"])]],
         "", f"ROC-AUC **{metrics['roc_auc']}**, Brier score {metrics['brier']}, "
             f"sai số hiệu chỉnh kỳ vọng (ECE) {metrics['ece']}.", "",
-        "## Hồ sơ rủi ro (risk profiles)", "",
+        *visual_rule_section(profiles, test), "## Hồ sơ rủi ro (risk profiles)", "",
         "Ngưỡng chọn trên tập train theo mục tiêu tỷ lệ báo nhầm, đo lại trên tập test. "
         "Báo nhầm / 10k = số cảnh báo sai trên 10.000 domain hợp lệ, không phụ thuộc tỷ lệ tấn công của môi trường.", "",
         "| profile | ngưỡng SUSPICIOUS | recall | báo nhầm / 10k | ngưỡng MALICIOUS | recall | báo nhầm / 10k |",

@@ -12,16 +12,18 @@ def combosquat_engine(ctx: Context, brands: list[dict]) -> EngineResult:
     if ctx.input_type == "name" or not ctx.host or is_official(host, brands):
         return result.noisy_or()
     rd, label = registrable(host)
-    squashed = skeleton(host).replace(".", "").replace("-", "")   # also 'am.azon.com', 'pay-pal-login'
+    plain = host.replace(".", "").replace("-", "")   # also 'am.azon.com', 'pay-pal-login'
+    squashed = skeleton(plain)
     for brand in brands:
         for kw in brand["keywords"]:
             if label == kw:
                 result.add("brand_unofficial", "medium", f"Uses the {brand['name']} name on an unofficial domain '{rd}'",
-                           brand=brand["name"])
+                           brand=brand["name"], basis="name")
                 break
             if len(kw) >= MIN_FUZZY_LEN and skeleton(kw) in squashed and skeleton(label) != skeleton(kw):
                 result.add("brand_in_host", "medium",
                            f"Contains {brand['name']} keyword '{kw}' on unofficial domain '{rd}'",
-                           brand=brand["name"], keyword=kw)
+                           brand=brand["name"], keyword=kw,
+                           basis="name" if kw in plain else "visual")   # 'rnicrosoft-login' only via rn ~ m
                 break
     return result.noisy_or()

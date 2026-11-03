@@ -37,7 +37,16 @@ def render(report: Report) -> str:
         lines.append(f"    at base rate {report.base_rate:g}: P(attack) = {report.probability_at_base_rate:.4f}")
     lines.append(f"    profile : {report.profile} (SUSPICIOUS >= {report.thresholds['suspicious']:.2f}, "
                  f"MALICIOUS >= {report.thresholds['malicious']:.2f})")
-    lines += [f"    - [{f.engine}/{f.severity}] {visible(f.message)}" for f in report.findings]
+    shown = {"unicode_confusable": "unicode", "visual_similarity": "visual", "brand_impersonation": "brand",
+             "protocol": "idna"}
+    parts = [f"{short} {report.evidence.get(key, '-')}" for key, short in shown.items()]
+    if "brand_basis" in report.evidence:
+        parts[2] += f" (basis: {report.evidence['brand_basis']})"
+    lines.append(f"    evidence: {',  '.join(parts)}")
+    if report.verdict_note:
+        lines.append(f"    note    : {report.verdict_note}")
+    lines += [f"    - [{f.engine}/{f.severity}{', ' + f.detail['basis'] if 'basis' in f.detail else ''}] "
+              f"{visible(f.message)}" for f in report.findings]
     return "\n".join(lines)
 
 

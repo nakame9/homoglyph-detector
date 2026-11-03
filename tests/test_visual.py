@@ -51,9 +51,13 @@ def test_near_table_complements_the_official_data():
     "paypai-login.com",           # look-alike inside a longer label
     "5hopee Official",            # display name / username
 ])
-def test_brand_visual_lookalikes_are_malicious(raw):
-    report = analyze(raw)
-    assert report.verdict == "MALICIOUS" and "brand_visual" in {f.kind for f in report.findings}
+def test_brand_visual_lookalikes_are_flagged_as_supporting_evidence(raw):
+    """Visual similarity flags the input, but alone it never makes it MALICIOUS (font-dependent)."""
+    for policy in ("default", "banking", "browser"):
+        report = analyze(raw, policy=policy)
+        assert "brand_visual" in {f.kind for f in report.findings}
+        assert report.verdict != "MALICIOUS" and report.evidence["visual_similarity"] == "high"
+    assert analyze(raw).verdict == "SUSPICIOUS"
 
 
 def test_plain_typo_stays_a_typosquat():

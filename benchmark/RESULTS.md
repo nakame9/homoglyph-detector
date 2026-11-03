@@ -19,11 +19,23 @@ Train 11006 / test 4799 dòng, tách theo domain gốc. **Mọi con số đều 
 | | precision | recall | F1 | tỷ lệ báo nhầm |
 |---|---|---|---|---|
 | đã hiệu chỉnh, p >= 0.5 (SUSPICIOUS trở lên) | 0.9665 | 0.865 | 0.9129 | 0.016 |
-| đã hiệu chỉnh, p >= 0.9 (MALICIOUS) | 0.9925 | 0.6347 | 0.7742 | 0.0026 |
+| đã hiệu chỉnh, p >= 0.9 (MALICIOUS) | 0.9915 | 0.5591 | 0.715 | 0.0026 |
 | luật mức độ, không hiệu chỉnh: SUSPICIOUS trở lên | 0.9622 | 0.7475 | 0.8413 | 0.0156 |
 | luật mức độ, không hiệu chỉnh: MALICIOUS | 1.0 | 0.0714 | 0.1333 | 0.0 |
 
 ROC-AUC **0.9277**, Brier score 0.0599, sai số hiệu chỉnh kỳ vọng (ECE) 0.0604.
+
+## Quy tắc visual-only
+
+Độ giống hình ảnh (`rn`/`m`, `0`/`o`, `5`/`s`, `vv`/`w`, bỏ dấu) phụ thuộc font và cách hiển thị, nên chỉ hỗ trợ chấm điểm: MALICIOUS cần thêm ít nhất một bằng chứng độc lập (Unicode, chính tả, tên thương hiệu, IDNA). Bảng so sánh mức MALICIOUS trên tập test khi không và có quy tắc.
+
+| profile | recall MALICIOUS (không / có quy tắc) | FPR MALICIOUS (không / có) | tấn công bị hạ xuống SUSPICIOUS |
+|---|---|---|---|
+| default | 63,47% / 55,91% | 0,26% / 0,26% | 126 |
+| banking | 86,50% / 67,37% | 1,60% / 1,56% | 319 |
+| browser | 17,88% / 13,38% | 0,06% / 0,06% | 75 |
+
+Các tấn công bị hạ (profile default) vẫn được gắn cờ SUSPICIOUS; theo loại: brand/homoglyph 122, brand/replacement 3, curated/combosquat 1.
 
 ## Hồ sơ rủi ro (risk profiles)
 
@@ -31,9 +43,9 @@ Ngưỡng chọn trên tập train theo mục tiêu tỷ lệ báo nhầm, đo l
 
 | profile | ngưỡng SUSPICIOUS | recall | báo nhầm / 10k | ngưỡng MALICIOUS | recall | báo nhầm / 10k |
 |---|---|---|---|---|---|---|
-| default | 0.5000 | 0.865 | 160.0 | 0.9000 | 0.6347 | 26.0 |
-| banking | 0.2766 | 0.865 | 160.0 | 0.2766 | 0.865 | 160.0 |
-| browser | 0.8444 | 0.6359 | 26.0 | 0.9805 | 0.1788 | 6.0 |
+| default | 0.5000 | 0.865 | 160.0 | 0.9000 | 0.5591 | 26.0 |
+| banking | 0.2766 | 0.865 | 160.0 | 0.2766 | 0.6737 | 156.0 |
+| browser | 0.8444 | 0.6359 | 26.0 | 0.9805 | 0.1338 | 6.0 |
 
 ## Các điểm vận hành
 
@@ -76,7 +88,7 @@ Muốn tự đặt ngân sách báo nhầm: chọn một dòng (`--max-fpr`). C�
 
 | p50 | p95 | p99 | lớn nhất | trung bình | thông lượng | lần gọi đầu (nạp dữ liệu) |
 |---|---|---|---|---|---|---|
-| 5.55 ms | 12.86 ms | 19.87 ms | 36.64 ms | 6.38 ms | 157 domain/giây | 141 ms |
+| 5.52 ms | 12.72 ms | 19.80 ms | 63.30 ms | 6.29 ms | 159 domain/giây | 137 ms |
 
 ## Độ tin cậy của xác suất (reliability)
 

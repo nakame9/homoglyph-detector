@@ -44,7 +44,7 @@ from calibrate import fit, reliability, roc_auc, sigmoid  # noqa: E402
 from homoglyph_detector.analyzer import run_engines  # noqa: E402
 from homoglyph_detector.brands import load_brands  # noqa: E402
 from homoglyph_detector.engines import ENGINES  # noqa: E402
-from homoglyph_detector.scoring import at_base_rate, calibration, profile  # noqa: E402
+from homoglyph_detector.scoring import at_base_rate, calibration, has_independent_evidence, profile  # noqa: E402
 
 CACHE = ROOT / "benchmark" / ".cache"
 OUT = ROOT / "benchmark" / "REAL_WORLD.md"
@@ -119,9 +119,12 @@ def region(host: str) -> str:
     return next((name for name, tlds in REGIONS.items() if tld in tlds), "gTLD / khác")
 
 
-def _score(host: str) -> list[float]:
+INDEPENDENT: dict[str, bool] = {}   # host -> has evidence beyond visual similarity (MALICIOUS allowed)
+
+
+def _score(host: str) -> tuple[list[float], bool]:
     _, results = run_engines(host)
-    return [results[n].score for n in NAMES]
+    return [results[n].score for n in NAMES], has_independent_evidence([f for r in results.values() for f in r.findings])
 
 
 def engine_digest() -> str:
@@ -138,12 +141,14 @@ def score_all(hosts: list[str]) -> dict[str, list[float]]:
         for line in cache.read_text("utf-8").splitlines():
             row = json.loads(line)
             known[row["h"]] = row["s"]
+            INDEPENDENT[row["h"]] = row["i"]
     todo = [h for h in dict.fromkeys(hosts) if h not in known]
     if todo:
         with Pool() as pool, cache.open("a", encoding="utf-8") as out:
-            for host, scores in zip(todo, pool.imap(_score, todo, chunksize=200)):
+            for host, (scores, independent) in zip(todo, pool.imap(_score, todo, chunksize=200)):
                 known[host] = scores
-                out.write(json.dumps({"h": host, "s": scores}) + "\n")
+                INDEPENDENT[host] = independent
+                out.write(json.dumps({"h": host, "s": scores, "i": independent}) + "\n")
     return known
 
 
@@ -358,6 +363,19 @@ def main() -> int:
     for h in benign:
         if flagged(p0[h]):
             kinds[NAMES[max(range(len(NAMES)), key=lambda i: scores[h][i] * w0[i + 1])]] += 1
+    lines += ["", "**Quy tắc visual-only trên web thật**: số domain hợp lệ bị kết luận MALICIOUS khi không và có quy tắc "
+              "(MALICIOUS cần bằng chứng ngoài độ giống hình ảnh), và số phishing thật trong phạm vi vẫn đạt MALICIOUS:", "",
+              "| profile | hợp lệ MALICIOUS: không quy tắc | có quy tắc | phishing trong phạm vi MALICIOUS: không | có |",
+              "|---|---|---|---|---|"]
+    for n in ("default", "banking", "browser"):
+        mal = lambda h, gate: flagged(p0[h], "malicious", n) and (INDEPENDENT[h] or not gate)  # noqa: E731
+        lines.append(f"| {n} | {rate(sum(mal(h, False) for h in benign), len(benign))} | "
+                     f"{rate(sum(mal(h, True) for h in benign), len(benign))} | "
+                     f"{rate(sum(mal(h, False) for h in in_scope_hosts), len(in_scope_hosts))} | "
+                     f"{rate(sum(mal(h, True) for h in in_scope_hosts), len(in_scope_hosts))} |")
+    visual_fp = sorted(h for h in benign if flagged(p0[h], "malicious") and not INDEPENDENT[h])
+    lines += ["", "Domain hợp lệ không còn bị MALICIOUS nhờ quy tắc (profile default): " +
+              (", ".join(f"`{h}`" for h in visual_fp[:15]) or "không có") + ".", ""]
     lines += ["", "Engine gây báo nhầm (profile default): " + ", ".join(f"{n} {num(c)}" for n, c in kinds.most_common()) + ".",
               "", "Báo nhầm còn lại ở profile browser: " + ", ".join(f"`{h}`" for h in fp[:15]) + ".", ""]
 

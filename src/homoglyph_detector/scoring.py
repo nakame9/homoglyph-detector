@@ -17,6 +17,7 @@ import math
 import os
 from functools import cache
 
+from .engines.base import BRAND, PROTOCOL, STRONG, UNICODE, VISUAL
 from .integrity import read_verified
 
 LEVELS = ("SAFE", "SUSPICIOUS", "MALICIOUS")
@@ -99,3 +100,34 @@ def at_base_rate(p: float, base_rate: float) -> float:
 def verdict(p: float, policy: dict | None = None) -> str:
     policy = policy or profile()
     return "MALICIOUS" if p >= policy["malicious"] else "SUSPICIOUS" if p >= policy["suspicious"] else "SAFE"
+
+
+def has_independent_evidence(findings) -> bool:
+    """A medium-or-stronger finding that does not rest on visual similarity: Unicode evidence,
+    a brand match through Unicode, spelling or the literal name, or an IDNA violation."""
+    return any(f.severity in STRONG and not f.rests_on_visual for f in findings)
+
+
+def evidence_rule(level: str, findings) -> tuple[str, str]:
+    """Visual similarity supports a verdict but never decides MALICIOUS on its own: whether 'rn' reads
+    as 'm' depends on font, size, kerning and renderer. Returns (verdict, note)."""
+    if level == "MALICIOUS" and not has_independent_evidence(findings):
+        return "SUSPICIOUS", ("capped at SUSPICIOUS: the only evidence is visual similarity, "
+                              "which depends on font and rendering")
+    return level, ""
+
+
+def evidence_summary(findings) -> dict[str, str]:
+    """Strongest severity per kind of evidence (info excluded); brand evidence lists its bases."""
+    order = ["low", *STRONG]
+    summary: dict[str, str] = {}
+    bases: set[str] = set()
+    for f in findings:
+        if f.severity in order and f.evidence:
+            if order.index(f.severity) >= order.index(summary.get(f.evidence, "low")):
+                summary[f.evidence] = f.severity
+            if f.evidence == BRAND and "basis" in f.detail:
+                bases.add(f.detail["basis"])
+    if bases:
+        summary["brand_basis"] = ",".join(sorted(bases))
+    return {key: summary[key] for key in (UNICODE, VISUAL, BRAND, "brand_basis", PROTOCOL) if key in summary}

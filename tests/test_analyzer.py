@@ -22,15 +22,11 @@ def kinds(report):
     "p\u0430ypal.com",                 # one Cyrillic 'а'
     APPLE_CYRILLIC + ".com",           # whole-script confusable
     APPLE_PUNYCODE + ".com",           # same, as the browser/DNS sees it
-    "rnicrosoft.com",                  # 'rn' -> 'm', pure ASCII
-    "g00gle.com",                      # '0' -> 'o'
-    "paypa1.com",                      # '1' -> 'l'
-    "vietcornbank.com.vn",             # Vietnamese bank, multi-level TLD
     "user@p\u0430ypal.com",            # email
     "https://\u0430pple.com/login",    # URL
     "p\u0430ypal.github.io",          # homograph site on a hosting platform (PSL private suffix)
 ])
-def test_malicious(raw):
+def test_malicious(raw):   # each has Unicode evidence, not only visual similarity
     assert analyze(raw).verdict == "MALICIOUS"
 
 
@@ -220,3 +216,38 @@ def test_round_trip_mismatch_is_reported(monkeypatch):
 ])
 def test_public_suffix_list(host, expected):
     assert registrable(host) == expected
+
+
+# --- evidence classes and the visual-only rule ---------------------------------------
+
+@pytest.mark.parametrize("raw", [
+    "rnicrosoft.com",                  # 'rn' -> 'm': in confusables.txt, but ASCII and font-dependent
+    "g00gle.com",                      # '0' -> 'o'
+    "paypa1.com",                      # '1' -> 'l'
+    "vietcornbank.com.vn",             # Vietnamese bank, multi-level TLD
+])
+@pytest.mark.parametrize("policy", ["default", "banking", "browser"])
+def test_ascii_lookalikes_are_flagged_but_never_malicious_alone(raw, policy):
+    report = analyze(raw, policy=policy)
+    assert report.verdict == "SUSPICIOUS" and "visual similarity" in report.verdict_note
+    assert report.evidence["brand_basis"] == "visual" and "unicode_confusable" not in report.evidence
+
+
+@pytest.mark.parametrize("raw, basis", [
+    ("p\u0430ypal.com", "unicode"),    # other-script letter
+    ("\u0251pple.com", "unicode"),     # Latin-extended letter listed in confusables.txt
+    ("paypak.com", "spelling"),        # one edit, not a look-alike
+    ("paypal-login.com", "name"),      # the literal brand name on an unofficial domain
+])
+def test_independent_brand_evidence_can_be_malicious(raw, basis):
+    report = analyze(raw, policy="banking")
+    assert report.verdict == "MALICIOUS" and report.verdict_note == ""
+    assert basis in report.evidence["brand_basis"].split(",")
+
+
+def test_every_finding_has_an_evidence_class():
+    classes = {"unicode_confusable", "visual_similarity", "brand_impersonation", "protocol"}
+    for raw in ("p\u0430ypal.com", "5hopee.vn", "paypal-login.com", "xn--a.com", "pay\u200bpal.com", "G\u043e\u043egle x"):
+        assert all(f.evidence in classes for f in analyze(raw).findings)
+    report = analyze("5hopee.vn")
+    assert report.evidence == {"visual_similarity": "high", "brand_impersonation": "medium", "brand_basis": "visual"}

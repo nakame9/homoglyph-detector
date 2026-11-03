@@ -88,7 +88,8 @@ def test_seal_refuses_a_change_without_a_version_bump(tampered_data):
 def test_organisation_database_is_merged_and_detected(tmp_path):
     path = write_db(tmp_path, ACME)
     report = analyze("acrnebank.vn", (path,))
-    assert report.verdict == "MALICIOUS"
+    assert report.verdict == "SUSPICIOUS"        # 'rn' ~ 'm' is visual evidence only
+    assert analyze("\u0430cmebank.vn", (path,)).verdict == "MALICIOUS"   # Cyrillic a: Unicode evidence
     assert [db["name"] for db in report.brand_db] == ["homoglyph-detector default brands", "ACME Bank brands"]
     assert report.brand_db[1]["verification"] == "unpinned"
     assert analyze("acmebank.vn", (path,)).verdict == "SAFE"

@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from ..context import Context, registrable
 from ..unicode_data import confusable_type, skeleton
-from .base import MIN_FUZZY_LEN, EngineResult, is_official, typed
+from ..visual import MAX_VISUAL_DISTANCE, visual_similarity
+from .base import MIN_FUZZY_LEN, EngineResult, is_official, resemblance_basis, typed
 
 
 def edit_distance(a: str, b: str) -> int:
@@ -29,7 +30,7 @@ def _brands_host(host: str, brands: list[dict], result: EngineResult) -> None:
         if hit:
             kind = confusable_type(label, registrable(hit)[1])
             result.add("brand_homograph", "critical", f"Impersonates {name}: renders like '{hit}'{typed(kind)}",
-                       brand=name, official=hit, confusable_type=kind)
+                       brand=name, official=hit, confusable_type=kind, basis=resemblance_basis(label))
             continue
         # keywords plus the names of the official domains ('office' from office.com)
         for kw in dict.fromkeys([*brand["keywords"], *(registrable(d)[1] for d in brand["domains"])]):
@@ -37,12 +38,14 @@ def _brands_host(host: str, brands: list[dict], result: EngineResult) -> None:
             if label_skel == kw_skel and label != kw:
                 kind = confusable_type(label, kw)
                 result.add("brand_homograph", "high", f"Name '{label}' renders like {name} keyword '{kw}'{typed(kind)}",
-                           brand=name, keyword=kw, confusable_type=kind)
+                           brand=name, keyword=kw, confusable_type=kind, basis=resemblance_basis(label))
                 break
             # raw and skeleton forms: the skeleton alone turns 'amazon' into 'arnazon' and hides 'aazon'
             if len(kw) >= MIN_FUZZY_LEN and min(edit_distance(label, kw), edit_distance(label_skel, kw_skel)) == 1:
+                # '5hopee' is one edit from 'shopee' only because 5 looks like s: that typo is visual evidence
+                visual = visual_similarity(label, kw).distance <= MAX_VISUAL_DISTANCE
                 result.add("brand_typosquat", "medium", f"'{label}' is one edit away from {name} keyword '{kw}'",
-                           brand=name, keyword=kw)
+                           brand=name, keyword=kw, basis="visual" if visual else "spelling")
                 break
 
 
@@ -54,7 +57,7 @@ def _brands_name(name: str, brands: list[dict], result: EngineResult) -> None:
                     kind = confusable_type(word, kw)
                     result.add("brand_homograph", "high",
                                f"'{word}' renders like {brand['name']} keyword '{kw}'{typed(kind)}",
-                               brand=brand["name"], keyword=kw, confusable_type=kind)
+                               brand=brand["name"], keyword=kw, confusable_type=kind, basis=resemblance_basis(word))
 
 
 def brand_engine(ctx: Context, brands: list[dict]) -> EngineResult:
