@@ -1,5 +1,7 @@
 # Benchmark và hiệu chỉnh
 
+> Có **hai** bộ đánh giá. Benchmark tổng hợp (phần đầu tài liệu) dùng để hiệu chỉnh và so sánh phiên bản. [Đánh giá thực tế](#đánh-giá-thực-tế) (phishing thật, web thật, theo thời gian, adversarial) mới cho biết hiệu quả khi triển khai.
+
 Điểm số của công cụ không đặt bằng tay: trọng số của tầng hợp nhất được **học và đo trên một benchmark** gồm 15.805 tên miền có nhãn. Báo cáo đầy đủ (theo từng loại tấn công, bảng độ tin cậy, các lỗi khó nhất) ở [`benchmark/RESULTS.md`](../benchmark/RESULTS.md); file đó được sinh tự động.
 
 ## Bộ dữ liệu
@@ -66,3 +68,44 @@ python benchmark/build_dataset.py   # cần internet: tải OpenDNS top 10k, ch�
 python benchmark/calibrate.py       # ~1 phút, ghi calibration.json + RESULTS.md, tự niêm phong
 pytest -q
 ```
+
+## Đánh giá thực tế
+
+Benchmark tổng hợp có giới hạn cơ bản: domain sinh bằng công cụ hoán vị (dnstwist) không đại diện cho phishing đang hoạt động. `benchmark/real_world.py` bổ sung năm hạng mục; báo cáo đầy đủ ở [`benchmark/REAL_WORLD.md`](../benchmark/REAL_WORLD.md).
+
+| Hạng mục | Dữ liệu | Kết quả chính |
+|---|---|---|
+| 1. Phishing thật | 271.231 host từ toàn bộ lịch sử git của [OpenPhish Community Feed](https://github.com/openphish/public_feed), 10/2024 → 11/2026, mỗi host kèm thời điểm xuất hiện đầu tiên | chỉ **3,5%** thuộc phạm vi công cụ; phát hiện **3,4%** toàn bộ; trong phạm vi chủ yếu là combosquat, chỉ 0,8% có bằng chứng giả mạo trông giống (profile `browser`); homograph IDN chiếm 0,06% |
+| 2. Domain hợp lệ quốc tế | 41.620 host từ [Chrome UX Report](https://github.com/zakird/crux-top-lists) top 1 triệu (phân bố thật theo quốc gia), gồm toàn bộ 1.678 IDN | FPR 0,1–0,3% mọi khu vực, 0% Việt Nam; báo nhầm còn lại chủ yếu là domain của chính thương hiệu chưa có trong database (`cloud.microsoft`, `hicloud.com`) |
+| 3. Temporal validation | fit trên phishing trước 01/05/2026, test trên phishing sau mốc | xếp hạng không đổi (ROC-AUC 0,994 trong phạm vi cho cả mô hình hiện tại lẫn mô hình fit trên quá khứ); recall trong phạm vi ổn định 91–100% mỗi tháng; mô hình hiện tại **lệch calibration** trên dữ liệu thật (ECE 0,21 so với 0,06 trên benchmark) |
+| 4. Adversarial | leave-one-technique-out trên benchmark; 203 biến thể từ 11 kỹ thuật chưa từng dùng | homoglyph Latin mở rộng / Armenia / chữ toán học / Cyrillic hoa: 100%; thay chữ bằng số ngoài bảng (`4ppl3`, `p4yp4l`): **47%**; bỏ loại `dictionary` khi fit thì engine combosquat mất trọng số (recall loại đó 81% → **0%**) |
+| 5. Calibration | Brier, ECE, [reliability diagram](img/reliability.svg) | xem bên dưới |
+
+**Đánh giá thực tế đã phát hiện một lỗi báo nhầm** mà benchmark tổng hợp và golden corpus đều bỏ sót: chữ Latin có dấu hoặc chữ ghép (`mæglerhuset.dk`, `borsaekranı.com`) bị coi là "cả nhãn trông như ASCII". Đã sửa: FPR trên IDN hợp lệ giảm từ 0,3% xuống 0,1%, ở profile `browser` từ 0,2% xuống 0%.
+
+### Xác suất không phải tỷ lệ tấn công thật
+
+Tầng hợp nhất là logistic regression fit trên benchmark có khoảng 37% tấn công. Xác suất của nó **chỉ đúng với tỷ lệ đó** và với kiểu tấn công giống benchmark. Khi triển khai có hai độ lệch khác nhau:
+
+1. **Lệch tỷ lệ (prior shift)**: lưu lượng thật có ít tấn công hơn nhiều. Phần này sửa được bằng công thức Bayes: `--base-rate R` (CLI), `analyze(..., base_rate=R)` (thư viện), trả về `probability_at_base_rate`. Ví dụ `paypal-login.com`: 81% trên benchmark, **0,7%** khi 1/1.000 đầu vào là tấn công; `5hopee.vn`: 100% → 95%. Verdict không đổi, vì ngưỡng của profile là ngân sách tỷ lệ báo nhầm, không phụ thuộc tỷ lệ tấn công.
+2. **Lệch phân bố (covariate shift)**: phishing thật phần lớn không có dấu hiệu giả mạo nào, nên ở mức dự đoán 13% thì 35% là tấn công thật (xem reliability diagram). Hiệu chỉnh base rate **không** sửa được độ lệch này (ECE 0,215 → 0,219). Chỉ fit lại trên dữ liệu thật mới giảm được (ECE 0,086).
+
+Precision khi triển khai, tính từ recall và FPR đo trên phishing thật sau mốc thời gian:
+
+| tỷ lệ tấn công trong lưu lượng | precision: phạm vi của công cụ | precision: mọi phishing |
+|---|---|---|
+| 1 / 10 | 97,1% | 66,3% |
+| 1 / 100 | 75,4% | 15,2% |
+| 1 / 1.000 | 23,3% | 1,7% |
+| 1 / 10.000 | 2,9% | 0,2% |
+
+Với DNS resolver hay email gateway (tỷ lệ tấn công rất thấp), dùng profile `browser` hoặc `--max-fpr` với ngân sách nhỏ, và coi kết quả SUSPICIOUS là tín hiệu để điều tra, không phải để chặn tự động.
+
+### Chạy lại
+
+```bash
+pip install -e ".[dev,bench]"
+python benchmark/real_world.py    # lần đầu cần mạng; ~45 phút trên 2 lõi (điểm được cache theo phiên bản engine)
+```
+
+Dữ liệu thô không nằm trong repo: OpenPhish Community Feed chỉ cho dùng phi thương mại ([điều khoản](https://openphish.com/terms.html)). Script tải lại từ đúng commit đã ghim, chỉ giữ hostname (không giữ URL đầy đủ, vốn có thể chứa email nạn nhân), và cache vào `benchmark/.cache/` (không commit).

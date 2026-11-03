@@ -85,6 +85,7 @@ homoglyph-detector g00gle.com --json                                    # JSON c
 homoglyph-detector paypal-login.com --profile banking                  # profile: default, banking, browser
 homoglyph-detector paypal-login.com --max-fpr 0.01,0.001                # ngân sách báo nhầm riêng
 homoglyph-detector --profiles                                           # các profile và số liệu đo được
+homoglyph-detector paypal-login.com --base-rate 0.001                   # xác suất khi 1/1.000 đầu vào là tấn công
 homoglyph-detector x.vn --brands "org.json#sha256=<mã>"                 # thêm thương hiệu của tổ chức
 homoglyph-detector --verify                                             # kiểm tra toàn vẹn dữ liệu
 homoglyph-detector --version                                            # phiên bản công cụ và dữ liệu
@@ -127,19 +128,32 @@ Chi tiết từng module, các khái niệm chính và bảng **"muốn sửa g�
 
 ## Chất lượng
 
-Đo trên tập test (4.799 tên miền mô hình chưa từng thấy) của benchmark gồm tấn công do [dnstwist](https://github.com/elceef/dnstwist) sinh ra và [OpenDNS top 10.000](https://github.com/opendns/public-domain-lists):
+Có hai loại số liệu, đo những thứ khác nhau. Đừng đọc số của benchmark tổng hợp như hiệu quả khi triển khai.
+
+**1. Phishing thật và web thật** ([benchmark/REAL_WORLD.md](benchmark/REAL_WORLD.md)): 271.231 host phishing từ lịch sử feed OpenPhish (10/2024 → 11/2026) và 41.620 domain hợp lệ từ Chrome UX Report top 1 triệu, profile `default`:
+
+| | kết quả |
+|---|---|
+| phishing thật thuộc phạm vi của công cụ (nhắc thương hiệu được bảo vệ, hoặc IDN) | **3,5%** — phần lớn phishing nhắm thương hiệu khác (Telegram, USPS, Ledger, Coinbase...) hoặc không giả mạo tên miền |
+| phát hiện trên **toàn bộ** phishing thật | **3,4%** |
+| phát hiện phishing nhắc thương hiệu được bảo vệ | 99,6% (gần như tự chứng minh, xem báo cáo); chỉ 0,8% có bằng chứng giả mạo *trông giống* (profile `browser`, bỏ qua combosquat), còn lại là ghép tên thương hiệu |
+| homograph IDN trong phishing thật | 166 / 271.231 host (0,06%) |
+| báo nhầm trên web thật | 0,1–0,3% mọi khu vực, 0% Việt Nam, 0,1% trên 1.678 IDN hợp lệ; 0% ở profile `browser` trừ vài domain của chính thương hiệu |
+| ổn định theo thời gian | recall trong phạm vi 91–100% mỗi tháng suốt 25 tháng; mô hình fit trên quá khứ không xếp hạng tốt hơn mô hình hiện tại |
+| precision khi 1 / 1.000 domain là tấn công | 23% trong phạm vi, 1,7% trên mọi phishing |
+
+Kết luận: đây là **một lớp phòng thủ chuyên biệt** cho giả mạo các thương hiệu được bảo vệ, không phải bộ lọc phishing tổng quát. Hiệu quả phụ thuộc trước hết vào **độ phủ của brand database**. Muốn biết xác suất trong lưu lượng của bạn, dùng `--base-rate`.
+
+**2. Benchmark tổng hợp** ([docs/benchmark.md](docs/benchmark.md)): tấn công do [dnstwist](https://github.com/elceef/dnstwist) sinh từ domain thương hiệu, domain hợp lệ từ [OpenDNS top 10.000](https://github.com/opendns/public-domain-lists), tập test 4.799 domain mô hình chưa thấy. Dùng để hiệu chỉnh tầng hợp nhất và so sánh các phiên bản, **không** đại diện phân bố phishing thật:
 
 | | precision | recall | F1 | tỷ lệ báo nhầm |
 |---|---|---|---|---|
-| p ≥ 0.5 (SUSPICIOUS trở lên) | 0.9667 | 0.8698 | 0.9157 | 0.016 |
-| p ≥ 0.9 (MALICIOUS) | 0.9926 | 0.6395 | 0.7778 | 0.0026 |
-| luật mức độ, không hiệu chỉnh | 0.9624 | 0.7522 | 0.8444 | 0.0156 |
+| p ≥ 0,5 (SUSPICIOUS trở lên) | 96,6% | 86,5% | 91,3% | 1,6% |
+| p ≥ 0,9 (MALICIOUS) | 99,3% | 63,5% | 77,4% | 0,26% |
 
-Ngưỡng ở bảng trên là của profile `default`; mỗi môi trường chọn điểm vận hành riêng, ví dụ `browser` chỉ có 26 báo nhầm / 10.000 domain, `banking` bắt 87% tấn công: [docs/risk-scoring.md](docs/risk-scoring.md).
+Ngưỡng là của profile `default`; mỗi môi trường chọn điểm vận hành riêng: [docs/risk-scoring.md](docs/risk-scoring.md).
 
-Golden corpus 142 ca cho 10 nhóm test bắt buộc: **recall 97,1%** trên tấn công, **0 báo nhầm** trên 45 domain hợp lệ đa ngôn ngữ (tiếng Việt, Đức, Nga, Trung, Nhật, Hàn, Ả Rập, ...). Độ trễ p50 **4,3 ms**, p99 14 ms mỗi domain. Kiểm thử gồm pytest, Hypothesis (property-based, fuzzing Unicode), differential testing giữa các bản cài đặt IDNA và regression snapshot: [docs/testing.md](docs/testing.md).
-
-ROC-AUC 0.9302. Cách xây dựng, những gì benchmark đã phát hiện và các giới hạn: [docs/benchmark.md](docs/benchmark.md).
+**3. Kiểm thử**: golden corpus 142 ca cho 10 nhóm bắt buộc, Hypothesis (property-based, fuzzing Unicode), differential testing IDNA, regression snapshot, 203 biến thể adversarial với kỹ thuật chưa từng dùng khi phát triển. Độ trễ p50 4,3 ms, p99 14 ms mỗi domain: [docs/testing.md](docs/testing.md).
 
 ## Tài liệu
 
@@ -148,7 +162,8 @@ ROC-AUC 0.9302. Cách xây dựng, những gì benchmark đã phát hiện và c
 | [docs/kien-truc.md](docs/kien-truc.md) | luồng xử lý, bản đồ thư mục, muốn sửa gì thì mở file nào, các trường kết quả |
 | [docs/ky-thuat.md](docs/ky-thuat.md) | UTS #39, ASCII visual, IDNA2008 + PSL, typosquat / combosquat |
 | [docs/brand-database.md](docs/brand-database.md) | định dạng brand database, các lớp, kiểm tra hợp lệ, toàn vẹn, version, dữ liệu Unicode |
-| [docs/benchmark.md](docs/benchmark.md) | bộ dữ liệu, hiệu chỉnh, kết quả, giới hạn |
+| [docs/benchmark.md](docs/benchmark.md) | benchmark tổng hợp và **đánh giá thực tế** (phishing thật, temporal, adversarial, calibration), giới hạn |
+| [benchmark/REAL_WORLD.md](benchmark/REAL_WORLD.md) | báo cáo đánh giá thực tế đầy đủ (tự sinh) |
 | [docs/testing.md](docs/testing.md) | kỹ thuật kiểm thử, golden corpus 10 nhóm, precision / recall / FPR / FNR / độ trễ, các lỗi đã tìm ra |
 | [docs/risk-scoring.md](docs/risk-scoring.md) | profile rủi ro theo môi trường, ngân sách báo nhầm, điểm vận hành |
 | [docs/bao-tri.md](docs/bao-tri.md) | **hướng dẫn bảo trì**: thêm thương hiệu, sửa báo nhầm, thêm engine, cập nhật dữ liệu, phát hành, **tra cứu lỗi** |
@@ -157,6 +172,9 @@ ROC-AUC 0.9302. Cách xây dựng, những gì benchmark đã phát hiện và c
 
 ## Lộ trình
 
+- Mở rộng brand database theo thương hiệu bị giả mạo nhiều nhất ngoài thực tế (Telegram, USPS, Ledger, Coinbase, Netflix, Instagram, MetaMask) và domain của chính thương hiệu (`cloud.microsoft`, `amazon.co.jp`).
+- Thay chữ bằng số chưa có trong bảng (`3`→e, `4`→a, `7`→t, `8`→b): chỉ bắt được 47% ở kiểm thử adversarial.
+- Engine combosquat chỉ có trọng số nhờ loại `dictionary` của benchmark (bỏ loại này khi fit thì recall về 0%): cần dữ liệu combosquat đa dạng hơn, ví dụ từ phishing thật.
 - Phát hiện lừa bằng phần userinfo của URL (`https://paypal.com@evil.com/`); bổ sung domain quốc gia của các thương hiệu (`amazon.co.jp`).
 - Điểm số mịn hơn (đặc trưng liên tục như độ dài từ khóa, mức phổ biến của domain) để có nhiều điểm vận hành hơn ba bậc hiện tại.
 - Tập test từ domain lừa đảo thật (PhishTank, OpenPhish) bên cạnh tấn công do dnstwist sinh.

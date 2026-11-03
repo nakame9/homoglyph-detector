@@ -61,6 +61,9 @@ homoglyph-detector/
 │   ├── build_dataset.py        tạo bộ dữ liệu có nhãn (dnstwist + OpenDNS top 10k)
 │   ├── dataset.jsonl           bộ dữ liệu (ASCII thuần, escape JSON)
 │   ├── calibrate.py            hiệu chỉnh fusion, ghi calibration.json + RESULTS.md, tự niêm phong
+│   ├── real_world.py           đánh giá trên phishing thật / web thật, temporal, adversarial, calibration
+│   ├── REAL_WORLD.md           báo cáo đánh giá thực tế (tự sinh)
+│   ├── adversarial.jsonl       biến thể tấn công với kỹ thuật chưa từng dùng khi phát triển
 │   └── RESULTS.md              báo cáo kết quả (tự sinh)
 ├── scripts/
 │   ├── update_unicode_data.py  tải dữ liệu Unicode mới từ unicode.org, tự niêm phong

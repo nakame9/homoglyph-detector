@@ -2,6 +2,14 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/), đánh số theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [0.11.0] - 2026-11-03
+### Thêm
+- Đánh giá thực tế (`benchmark/real_world.py`, `benchmark/REAL_WORLD.md`): 271.231 host phishing thật từ lịch sử OpenPhish (10/2024 → 11/2026), 41.620 domain hợp lệ quốc tế từ Chrome UX Report top 1 triệu, temporal validation (mốc 01/05/2026), leave-one-technique-out, 203 biến thể adversarial từ 11 kỹ thuật mới, Brier / ECE / reliability diagram.
+- Hiệu chỉnh theo tỷ lệ tấn công của môi trường (Bayes prior shift): `--base-rate`, `analyze(base_rate=...)`, `Report.probability_at_base_rate`; `calibration.json` lưu `train_prior`.
+- README tách số liệu thực tế khỏi số liệu benchmark tổng hợp; lộ trình theo các lỗ hổng đo được.
+### Sửa
+- Chữ Latin có dấu / chữ ghép (`mæglerhuset.dk`, `borsaekranı.com`) bị coi là whole-script look-alike: báo nhầm trên IDN hợp lệ từ 0,3% xuống 0,1% (profile `browser`: 0,2% → 0%). Phát hiện nhờ dữ liệu thật.
+
 ## [0.10.1] - 2026-11-03
 ### Sửa
 - Test `test_documented_differences[Ⱥ.com]` thất bại trên Python 3.10.20 và 3.12.3: codec IDNA2003 của CPython cho kết quả khác nhau theo bản vá với ký tự thêm sau Unicode 3.2. Thay bằng test chấp nhận cả hai hành vi và kiểm tra engine báo đúng theo bản đang chạy.

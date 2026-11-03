@@ -13,6 +13,8 @@ Mục tiêu kỹ thuật: **recall cao trên tập tấn công giả mạo đã 
 | Golden test corpus | `tests/golden/corpus.jsonl`, `tests/test_golden.py` | 142 ca gán nhãn thủ công, đủ 10 nhóm bắt buộc |
 | Regression testing | `tests/golden/snapshot.jsonl` | kết luận và bằng chứng của từng ca golden dưới mọi profile; đổi gì cũng phải review |
 | Benchmark | `benchmark/` | precision, recall, FPR, FNR, độ trễ trên 15.805 domain (xem [benchmark](benchmark.md)) |
+| Đánh giá thực tế | `benchmark/real_world.py` | phishing thật (OpenPhish), web thật (CrUX), temporal validation, adversarial, calibration (xem [benchmark](benchmark.md#đánh-giá-thực-tế)) |
+| Adversarial | `benchmark/adversarial.jsonl` | 203 biến thể từ 11 kỹ thuật chưa từng dùng khi phát triển, và leave-one-technique-out |
 
 ## Property test và fuzzing
 

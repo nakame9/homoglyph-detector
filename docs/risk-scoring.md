@@ -78,6 +78,18 @@ Các điểm vận hành hiện có (ngưỡng chọn trên tập train, số li
 | 0.002 | 0.84 | 0.64 | 26 |
 | 0.02 | 0.27 | 0.87 | 160 |
 
+## Xác suất theo tỷ lệ tấn công của bạn
+
+`risk_score` và `probability` đúng với tỷ lệ tấn công của benchmark (khoảng 37%). Khi biết tỷ lệ tấn công trong lưu lượng của mình, dùng `--base-rate`:
+
+```bash
+homoglyph-detector paypal-login.com --base-rate 0.001
+#     risk    : 81/100 ...
+#     at base rate 0.001: P(attack) = 0.0070
+```
+
+Verdict không đổi, vì profile chọn ngưỡng theo tỷ lệ báo nhầm. Hiệu chỉnh này chỉ sửa được lệch tỷ lệ, không sửa được việc phishing thật trông khác benchmark: xem [đánh giá thực tế](benchmark.md#xác-suất-không-phải-tỷ-lệ-tấn-công-thật).
+
 ## Giới hạn hiện tại
 
 - **Điểm số còn thô.** Mỗi engine cho điểm theo vài mức cố định, nên toàn bộ benchmark chỉ có khoảng 30 mức điểm khác nhau, và đường đánh đổi chỉ có ba bậc như bảng trên: (1) mọi bằng chứng kể cả combosquat, (2) typosquat / homograph / hình ảnh, (3) chỉ bằng chứng mạnh nhất. Mọi ngân sách FPR đều rơi vào một trong ba bậc này. Muốn có nhiều lựa chọn hơn cần thêm đặc trưng liên tục cho engine (ví dụ độ dài từ khóa, mức phổ biến của domain); đây là việc trong lộ trình.

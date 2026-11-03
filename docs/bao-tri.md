@@ -94,6 +94,17 @@ python benchmark/calibrate.py             # dữ liệu mới có thể đổi �
 
 Commit các file trong `data/` cùng `RESULTS.md`.
 
+## Đánh giá lại trên dữ liệu thật
+
+Nên chạy trước mỗi lần phát hành, hoặc sau khi đổi engine hay brand database:
+
+```bash
+python benchmark/real_world.py    # ~45 phút lần đầu; cập nhật benchmark/REAL_WORLD.md và docs/img/reliability.svg
+git diff benchmark/REAL_WORLD.md
+```
+
+Muốn dùng dữ liệu mới hơn, đổi `OPENPHISH_COMMIT` / `CRUX_COMMIT` trong script (giữ ghim commit để kết quả tái tạo được), và chuyển `CUTOFF` để tập test vẫn là các tháng gần nhất.
+
 ## Cập nhật Public Suffix List
 
 PSL đi kèm thư viện `publicsuffixlist`: `pip install -U publicsuffixlist`. Sau đó chạy `python benchmark/calibrate.py` và xem `git diff`: PSL mới có thể đổi cách tách tên miền.
