@@ -6,7 +6,7 @@ import unicodedata
 
 import idna
 
-from ..context import Context
+from ..context import Context, userinfo_domain
 from .base import EngineResult
 
 
@@ -36,6 +36,10 @@ def idna_engine(ctx: Context, brands: list[dict]) -> EngineResult:
         result.add("not_nfc", "low", "Input was not in Unicode NFC; normalised to NFC (same meaning)")
     if not ctx.host:
         return result.noisy_or()
+    fake = userinfo_domain(ctx.userinfo)
+    if fake and fake != ctx.resolved:
+        result.add("userinfo_domain", "medium", f"URL userinfo '{fake}' looks like a host, but the link goes to "
+                   f"'{ctx.resolved or ctx.text}'", shown=fake)
     for label in ctx.host.split("."):
         if label.startswith("xn--"):
             try:

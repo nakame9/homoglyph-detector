@@ -1,6 +1,6 @@
 # Kết quả benchmark
 
-Sinh tự động bởi `benchmark/calibrate.py` ngày 2026-11-03. Bộ dữ liệu: `benchmark/dataset.jsonl` (15805 dòng, 5740 tấn công), tạo bởi `benchmark/build_dataset.py`.
+Sinh tự động bởi `benchmark/calibrate.py` ngày 2026-11-08. Bộ dữ liệu: `benchmark/dataset.jsonl` (15805 dòng, 5740 tấn công), tạo bởi `benchmark/build_dataset.py`.
 Train 11006 / test 4799 dòng, tách theo domain gốc. **Mọi con số đều đo trên tập test.**
 
 ## Mô hình hợp nhất (fusion)
@@ -59,7 +59,7 @@ Muốn tự đặt ngân sách báo nhầm: chọn một dòng (`--max-fpr`). C�
 
 ## Golden corpus (10 nhóm test bắt buộc)
 
-142 ca gán nhãn thủ công trong `tests/golden/corpus.jsonl`, profile `default` (gắn cờ = SUSPICIOUS trở lên). Recall / FNR tính trên ca tấn công, FPR trên ca hợp lệ.
+146 ca gán nhãn thủ công trong `tests/golden/corpus.jsonl`, profile `default` (gắn cờ = SUSPICIOUS trở lên). Recall / FNR tính trên ca tấn công, FPR trên ca hợp lệ.
 
 | nhóm | recall | FNR | FPR | lỗi đã biết |
 |---|---|---|---|---|
@@ -72,15 +72,15 @@ Muốn tự đặt ngân sách báo nhầm: chọn một dòng (`--max-fpr`). C�
 | vietnamese | – | – | 0.0% (0/15) |  |
 | multilingual_legit | – | – | 0.0% (0/27) |  |
 | multi_level_suffix | 100.0% (7/7) | 0.0% (0/7) | 14.3% (1/7) | 1 |
-| url_edge | 71.4% (5/7) | 28.6% (2/7) | 0.0% (0/7) | 2 |
+| url_edge | 100.0% (9/9) | 0.0% (0/9) | 0.0% (0/8) |  |
 
 ## Mục tiêu kỹ thuật: recall cao, báo nhầm thấp trên domain đa ngôn ngữ
 
 | profile | recall: golden tấn công | recall: benchmark test | FPR: golden đa ngôn ngữ | FPR: mẫu âm khó (test) | FPR: top 10k (test) |
 |---|---|---|---|---|---|
-| default | 97.1% (67/69) | 86.5% (1442/1667) | 0.0% (0/45) | 22.7% (5/22) | 1.4% (45/3110) |
-| banking | 97.1% (67/69) | 86.5% (1442/1667) | 0.0% (0/45) | 22.7% (5/22) | 1.4% (45/3110) |
-| browser | 91.3% (63/69) | 63.6% (1060/1667) | 0.0% (0/45) | 13.6% (3/22) | 0.2% (5/3110) |
+| default | 100.0% (71/71) | 86.5% (1442/1667) | 0.0% (0/45) | 22.7% (5/22) | 1.4% (45/3110) |
+| banking | 100.0% (71/71) | 86.5% (1442/1667) | 0.0% (0/45) | 22.7% (5/22) | 1.4% (45/3110) |
+| browser | 94.4% (67/71) | 63.6% (1060/1667) | 0.0% (0/45) | 13.6% (3/22) | 0.2% (5/3110) |
 
 ## Độ trễ phát hiện
 
@@ -88,7 +88,7 @@ Muốn tự đặt ngân sách báo nhầm: chọn một dòng (`--max-fpr`). C�
 
 | p50 | p95 | p99 | lớn nhất | trung bình | thông lượng | lần gọi đầu (nạp dữ liệu) |
 |---|---|---|---|---|---|---|
-| 5.52 ms | 12.72 ms | 19.80 ms | 63.30 ms | 6.29 ms | 159 domain/giây | 137 ms |
+| 4.34 ms | 9.64 ms | 13.82 ms | 28.40 ms | 4.93 ms | 203 domain/giây | 107 ms |
 
 ## Độ tin cậy của xác suất (reliability)
 

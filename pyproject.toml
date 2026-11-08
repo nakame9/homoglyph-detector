@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "homoglyph-detector"
-version = "0.12.0"
+version = "0.13.0"
 description = "Detect homoglyph / IDN homograph look-alikes in domains, emails, URLs and names (UTS #39)."
 readme = "README.md"
 requires-python = ">=3.10"

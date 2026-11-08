@@ -2,6 +2,13 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/), đánh số theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [0.13.0] - 2026-11-08
+### Thêm
+- **Phát hiện lừa bằng userinfo của URL** (`https://paypal.com@evil.com/`, cả dạng `paypal.com:x@`, `paypal.com／@` với gạch chéo fullwidth): finding `brand_in_userinfo` (combosquat, high) khi phần trước `@` là domain hoặc tên của thương hiệu; `userinfo_domain` (idna, medium) khi phần đó trông như một host khác host thật. `Context.userinfo` giữ phần userinfo đã percent-decode.
+### Sửa
+- URL không có scheme nhưng có userinfo (`paypal.com@evil.com/login`) bị coi là email với host `evil.com/login`; nay đọc như URL, host `evil.com`, giống thanh địa chỉ của browser.
+- Golden corpus: bỏ 2 `known_issue` userinfo, thêm 4 ca (`url_edge` 9/9 trên profile default).
+
 ## [0.12.0] - 2026-11-03
 ### Thay đổi
 - **Visual similarity không còn tự quyết định MALICIOUS.** MALICIOUS cần ít nhất một bằng chứng mức medium trở lên không dựa trên hình ảnh; nếu không, kết luận dừng ở SUSPICIOUS (`Report.verdict_note`). Áp dụng ở mọi profile.

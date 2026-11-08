@@ -5,4 +5,4 @@ from .visual import visual_similarity
 
 __all__ = ["analyze", "Report", "Finding", "skeleton", "script_of", "confusable_type", "restriction_level",
            "visual_similarity"]
-__version__ = "0.12.0"
+__version__ = "0.13.0"

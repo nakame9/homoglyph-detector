@@ -181,7 +181,7 @@ Ngưỡng là của profile `default`; mỗi môi trường chọn điểm vận
 - Mở rộng brand database theo thương hiệu bị giả mạo nhiều nhất ngoài thực tế (Telegram, USPS, Ledger, Coinbase, Netflix, Instagram, MetaMask) và domain của chính thương hiệu (`cloud.microsoft`, `amazon.co.jp`).
 - Thay chữ bằng số chưa có trong bảng (`3`→e, `4`→a, `7`→t, `8`→b): chỉ bắt được 47% ở kiểm thử adversarial.
 - Engine combosquat chỉ có trọng số nhờ loại `dictionary` của benchmark (bỏ loại này khi fit thì recall về 0%): cần dữ liệu combosquat đa dạng hơn, ví dụ từ phishing thật.
-- Phát hiện lừa bằng phần userinfo của URL (`https://paypal.com@evil.com/`); bổ sung domain quốc gia của các thương hiệu (`amazon.co.jp`).
+- Bổ sung domain quốc gia của các thương hiệu (`amazon.co.jp`).
 - Điểm số mịn hơn (đặc trưng liên tục như độ dài từ khóa, mức phổ biến của domain) để có nhiều điểm vận hành hơn ba bậc hiện tại.
 - Tập test từ domain lừa đảo thật (PhishTank, OpenPhish) bên cạnh tấn công do dnstwist sinh.
 - Chế độ `.eml`: kiểm tra From / Reply-To / Return-Path và mọi liên kết trong email lừa đảo.

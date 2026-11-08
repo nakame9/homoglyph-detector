@@ -120,7 +120,7 @@
 {"group": "multi_level_suffix", "input": "paypal.com.evil.co.uk", "label": "attack"}
 {"group": "multi_level_suffix", "input": "techc0mbank.com", "label": "attack"}
 {"group": "multi_level_suffix", "input": "g00gle.co.uk", "label": "attack"}
-{"group": "url_edge", "input": "https://paypal.com@evil.com/login", "label": "attack", "host": "evil.com", "known_issue": "userinfo deception ('paypal.com@' before the real host) is not detected yet: the host evil.com is not a look-alike"}
+{"group": "url_edge", "input": "https://paypal.com@evil.com/login", "label": "attack", "host": "evil.com"}
 {"group": "url_edge", "input": "https://user:pass@pаypal.com:8443/x?y=1#z", "label": "attack", "host": "pаypal.com"}
 {"group": "url_edge", "input": "HTTPS://WWW.PAYPAL.COM/", "label": "benign", "host": "www.paypal.com"}
 {"group": "url_edge", "input": "https://xn--80ak6aa92e.com/", "label": "attack"}
@@ -135,8 +135,12 @@
 {"group": "url_edge", "input": "paypal.com:443", "label": "benign", "host": "paypal.com"}
 {"group": "url_edge", "input": "mailto:user@pаypal.com", "label": "attack", "host": "pаypal.com"}
 {"group": "url_edge", "input": "https://5hopee.vn/sale", "label": "attack", "host": "5hopee.vn"}
-{"group": "url_edge", "input": "https://paypal.com／@evil.com/", "label": "attack", "host": "evil.com", "known_issue": "userinfo deception with a fullwidth solidus is not detected yet"}
+{"group": "url_edge", "input": "https://paypal.com／@evil.com/", "label": "attack", "host": "evil.com"}
 {"group": "url_edge", "input": "https://evil.com／@paypal.com/", "label": null, "host": "paypal.com"}
 {"group": "url_edge", "input": "https://pay＠pal.com", "label": null, "host": "pay＠pal.com"}
 {"group": "url_edge", "input": "https://[paypal.com/", "label": null, "host": "[paypal.com"}
 {"group": "url_edge", "input": "https://a℀b.com", "label": null, "host": "a℀b.com"}
+{"group": "url_edge", "input": "paypal.com@evil.com/login", "label": "attack", "host": "evil.com"}
+{"group": "url_edge", "input": "https://paypal.com:x@evil.com/", "label": "attack", "host": "evil.com"}
+{"group": "url_edge", "input": "https://john.doe@evil.com/", "label": "benign", "host": "evil.com"}
+{"group": "url_edge", "input": "https://paypal.com%40evil.com/", "label": null, "host": "paypal.com@evil.com"}
