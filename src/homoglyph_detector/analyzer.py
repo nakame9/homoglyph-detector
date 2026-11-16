@@ -3,11 +3,15 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 
-from .context import Context, classify, prepare, registrable  # noqa: F401  (re-exported)
+from .context import REASONS, Context, classify, prepare, registrable  # noqa: F401  (re-exported)
 from .brands import load, resolve
 from .engines import ENGINES, EngineResult, Finding
 from .scoring import at_base_rate, evidence_rule, evidence_summary, probability, profile, verdict
 from .unicode_data import skeleton
+
+# Bidi embedding, override and isolate controls (UAX #9): reorder what a reader sees, so they are evidence even
+# in a host a browser rejects (P1-b). LRM / RLM / ALM only affect neutral characters and are left out.
+BIDI_FORMATTING = frozenset(map(chr, (*range(0x202A, 0x202F), *range(0x2066, 0x206A))))
 
 
 @dataclass
@@ -17,6 +21,8 @@ class Report:
     target: str            # what a reader sees: the name, or the host with A-labels shown as U-labels
     skeleton: str
     a_label: str = ""      # the domain as DNS sees it (IDNA2008 A-labels); empty if not a valid domain
+    parse_status: str = "ok"    # 'rejected': a browser refuses this URL (or the input is empty); its target
+    parse_reason: str = ""      # is not scored and the verdict asks for review (see parse_reason)
     verdict: str = "SAFE"
     verdict_note: str = ""      # why the verdict differs from the probability's, e.g. capped visual-only evidence
     probability: float = 0.0    # P(look-alike attack) at the benchmark's base rate; see benchmark/RESULTS.md
@@ -47,18 +53,39 @@ def analyze(raw: str, brand_files: tuple[str, ...] = (), policy: str | dict | No
     """policy: a built-in profile name ('default', 'banking', 'browser', ...; None = $HOMOGLYPH_PROFILE
     or 'default') or a dict from scoring.custom_profile(). base_rate: share of attacks in your traffic;
     adds probability_at_base_rate. The verdict does not change: thresholds are false positive budgets.
-    MALICIOUS needs evidence beyond visual similarity (scoring.evidence_rule)."""
+    MALICIOUS needs evidence beyond visual similarity (scoring.evidence_rule).
+    A URL a browser rejects (parse_status 'rejected') is not scored and comes out SUSPICIOUS for review; only a
+    bidi formatting control in its host is scored, from that evidence alone, against the policy's thresholds."""
     ctx, results = run_engines(raw, brand_files)
-    scores = {name: result.score for name, result in results.items()}
-    p = probability(scores)
     policy = policy if isinstance(policy, dict) else profile(policy)
-    findings = [finding for result in results.values() for finding in result.findings]
-    level, note = evidence_rule(verdict(p, policy), findings)
+    if ctx.parse_status == "ok":
+        scores = {name: result.score for name, result in results.items()}
+        findings = [finding for result in results.values() for finding in result.findings]
+        p = probability(scores)
+        level, note = evidence_rule(verdict(p, policy), findings)
+        if ctx.ip_obfuscated and level == "SAFE":
+            level, note = "SUSPICIOUS", "an IP address written in an unusual form hides where the link goes"
+    else:   # P1: the target is unknown; keep the Unicode findings on the host as diagnostics
+        diagnostics = results["unicode"].findings
+        bidi = [f for f in diagnostics if f.kind == "bidi_control" and f.detail["char"] in BIDI_FORMATTING]
+        scores = {name: 0.0 for name in results}
+        scores["unicode"] = EngineResult("unicode", findings=bidi).noisy_or().score
+        p = probability(scores) if bidi else 0.0   # P1-b: scored from the bidi evidence alone
+        level, note = evidence_rule(verdict(p, policy), bidi) if bidi else ("SAFE", "")
+        reason = REASONS[ctx.parse_reason]
+        findings = [Finding("idna", "url_rejected", "info", f"Browsers reject this input: {reason}",
+                            {"reason": ctx.parse_reason}, "protocol"), *diagnostics]
+        note = ("bidi formatting control in the host; " if bidi else "") + \
+            f"needs review: {reason}, so the destination was not scored"
+        if level == "SAFE":
+            level = "SUSPICIOUS"
     return Report(input=raw, input_type=ctx.input_type, target=ctx.text, skeleton=skeleton(ctx.text),
-                  a_label=ctx.a_label, verdict=level, verdict_note=note, probability=round(p, 4),
+                  a_label=ctx.a_label, parse_status=ctx.parse_status, parse_reason=ctx.parse_reason,
+                  verdict=level, verdict_note=note, probability=round(p, 4),
                   risk_score=round(100 * p), evidence=evidence_summary(findings),
                   base_rate=base_rate,
-                  probability_at_base_rate=None if base_rate is None else round(at_base_rate(p, base_rate), 6),
+                  probability_at_base_rate=None if base_rate is None or ctx.parse_status != "ok"
+                  else round(at_base_rate(p, base_rate), 6),
                   profile=policy["name"],
                   thresholds={level: policy[level] for level in ("suspicious", "malicious")},
                   restriction_level=results["unicode"].facts["restriction_level"], engine_scores=scores,

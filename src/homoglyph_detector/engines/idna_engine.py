@@ -40,6 +40,13 @@ def idna_engine(ctx: Context, brands: list[dict]) -> EngineResult:
     if fake and fake != ctx.resolved:
         result.add("userinfo_domain", "medium", f"URL userinfo '{fake}' looks like a host, but the link goes to "
                    f"'{ctx.resolved or ctx.text}'", shown=fake)
+    if ctx.ip:
+        if ctx.ip_obfuscated:
+            result.add("ip_obfuscated", "medium", f"Host '{ctx.host}' is the IP address {ctx.ip} written in an "
+                       "unusual form (hex, octal, shortened or one number) that hides where the link goes", ip=ctx.ip)
+        else:
+            result.add("ip_host", "info", f"Host is the IP address {ctx.ip}", ip=ctx.ip)
+        return result.noisy_or()
     for label in ctx.host.split("."):
         if label.startswith("xn--"):
             try:

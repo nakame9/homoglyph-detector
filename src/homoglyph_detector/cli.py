@@ -33,7 +33,9 @@ def render(report: Report) -> str:
     lines.append(f"    level   : {report.restriction_level}")
     engines = "  ".join(f"{name} {score:.2f}" for name, score in report.engine_scores.items())
     lines.append(f"    risk    : {report.risk_score}/100   engines: {engines}")
-    if report.base_rate is not None:
+    if report.parse_status != "ok":
+        lines.append(f"    parse   : {report.parse_status} ({report.parse_reason}): destination not scored")
+    if report.probability_at_base_rate is not None:
         lines.append(f"    at base rate {report.base_rate:g}: P(attack) = {report.probability_at_base_rate:.4f}")
     lines.append(f"    profile : {report.profile} (SUSPICIOUS >= {report.thresholds['suspicious']:.2f}, "
                  f"MALICIOUS >= {report.thresholds['malicious']:.2f})")

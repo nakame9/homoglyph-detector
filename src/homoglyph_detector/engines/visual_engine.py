@@ -11,7 +11,7 @@ def visual_engine(ctx: Context, brands: list[dict]) -> EngineResult:
     result = EngineResult("visual")
     if ctx.input_type == "name":
         parts = [word.lower() for word in ctx.text.split()]
-    elif ctx.host and not is_official(ctx.resolved or ctx.text, brands):
+    elif ctx.host and not ctx.ip and not is_official(ctx.resolved or ctx.text, brands):
         label = registrable(ctx.resolved or ctx.text)[1]
         parts = [label, *label.split("-")]   # also 'paypai-login': each hyphen-separated part
     else:

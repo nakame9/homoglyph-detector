@@ -55,6 +55,10 @@ def check(raw: str):
     report = analyze(raw)
     assert report.verdict in VERDICTS
     assert 0 <= report.probability <= 1 and report.risk_score == round(100 * report.probability)
+    # P1: a rejected input carries its reason, is never SAFE, and is not corrected to a base rate
+    assert (report.parse_status, bool(report.parse_reason)) in (("ok", False), ("rejected", True))
+    if report.parse_status == "rejected":
+        assert report.verdict != "SAFE" and report.probability_at_base_rate is None
     assert set(report.engine_scores) == set(ENGINES) and all(0 <= s <= 1 for s in report.engine_scores.values())
     assert all(f.engine in ENGINES for f in report.findings)
     if report.a_label:
@@ -86,6 +90,11 @@ def test_url_fuzz_finds_the_host(domain, scheme, userinfo, path, with_port):
     assume("@" not in domain)
     expected = "".join(ch.lower() if ch.isascii() else ch for ch in unicodedata.normalize("NFC", domain))
     assert prepare(url).host == expected.rstrip(".") and report.input_type == "url"
+    if report.parse_status == "ok":        # accepted by the URL Standard: the destination is scored
+        assert report.target and set(report.engine_scores) == set(ENGINES)
+    else:                                  # rejected: only the status and its reason, never a score of the target
+        assert report.parse_reason and "url_rejected" in {f.kind for f in report.findings}
+        assert report.engine_scores["brand"] == report.engine_scores["combosquat"] == 0
 
 
 @given(st.text(st.sampled_from(string.ascii_lowercase + string.digits + "-"), max_size=20))

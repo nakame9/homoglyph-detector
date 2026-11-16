@@ -64,6 +64,6 @@ def brand_engine(ctx: Context, brands: list[dict]) -> EngineResult:
     result = EngineResult("brand")
     if ctx.input_type == "name":
         _brands_name(ctx.text, brands, result)
-    elif ctx.host:
+    elif ctx.host and not ctx.ip:
         _brands_host(ctx.resolved or ctx.text, brands, result)   # match what is actually visited
     return result.noisy_or()

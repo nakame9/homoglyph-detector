@@ -12,7 +12,7 @@ def combosquat_engine(ctx: Context, brands: list[dict]) -> EngineResult:
     host = ctx.resolved or ctx.text
     if ctx.input_type == "name" or not ctx.host or is_official(host, brands):
         return result.noisy_or()
-    rd, label = registrable(host)
+    rd, label = (ctx.ip, "") if ctx.ip else registrable(host)
     fake = userinfo_domain(ctx.userinfo)
     if fake:
         fake_label = skeleton(registrable(fake)[1])
@@ -22,6 +22,8 @@ def combosquat_engine(ctx: Context, brands: list[dict]) -> EngineResult:
             result.add("brand_in_userinfo", "high",
                        f"URL starts with '{fake}' ({brand['name']}) but goes to '{rd}': the part before '@' is "
                        "only a user name", brand=brand["name"], shown=fake, basis="name")
+    if ctx.ip:   # an address carries no brand name
+        return result.noisy_or()
     plain = host.replace(".", "").replace("-", "")   # also 'am.azon.com', 'pay-pal-login'
     squashed = skeleton(plain)
     for brand in brands:

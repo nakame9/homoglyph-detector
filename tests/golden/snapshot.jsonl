@@ -62,7 +62,7 @@
 {"input": "\u2066paypal.com", "a_label": "", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph[unicode]", "idna/idna_differential", "idna/idna_disallowed", "unicode/bidi_control"]}
 {"input": "apple\u200f.com", "a_label": "", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph[unicode]", "idna/idna_disallowed", "unicode/bidi_control"]}
 {"input": "user@\u202emoc.elgoog", "a_label": "", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["idna/idna_disallowed", "unicode/bidi_control"]}
-{"input": "https://\u202eapple.com/", "a_label": "", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph[unicode]", "idna/idna_disallowed", "unicode/bidi_control"]}
+{"input": "https://\u202eapple.com/", "a_label": "", "parse": "rejected:disallowed_code_point", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["unicode/bidi_control"]}
 {"input": "\u061cmicrosoft.com", "a_label": "", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph[unicode]", "idna/idna_differential", "idna/idna_disallowed", "unicode/bidi_control", "unicode/mixed_script", "unicode/whole_lookalike", "visual/brand_visual"]}
 {"input": "ti\u1ebfngvi\u1ec7t.vn", "a_label": "xn--tingvit-5t4cyc.vn", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
 {"input": "h\u00e0n\u1ed9i.vn", "a_label": "xn--hni-9ka0849a.vn", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
@@ -125,8 +125,8 @@
 {"input": "HTTPS://WWW.PAYPAL.COM/", "a_label": "www.paypal.com", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
 {"input": "https://xn--80ak6aa92e.com/", "a_label": "xn--80ak6aa92e.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph[unicode]", "unicode/whole_lookalike"]}
 {"input": "https://paypal.com/@evil.com", "a_label": "paypal.com", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
-{"input": "https://[::1]:8080/", "a_label": "", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": ["idna/idna_disallowed"]}
-{"input": "http://192.168.0.1/login", "a_label": "192.168.0.1", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "https://[::1]:8080/", "a_label": "", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "http://192.168.0.1/login", "a_label": "", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
 {"input": "https://paypal.com./", "a_label": "paypal.com", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
 {"input": "https://evil.com\\@paypal.com/", "a_label": "evil.com", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
 {"input": "https://paypal.com%2eevil.com/", "a_label": "paypal.com.evil.com", "verdicts": {"default": "SUSPICIOUS", "banking": "MALICIOUS", "browser": "SAFE"}, "evidence": ["combosquat/brand_in_host[name]"]}
@@ -137,10 +137,10 @@
 {"input": "https://5hopee.vn/sale", "a_label": "5hopee.vn", "verdicts": {"default": "SUSPICIOUS", "banking": "SUSPICIOUS", "browser": "SUSPICIOUS"}, "evidence": ["brand/brand_typosquat[visual]", "visual/brand_visual"]}
 {"input": "https://paypal.com\uff0f@evil.com/", "a_label": "evil.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "SUSPICIOUS"}, "evidence": ["combosquat/brand_in_userinfo[name]", "idna/userinfo_domain"]}
 {"input": "https://evil.com\uff0f@paypal.com/", "a_label": "paypal.com", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": ["idna/userinfo_domain"]}
-{"input": "https://pay\uff20pal.com", "a_label": "", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_typosquat[spelling]", "idna/idna_differential", "idna/idna_disallowed", "unicode/compatibility", "unicode/whole_lookalike"]}
-{"input": "https://[paypal.com/", "a_label": "", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_typosquat[spelling]", "combosquat/brand_in_host[name]", "idna/idna_disallowed"]}
-{"input": "https://a\u2100b.com", "a_label": "", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["idna/idna_differential", "idna/idna_disallowed", "unicode/compatibility", "unicode/whole_lookalike"]}
+{"input": "https://pay\uff20pal.com", "a_label": "", "parse": "rejected:forbidden_code_point", "verdicts": {"default": "SUSPICIOUS", "banking": "SUSPICIOUS", "browser": "SUSPICIOUS"}, "evidence": ["unicode/compatibility", "unicode/whole_lookalike"]}
+{"input": "https://[paypal.com/", "a_label": "", "parse": "rejected:invalid_ipv6", "verdicts": {"default": "SUSPICIOUS", "banking": "SUSPICIOUS", "browser": "SUSPICIOUS"}, "evidence": []}
+{"input": "https://a\u2100b.com", "a_label": "", "parse": "rejected:forbidden_code_point", "verdicts": {"default": "SUSPICIOUS", "banking": "SUSPICIOUS", "browser": "SUSPICIOUS"}, "evidence": ["unicode/compatibility", "unicode/whole_lookalike"]}
 {"input": "paypal.com@evil.com/login", "a_label": "evil.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "SUSPICIOUS"}, "evidence": ["combosquat/brand_in_userinfo[name]", "idna/userinfo_domain"]}
 {"input": "https://paypal.com:x@evil.com/", "a_label": "evil.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "SUSPICIOUS"}, "evidence": ["combosquat/brand_in_userinfo[name]", "idna/userinfo_domain"]}
 {"input": "https://john.doe@evil.com/", "a_label": "evil.com", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
-{"input": "https://paypal.com%40evil.com/", "a_label": "", "verdicts": {"default": "SUSPICIOUS", "banking": "MALICIOUS", "browser": "SAFE"}, "evidence": ["combosquat/brand_in_host[name]", "idna/idna_disallowed"]}
+{"input": "https://paypal.com%40evil.com/", "a_label": "", "parse": "rejected:forbidden_code_point", "verdicts": {"default": "SUSPICIOUS", "banking": "SUSPICIOUS", "browser": "SUSPICIOUS"}, "evidence": []}

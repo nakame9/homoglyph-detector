@@ -2,6 +2,17 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/), đánh số theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [Chưa phát hành]
+### Sửa
+- **Đọc URL như browser (WHATWG).** Scheme đặc biệt bỏ qua mọi dấu `/` và `\` sau dấu `:`. Vì vậy `https:///paypаl.com/`, `https:/…` và `https:…` (chữ `а` Cyrillic) không còn mất host. `paypаl.com/?q=https://x.org/` không còn bị coi là URL có scheme. Tab và xuống dòng trong URL bị bỏ qua. Ba ca này trước đây ra SAFE, nay ra MALICIOUS.
+- Port được tách trên authority gốc, trước khi giải mã host. `https://paypal.com%3A443/` không còn được nhận là domain chính thức của PayPal.
+### Thêm
+- **`Report.parse_status` / `parse_reason`.** URL mà browser từ chối (port sai, `%40` hay `%3A` trong host, IPv4 hoặc IPv6 không hợp lệ, ký tự IDNA không cho phép, ZWJ/ZWNJ sai ngữ cảnh) và đầu vào rỗng có trạng thái `rejected`. Đích của các đầu vào này không được chấm điểm. Verdict là SUSPICIOUS ("cần xem lại"), mã thoát `1`, không bao giờ SAFE. Lỗi cú pháp không còn làm tăng verdict: `https://g00gle.com:abc/` đổi từ MALICIOUS sang SUSPICIOUS. CLI in dòng `parse`.
+- Ngoại lệ: ký tự điều khiển định dạng bidi (U+202A–U+202E, U+2066–U+2069) trong host bị từ chối vẫn được chấm, chỉ từ bằng chứng đó và theo ngưỡng của policy đang dùng. URL `https://apple.com/` có U+202E chèn trước host vẫn là MALICIOUS ở cả ba profile.
+- **Host là địa chỉ IP** không đi qua các engine tên miền. Dạng chuẩn (`192.168.1.1`, `[::1]`) có finding `ip_host` (info). IPv4 viết lạ (`0x7f.1`, `2130706433`, `0177.0.0.1`, `127.1`) được chuẩn hóa về `127.0.0.1`, có finding `ip_obfuscated` và ra SUSPICIOUS.
+- Test đối chiếu với 418 ca URL tuyệt đối trong `urltestdata.json` của web-platform-tests (commit `bff876f9`). Kết quả khớp toàn bộ.
+- `--base-rate`: `probability_at_base_rate` là `null` với đầu vào chưa chấm điểm. Trước đây CLI dạng văn bản có thể gặp `TypeError`.
+
 ## [0.13.0] - 2026-11-08
 ### Thêm
 - **Phát hiện lừa bằng userinfo của URL** (`https://paypal.com@evil.com/`, cả dạng `paypal.com:x@`, `paypal.com／@` với gạch chéo fullwidth): finding `brand_in_userinfo` (combosquat, high) khi phần trước `@` là domain hoặc tên của thương hiệu; `userinfo_domain` (idna, medium) khi phần đó trông như một host khác host thật. `Context.userinfo` giữ phần userinfo đã percent-decode.

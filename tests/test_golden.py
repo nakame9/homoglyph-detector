@@ -81,6 +81,8 @@ def _snapshot() -> list[dict]:
         reports = {name: analyze(case["input"], policy=name) for name in calibration()["profiles"]}
         default = reports["default"]
         rows.append({"input": case["input"], "a_label": default.a_label,
+                     **({"parse": f"{default.parse_status}:{default.parse_reason}"}
+                        if default.parse_status != "ok" else {}),
                      "verdicts": {name: r.verdict for name, r in reports.items()},
                      "evidence": sorted({f"{f.engine}/{f.kind}" + (f"[{f.detail['basis']}]" if "basis" in f.detail else "")
                                             for f in default.findings if f.severity != "info"})})
