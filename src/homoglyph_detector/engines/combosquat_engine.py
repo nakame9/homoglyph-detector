@@ -10,19 +10,26 @@ from .base import MIN_FUZZY_LEN, EngineResult, is_official
 def combosquat_engine(ctx: Context, brands: list[dict]) -> EngineResult:
     result = EngineResult("combosquat")
     host = ctx.resolved or ctx.text
-    if ctx.input_type == "name" or not ctx.host or is_official(host, brands):
+    if ctx.input_type == "name" or not ctx.host:
         return result.noisy_or()
+    owner = None if ctx.ip else next((b for b in brands if is_official(host, [b])), None)
     rd, label = (ctx.ip, "") if ctx.ip else registrable(host)
     fake = userinfo_domain(ctx.userinfo)
     if fake:
         fake_label = skeleton(registrable(fake)[1])
         brand = next((b for b in brands if is_official(fake, [b])
                       or any(skeleton(kw) == fake_label for kw in b["keywords"])), None)
-        if brand:
+        if brand and owner and brand["id"] != owner["id"]:
+            # P2: the allowlist clears the destination only; the link still reads as another brand
+            result.add("brand_in_userinfo", "medium",
+                       f"URL starts with '{fake}' ({brand['name']}) but goes to '{rd}', an official "
+                       f"{owner['name']} domain: the part before '@' is only a user name",
+                       brand=brand["name"], shown=fake, basis="name", destination_brand=owner["name"])
+        elif brand and not owner:
             result.add("brand_in_userinfo", "high",
                        f"URL starts with '{fake}' ({brand['name']}) but goes to '{rd}': the part before '@' is "
                        "only a user name", brand=brand["name"], shown=fake, basis="name")
-    if ctx.ip:   # an address carries no brand name
+    if owner or ctx.ip:   # an official host is not a squat of itself; an address carries no brand name
         return result.noisy_or()
     plain = host.replace(".", "").replace("-", "")   # also 'am.azon.com', 'pay-pal-login'
     squashed = skeleton(plain)

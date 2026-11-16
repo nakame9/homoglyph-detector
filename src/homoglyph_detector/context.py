@@ -223,9 +223,11 @@ def _psl() -> PublicSuffixList:
 
 
 def userinfo_domain(userinfo: str) -> str:
-    """The domain a URL's userinfo pretends to be ('paypal.com' from 'paypal.com', 'paypal.com:x' or the
-    fullwidth 'paypal.com／'), or "" when it does not end in a known public suffix ('john.doe', 'user')."""
-    name = unicodedata.normalize("NFKC", userinfo).split(":")[0].strip("/\\ ").lower().rstrip(".")
+    """The domain a URL's userinfo pretends to be ('paypal.com' from 'paypal.com', 'paypal.com:x', the
+    fullwidth 'paypal.com／' or a decoded 'paypal.com/login'), or "" when it does not end in a known public
+    suffix ('john.doe', 'user')."""
+    name = unicodedata.normalize("NFKC", userinfo).strip("/\\ ")
+    name = re.split(r"[:/\\?#]", name, maxsplit=1)[0].lower().rstrip(".")
     return name if "." in name and _psl().privatesuffix(name, accept_unknown=False) else ""
 
 

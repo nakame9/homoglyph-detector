@@ -65,3 +65,35 @@ def test_calibrated_quality_does_not_regress():
     assert metrics["at_malicious"]["precision"] >= 0.98
     assert metrics["at_suspicious"]["f1"] >= 0.85
     assert metrics["ece"] <= 0.1
+
+
+# --- A2: the userinfo of a URL ---------------------------------------------------------
+
+def _userinfo_findings(url: str) -> list:
+    return [f for f in run_engines(url)[1]["combosquat"].findings if f.kind == "brand_in_userinfo"]
+
+
+@pytest.mark.parametrize("url", ["https://paypal.com%2Flogin@evil.com/", "https://paypal.com%3Fx@evil.com/",
+                                 "https://paypal.com:x@evil.com/", "https://paypal.com%5Clogin@evil.com/"])
+def test_userinfo_brand_is_found_before_any_path_in_it(url):
+    """'%2F' decodes to '/': a browser shows paypal.com/login before the '@' and still goes to evil.com."""
+    [finding] = _userinfo_findings(url)
+    assert finding.detail["brand"] == "PayPal" and "evil.com" in finding.message and finding.severity == "high"
+    assert analyze(url).verdict == "MALICIOUS"
+
+
+def test_p2_userinfo_brand_on_another_brands_official_host():
+    """P2: the allowlist clears the destination only; a PayPal lure that lands on apple.com still needs review."""
+    url = "https://paypal.com@apple.com/"
+    [finding] = _userinfo_findings(url)
+    assert finding.severity == "medium" and finding.detail["brand"] == "PayPal" and "apple.com" in finding.message
+    assert analyze(url).verdict == "SUSPICIOUS"
+    assert all(analyze(url, policy=name).verdict != "MALICIOUS" for name in ("default", "browser"))
+
+
+@pytest.mark.parametrize("url", ["https://john.doe@evil.com/", "https://user:pass@evil.com/", "https://admin@apple.com/",
+                                 "https://paypal.com/@evil.com", "https://www.paypal.com@paypal.com/",
+                                 "https://apple.com@apple.com/", "https://paypal@apple.com/x",
+                                 "https://paypal.com/login@evil.com/", "https://paypal.com?x@evil.com/"])
+def test_ordinary_userinfo_is_not_flagged(url):
+    assert _userinfo_findings(url) == [] and analyze(url).verdict == "SAFE"

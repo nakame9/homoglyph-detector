@@ -144,3 +144,7 @@
 {"input": "https://paypal.com:x@evil.com/", "a_label": "evil.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "SUSPICIOUS"}, "evidence": ["combosquat/brand_in_userinfo[name]", "idna/userinfo_domain"]}
 {"input": "https://john.doe@evil.com/", "a_label": "evil.com", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
 {"input": "https://paypal.com%40evil.com/", "a_label": "", "parse": "rejected:forbidden_code_point", "verdicts": {"default": "SUSPICIOUS", "banking": "SUSPICIOUS", "browser": "SUSPICIOUS"}, "evidence": []}
+{"input": "https://paypal.com%2Flogin@evil.com/", "a_label": "evil.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "SUSPICIOUS"}, "evidence": ["combosquat/brand_in_userinfo[name]", "idna/userinfo_domain"]}
+{"input": "https://paypal.com@apple.com/", "a_label": "apple.com", "verdicts": {"default": "SUSPICIOUS", "banking": "MALICIOUS", "browser": "SAFE"}, "evidence": ["combosquat/brand_in_userinfo[name]", "idna/userinfo_domain"]}
+{"input": "https://www.paypal.com@paypal.com/", "a_label": "paypal.com", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": ["idna/userinfo_domain"]}
+{"input": "https://user:pass@evil.com/", "a_label": "evil.com", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}

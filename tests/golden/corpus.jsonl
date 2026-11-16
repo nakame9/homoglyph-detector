@@ -144,3 +144,7 @@
 {"group": "url_edge", "input": "https://paypal.com:x@evil.com/", "label": "attack", "host": "evil.com"}
 {"group": "url_edge", "input": "https://john.doe@evil.com/", "label": "benign", "host": "evil.com"}
 {"group": "url_edge", "input": "https://paypal.com%40evil.com/", "label": null, "host": "paypal.com@evil.com"}
+{"group": "url_edge", "input": "https://paypal.com%2Flogin@evil.com/", "label": "attack", "host": "evil.com"}
+{"group": "url_edge", "input": "https://paypal.com@apple.com/", "label": "attack", "host": "apple.com"}
+{"group": "url_edge", "input": "https://www.paypal.com@paypal.com/", "label": "benign", "host": "paypal.com"}
+{"group": "url_edge", "input": "https://user:pass@evil.com/", "label": "benign", "host": "evil.com"}
