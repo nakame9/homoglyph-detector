@@ -1,5 +1,6 @@
 import codecs
 import json
+import unicodedata
 from pathlib import Path
 
 import pytest
@@ -92,6 +93,45 @@ def test_cli_json_output(capsys):
     main(["p\u0430ypal.com", "--json"])
     [report] = json.loads(capsys.readouterr().out)
     assert report["verdict"] == "MALICIOUS" and report["skeleton"] == skeleton("paypal.com")
+
+
+
+# --- A3: attacker input cannot drive the terminal --------------------------------------
+
+HOSTILE = [
+    "evil\x1b[2J\x1b[31m.com",                                    # ANSI CSI: clear screen, red
+    "x\x1b]8;;https://evil.com\x07paypal.com\x1b]8;;\x07",          # OSC 8 hyperlink to another place
+    "paypal.com\r\n✅ SAFE       paypal.com",                     # forged report line
+    "a\x9b31mb.com",                                              # C1 CSI (8-bit terminals)
+    "a\x7fb.com",                                                 # DEL
+    "pay\u2028pal.com",                                           # line separator
+    "invoice\u202efdp.exe",                                       # bidi override
+    "pay\U000e0041pal.com",                                       # tag character, outside the BMP
+    "https://\x1b[31mevil.com/",
+]
+TERMINAL_CONTROL = {"Cc", "Cf", "Zl", "Zp"}
+
+
+def _live_controls(out: str) -> list[str]:
+    return [f"U+{ord(ch):04X}" for ch in out if ch != "\n" and unicodedata.category(ch) in TERMINAL_CONTROL]
+
+
+@pytest.mark.parametrize("raw", HOSTILE)
+def test_cli_text_output_cannot_drive_the_terminal(raw, capsys):
+    main([raw])
+    out = capsys.readouterr().out
+    assert _live_controls(out) == []
+    lines = out.splitlines()
+    assert [line for line in lines if line.startswith(("✅", "⚠", "\U0001f6a8"))] == lines[:1]
+
+
+@pytest.mark.parametrize("raw", HOSTILE)
+def test_cli_json_output_escapes_terminal_controls_and_round_trips(raw, capsys):
+    main(["--json", raw])
+    out = capsys.readouterr().out
+    assert _live_controls(out) == []
+    [row] = json.loads(out)
+    assert row["input"] == raw
 
 
 # --- UTS #39 building blocks -------------------------------------------------

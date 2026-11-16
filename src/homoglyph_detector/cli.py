@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import unicodedata
 
 from . import __version__
 from .analyzer import Report, analyze
@@ -18,18 +19,32 @@ EXIT = {"SAFE": 0, "SUSPICIOUS": 1, "MALICIOUS": 2}
 DATA_ERROR = 3   # tampered, unpinned-but-required or invalid data: refuse to give a verdict
 
 
+def unsafe(ch: str) -> bool:
+    """A character a terminal acts on or does not show: controls (C0 such as ESC, CR, LF; DEL; C1 such as CSI),
+    format characters (bidi, zero-width, tags), line and paragraph separators, any default-ignorable."""
+    return unicodedata.category(ch) in {"Cc", "Cf", "Zl", "Zp"} or is_default_ignorable(ch)
+
+
 def visible(text: str) -> str:
-    """Show hidden/bidi characters as <U+XXXX> so attacker input cannot reorder the report."""
-    return "".join(f"<U+{ord(ch):04X}>" if is_default_ignorable(ch) else ch for ch in text)
+    """Show unsafe characters as <U+XXXX> so attacker input cannot drive the terminal or reorder the report."""
+    return "".join(f"<U+{ord(ch):04X}>" if unsafe(ch) else ch for ch in text)
+
+
+def json_text(data: object) -> str:
+    """JSON that stays human readable (non-ASCII as is) but carries no live unsafe character: those become
+    \\uXXXX escapes, so json.loads gives back exactly the same values. Raw newlines only come from the indent."""
+    text = json.dumps(data, ensure_ascii=False, indent=2)
+    return "".join(json.dumps(ch)[1:-1] if ch != "\n" and unsafe(ch) else ch for ch in text)
 
 
 def render(report: Report) -> str:
+    """The text report; every field that comes from the input or a brand database goes through visible()."""
     lines = [f"{ICON[report.verdict]} {report.verdict:<10} {visible(report.input)}  [{report.input_type}]"]
     if report.target != report.input:
         lines.append(f"    decoded : {visible(report.target)}")
     if report.a_label and report.a_label not in (report.target, report.input.strip().lower()):
-        lines.append(f"    a-label : {report.a_label}")
-    lines.append(f"    skeleton: {report.skeleton}")
+        lines.append(f"    a-label : {visible(report.a_label)}")
+    lines.append(f"    skeleton: {visible(report.skeleton)}")
     lines.append(f"    level   : {report.restriction_level}")
     engines = "  ".join(f"{name} {score:.2f}" for name, score in report.engine_scores.items())
     lines.append(f"    risk    : {report.risk_score}/100   engines: {engines}")
@@ -82,7 +97,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         return _run(parser, args)
     except (DataIntegrityError, BrandDBError, OSError) as error:
-        print(f"homoglyph-detector: data error: {error}", file=sys.stderr)
+        print(f"homoglyph-detector: data error: {visible(str(error))}", file=sys.stderr)
         return DATA_ERROR
 
 
@@ -124,8 +139,8 @@ def _run(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
             unicode_versions = ", ".join(sorted(set(map(str, data_versions().values()))))
             print(f"homoglyph-detector {__version__} (Unicode data {unicode_versions})")
         for db in load(resolve(brand_files))[1]:
-            print(f"brands: {db.name} {db.version} ({db.updated}) sha256 {db.sha256[:16]}... "
-                  f"[{db.verification}] {db.source}")
+            print(visible(f"brands: {db.name} {db.version} ({db.updated}) sha256 {db.sha256[:16]}... "
+                          f"[{db.verification}] {db.source}"))
         return 0
 
     inputs = list(args.inputs)
@@ -138,13 +153,13 @@ def _run(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
 
     for db in load(resolve(brand_files))[1]:
         if db.verification == "unpinned":
-            print(f"homoglyph-detector: warning: brand database {db.source} is not pinned; "
+            print(f"homoglyph-detector: warning: brand database {visible(db.source)} is not pinned; "
                   f"add '#sha256={db.sha256}' to trust exactly this version", file=sys.stderr)
     if args.base_rate is not None and not 0 < args.base_rate < 1:
         parser.error("--base-rate must be strictly between 0 and 1")
     reports = [analyze(item, brand_files, policy, args.base_rate) for item in inputs]
     if args.json:
-        print(json.dumps([r.to_dict() for r in reports], ensure_ascii=False, indent=2))
+        print(json_text([r.to_dict() for r in reports]))
     else:
         print("\n\n".join(render(r) for r in reports))
     return max(EXIT[r.verdict] for r in reports)

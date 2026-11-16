@@ -66,6 +66,7 @@ def check(raw: str):
     json.dumps(report.to_dict(), ensure_ascii=True)
     shown = render(report)          # the text report must never carry a live bidi / invisible character
     assert not any(is_bidi_control(ch) for ch in shown)
+    assert not any(ch != "\n" and unicodedata.category(ch) in {"Cc", "Cf", "Zl", "Zp"} for ch in shown)   # A3
     assert all(ch == "\ufe0f" for ch in shown if is_default_ignorable(ch))   # only the warning icon's VS16
     return report
 
