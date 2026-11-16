@@ -157,7 +157,7 @@ Kết luận: đây là **một lớp phòng thủ chuyên biệt** cho giả m�
 | | precision | recall | F1 | tỷ lệ báo nhầm |
 |---|---|---|---|---|
 | p ≥ 0,5 (SUSPICIOUS trở lên) | 96,6% | 86,5% | 91,3% | 1,6% |
-| p ≥ 0,9 (MALICIOUS) | 99,3% | 63,5% | 77,4% | 0,26% |
+| p ≥ 0,9 (MALICIOUS, áp dụng quy tắc visual-only) | 99,15% | 55,91% | 71,50% | 0,26% |
 
 Ngưỡng là của profile `default`; mỗi môi trường chọn điểm vận hành riêng: [docs/risk-scoring.md](docs/risk-scoring.md).
 
