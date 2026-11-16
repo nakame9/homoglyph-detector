@@ -52,15 +52,53 @@ def _costs() -> dict[tuple[str, str], float]:
     return costs
 
 
+@cache
+def _cheap_pairs() -> dict[str, list[tuple[str, str, int]]]:
+    by_first: dict[str, list[tuple[str, str, int]]] = {}
+    for (source, target), cost in _costs().items():
+        if cost < 1:
+            by_first.setdefault(source[0], []).append((source, target, round(cost * 1000)))
+    return by_first
+
+
+def _visual_text(value: str) -> tuple[str, int]:
+    if value.isascii():
+        return value, 0
+    skel = skeleton(value)
+    plain = "".join(ch for ch in skel if unicodedata.category(ch) != "Mn")
+    return plain, len(skel) - len(plain)
+
+
+def can_score_visually(a: str, b: str) -> bool:
+    """Test whether the alignment can cost less than one edit before computing its details."""
+    a, accents = _visual_text(a)
+    # An insertion, deletion or ordinary substitution costs 1 and cannot give a positive engine score.
+    # ponytail: search the cheap alignments only; compute the exact match only for candidates worth scoring.
+    pending = [(0, 0, 1000 - round(1000 * ACCENT_COST * accents))]
+    visited: dict[tuple[int, int], int] = {}
+    pairs = _cheap_pairs()
+    while pending:
+        i, j, budget = pending.pop()
+        if budget <= visited.get((i, j), 0):
+            continue
+        visited[i, j] = budget
+        if i == len(a) or j == len(b):
+            if i == len(a) and j == len(b):
+                return True
+            continue
+        if a[i] == b[j]:
+            pending.append((i + 1, j + 1, budget))
+        for source, target, cost in pairs.get(a[i], ()):
+            if cost < budget and a.startswith(source, i) and b.startswith(target, j):
+                pending.append((i + len(source), j + len(target), budget - cost))
+    return False
+
+
 def visual_similarity(a: str, b: str) -> VisualMatch:
     """How alike text `a` looks to the lower-case ASCII reference `b` (weighted Levenshtein with
     multi-character pairs). Non-ASCII `a` is read as a hurried reader would: its UTS #39 skeleton
     without accents, each dropped accent costing ACCENT_COST."""
-    accents = 0
-    if not a.isascii():
-        skel = skeleton(a)
-        a = "".join(ch for ch in skel if unicodedata.category(ch) != "Mn")
-        accents = len(skel) - len(a)
+    a, accents = _visual_text(a)
     costs = _costs()
     multi = [(x, y, c) for (x, y), c in costs.items() if len(x) > 1 or len(y) > 1]
     inf = float("inf")

@@ -15,6 +15,7 @@
 - **Host là địa chỉ IP** không đi qua các engine tên miền. Dạng chuẩn (`192.168.1.1`, `[::1]`) có finding `ip_host` (info). IPv4 viết lạ (`0x7f.1`, `2130706433`, `0177.0.0.1`, `127.1`) được chuẩn hóa về `127.0.0.1`, có finding `ip_obfuscated` và ra SUSPICIOUS.
 - Test đối chiếu với 418 ca URL tuyệt đối trong `urltestdata.json` của web-platform-tests (commit `bff876f9`). Kết quả khớp toàn bộ.
 - `--base-rate`: `probability_at_base_rate` là `null` với đầu vào chưa chấm điểm. Trước đây CLI dạng văn bản có thể gặp `TypeError`.
+- **Giới hạn từng đầu vào ở 272 điểm mã Unicode.** Đầu vào dài hơn được gửi xem lại (`unsupported/too_long`) trước khi chạy các engine. CLI bỏ phần dư của dòng dài khi đọc file hoặc stdin và không đưa đầu vào dài vào báo cáo.
 
 ## [0.13.0] - 2026-11-08
 ### Thêm

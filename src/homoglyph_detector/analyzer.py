@@ -21,8 +21,8 @@ class Report:
     target: str            # what a reader sees: the name, or the host with A-labels shown as U-labels
     skeleton: str
     a_label: str = ""      # the domain as DNS sees it (IDNA2008 A-labels); empty if not a valid domain
-    parse_status: str = "ok"    # 'rejected': a browser refuses this URL (or the input is empty); its target
-    parse_reason: str = ""      # is not scored and the verdict asks for review (see parse_reason)
+    parse_status: str = "ok"    # 'rejected' or 'unsupported' means the destination was not scored
+    parse_reason: str = ""      # why the input needs review when parse_status is not ok
     verdict: str = "SAFE"
     verdict_note: str = ""      # why the verdict differs from the probability's, e.g. capped visual-only evidence
     probability: float = 0.0    # P(look-alike attack) at the benchmark's base rate; see benchmark/RESULTS.md
@@ -45,6 +45,8 @@ class Report:
 def run_engines(raw: str, brand_files: tuple[str, ...] = ()) -> tuple[Context, dict[str, EngineResult]]:
     """brand_files: extra brand databases ('path' or 'path#sha256=HEX'), after HOMOGLYPH_BRANDS."""
     ctx, (brands, _) = prepare(raw), load(resolve(tuple(brand_files)))
+    if ctx.parse_status == "unsupported":
+        return ctx, {name: EngineResult(name) for name in ENGINES}
     return ctx, {name: engine(ctx, brands) for name, engine in ENGINES.items()}
 
 
@@ -73,13 +75,16 @@ def analyze(raw: str, brand_files: tuple[str, ...] = (), policy: str | dict | No
         p = probability(scores) if bidi else 0.0   # P1-b: scored from the bidi evidence alone
         level, note = evidence_rule(verdict(p, policy), bidi) if bidi else ("SAFE", "")
         reason = REASONS[ctx.parse_reason]
-        findings = [Finding("idna", "url_rejected", "info", f"Browsers reject this input: {reason}",
-                            {"reason": ctx.parse_reason}, "protocol"), *diagnostics]
+        if ctx.parse_reason == "too_long":
+            findings = [Finding("idna", "input_too_long", "info", reason, {"reason": ctx.parse_reason}, "protocol")]
+        else:
+            findings = [Finding("idna", "url_rejected", "info", f"Browsers reject this input: {reason}",
+                                {"reason": ctx.parse_reason}, "protocol"), *diagnostics]
         note = ("bidi formatting control in the host; " if bidi else "") + \
             f"needs review: {reason}, so the destination was not scored"
         if level == "SAFE":
             level = "SUSPICIOUS"
-    return Report(input=raw, input_type=ctx.input_type, target=ctx.text, skeleton=skeleton(ctx.text),
+    return Report(input=ctx.raw, input_type=ctx.input_type, target=ctx.text, skeleton=skeleton(ctx.text),
                   a_label=ctx.a_label, parse_status=ctx.parse_status, parse_reason=ctx.parse_reason,
                   verdict=level, verdict_note=note, probability=round(p, 4),
                   risk_score=round(100 * p), evidence=evidence_summary(findings),
@@ -88,6 +93,6 @@ def analyze(raw: str, brand_files: tuple[str, ...] = (), policy: str | dict | No
                   else round(at_base_rate(p, base_rate), 6),
                   profile=policy["name"],
                   thresholds={level: policy[level] for level in ("suspicious", "malicious")},
-                  restriction_level=results["unicode"].facts["restriction_level"], engine_scores=scores,
+                  restriction_level=results["unicode"].facts.get("restriction_level", "ASCII-Only"), engine_scores=scores,
                   brand_db=[db.info() for db in load(resolve(tuple(brand_files)))[1]],
                   findings=findings)

@@ -97,6 +97,8 @@ homoglyph-detector --verify                                             # kiểm
 homoglyph-detector --version                                            # phiên bản công cụ và dữ liệu
 ```
 
+Mỗi đầu vào tối đa 272 điểm mã Unicode (đếm trước khi chuẩn hóa). Với file hoặc stdin, giới hạn áp dụng cho từng dòng, kể cả khoảng trắng đầu và cuối, trừ dấu xuống dòng. Đầu vào vượt giới hạn trả SUSPICIOUS với `parse_status=unsupported` và `parse_reason=too_long`, không chấm đích và không đưa chuỗi quá dài vào báo cáo.
+
 | Mã thoát | Ý nghĩa |
 |---|---|
 | 0 | tất cả SAFE |

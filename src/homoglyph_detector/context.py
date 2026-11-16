@@ -27,17 +27,19 @@ class Context:
     resolved: str = ""              # U-label form of a_label (or the IP address): the destination actually visited
     strict_error: idna.IDNAError | None = None   # why the host is not IDNA2008 as written
     lookup_error: idna.IDNAError | None = None   # why even UTS #46 lookup rejects it
-    parse_status: str = "ok"        # ok / rejected (a browser refuses this URL, or the input is empty)
+    parse_status: str = "ok"        # ok / rejected (invalid input) / unsupported (input exceeds a limit)
     parse_reason: str = ""          # why, when not ok: a key of REASONS
     ip: str = ""                    # the IP address a URL host denotes, canonical ('127.0.0.1' for '0x7f.1')
     ip_obfuscated: bool = False     # that IPv4 address is written in another form (hex, octal, short, one number)
 
 
+MAX_INPUT_LENGTH = 272  # Unicode code points, before normalization
 SPECIAL_SCHEMES = {"http", "https", "ws", "wss", "ftp", "file"}   # WHATWG "special" URL schemes
 SCHEME = re.compile(r"([A-Za-z][A-Za-z0-9+.\-]*):")
 # WHATWG forbidden domain code points: checked after UTS #46 mapping, so fullwidth '＠' counts as '@'
 FORBIDDEN_DOMAIN = set("\x00\t\n\r #/:<>?@[\\]^|%\x7f") | {chr(c) for c in range(0x20)}
 REASONS = {
+    "too_long": f"input exceeds the limit of {MAX_INPUT_LENGTH} Unicode characters",
     "empty": "there is no host",
     "invalid_port": "the port is not a number from 0 to 65535",
     "forbidden_code_point": "the host contains a character a host cannot have (such as @ : / % or a space)",
@@ -190,6 +192,8 @@ def _shown(host: str) -> str:
 
 
 def prepare(raw: str) -> Context:
+    if len(raw) > MAX_INPUT_LENGTH:
+        return Context("", "unknown", "", parse_status="unsupported", parse_reason="too_long")
     input_type, target, before_at, reason, ip = classify(raw)
     status = "rejected" if reason else "ok"
     if input_type == "name":

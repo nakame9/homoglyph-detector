@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from ..context import Context, registrable
-from ..visual import MAX_VISUAL_DISTANCE, visual_similarity
+from ..visual import MAX_VISUAL_DISTANCE, can_score_visually, visual_similarity
 from .base import EngineResult, is_official
 
 
@@ -20,6 +20,8 @@ def visual_engine(ctx: Context, brands: list[dict]) -> EngineResult:
     for part in dict.fromkeys(p for p in parts if p):
         for brand in brands:
             for kw in brand["keywords"]:
+                if not can_score_visually(part, kw):
+                    continue
                 match = visual_similarity(part, kw)
                 if not match.edits:      # identical text is not a look-alike
                     continue

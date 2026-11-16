@@ -41,7 +41,10 @@ def _brands_host(host: str, brands: list[dict], result: EngineResult) -> None:
                            brand=name, keyword=kw, confusable_type=kind, basis=resemblance_basis(label))
                 break
             # raw and skeleton forms: the skeleton alone turns 'amazon' into 'arnazon' and hides 'aazon'
-            if len(kw) >= MIN_FUZZY_LEN and min(edit_distance(label, kw), edit_distance(label_skel, kw_skel)) == 1:
+            pairs = ((label, kw), (label_skel, kw_skel))
+            if len(kw) >= MIN_FUZZY_LEN and min(
+                (edit_distance(a, b) for a, b in pairs if abs(len(a) - len(b)) <= 1), default=2,
+            ) == 1:
                 # '5hopee' is one edit from 'shopee' only because 5 looks like s: that typo is visual evidence
                 visual = visual_similarity(label, kw).distance <= MAX_VISUAL_DISTANCE
                 result.add("brand_typosquat", "medium", f"'{label}' is one edit away from {name} keyword '{kw}'",
@@ -51,9 +54,10 @@ def _brands_host(host: str, brands: list[dict], result: EngineResult) -> None:
 
 def _brands_name(name: str, brands: list[dict], result: EngineResult) -> None:
     for word in name.split():
+        word_skel = skeleton(word)
         for brand in brands:
             for kw in brand["keywords"]:
-                if word.lower() != kw and skeleton(word) == skeleton(kw):
+                if word.lower() != kw and word_skel == skeleton(kw):
                     kind = confusable_type(word, kw)
                     result.add("brand_homograph", "high",
                                f"'{word}' renders like {brand['name']} keyword '{kw}'{typed(kind)}",

@@ -6,10 +6,13 @@ import argparse
 import json
 import sys
 import unicodedata
+from collections.abc import Iterator
+from typing import TextIO
 
 from . import __version__
 from .analyzer import Report, analyze
 from .brands import BrandDBError, load, resolve
+from .context import MAX_INPUT_LENGTH
 from .integrity import DataIntegrityError, verify_all
 from .scoring import calibration, custom_profile, profile
 from .unicode_data import data_versions, is_default_ignorable
@@ -39,7 +42,8 @@ def json_text(data: object) -> str:
 
 def render(report: Report) -> str:
     """The text report; every field that comes from the input or a brand database goes through visible()."""
-    lines = [f"{ICON[report.verdict]} {report.verdict:<10} {visible(report.input)}  [{report.input_type}]"]
+    shown_input = "<input omitted>" if report.parse_reason == "too_long" else visible(report.input)
+    lines = [f"{ICON[report.verdict]} {report.verdict:<10} {shown_input}  [{report.input_type}]"]
     if report.target != report.input:
         lines.append(f"    decoded : {visible(report.target)}")
     if report.a_label and report.a_label not in (report.target, report.input.strip().lower()):
@@ -124,6 +128,22 @@ def _list_profiles() -> int:
     return 0
 
 
+def _file_inputs(stream: TextIO) -> Iterator[str]:
+    # ponytail: bound one physical line; the batch budget belongs to A9.
+    read_size = MAX_INPUT_LENGTH + 2  # leave room for a CRLF after a maximum-length input
+    while line := stream.readline(read_size):
+        comment = line.startswith("#")
+        item = line.removesuffix("\n").removesuffix("\r")
+        if len(item) > MAX_INPUT_LENGTH:
+            # Drain the rest before processing the next line. The bounded prefix only triggers the shared guard.
+            while line and not line.endswith("\n"):
+                line = stream.readline(read_size)
+            if not comment:
+                yield item
+        elif not comment and (item := item.strip()):
+            yield item
+
+
 def _run(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
     brand_files = tuple(args.brands)
     if args.profiles:
@@ -147,7 +167,7 @@ def _run(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
     if args.file:
         stream = sys.stdin if args.file == "-" else open(args.file, encoding="utf-8")
         with stream:
-            inputs += [line.strip() for line in stream if line.strip() and not line.startswith("#")]
+            inputs.extend(_file_inputs(stream))
     if not inputs:
         parser.error("give at least one input or --file")
 
