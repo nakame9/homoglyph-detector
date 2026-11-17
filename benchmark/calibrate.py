@@ -305,7 +305,7 @@ def main() -> int:
         "operating_curve": curve,                  # train split: used by --max-fpr
         "baseline_test_metrics": baseline,
     }
-    CALIBRATION.write_text(json.dumps(model, indent=2) + "\n", encoding="utf-8")
+    CALIBRATION.write_text(json.dumps(model, indent=2) + "\n", encoding="utf-8", newline="\n")
 
     by_category = defaultdict(list)
     for r in test:

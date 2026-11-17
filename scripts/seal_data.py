@@ -43,7 +43,8 @@ def main(argv: list[str] | None = None) -> int:
 
     before = json.loads(MANIFEST.read_text("utf-8"))["files"] if MANIFEST.exists() else {}
     files = {}
-    for path in sorted(p for p in DATA.iterdir() if p.is_file() and p != MANIFEST):
+    paths = (path for path in DATA.iterdir() if path.is_file() and path != MANIFEST)
+    for path in sorted(paths, key=lambda item: item.name):
         raw = path.read_bytes()
         digest = hashlib.sha256(raw).hexdigest()
         version = version_of(path.name, raw.decode("utf-8"))
@@ -60,15 +61,15 @@ def main(argv: list[str] | None = None) -> int:
                 return 1
         files[path.name] = {"sha256": digest, "version": version, "bytes": len(raw)}
 
-    text = json.dumps({"schema": 1, "files": files}, indent=2) + "\n"
+    sealed = (json.dumps({"schema": 1, "files": files}, indent=2) + "\n").encode("utf-8")
     if args.check:
-        if not MANIFEST.exists() or MANIFEST.read_text("utf-8") != text:
+        if not MANIFEST.exists() or MANIFEST.read_bytes() != sealed:
             print("error: data/MANIFEST.json is out of date: review the data change and run scripts/seal_data.py",
                   file=sys.stderr)
             return 1
         print(f"MANIFEST.json is current ({len(files)} files)")
         return 0
-    MANIFEST.write_text(text, encoding="utf-8")
+    MANIFEST.write_bytes(sealed)
     print(f"sealed {len(files)} files in {MANIFEST}")
     return 0
 

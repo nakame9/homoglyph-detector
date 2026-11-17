@@ -4,6 +4,7 @@
 
 ## [Chưa phát hành]
 ### Sửa
+- **Dữ liệu đã ghim giữ nguyên SHA-256 trên Windows.** Checkout giữ LF và bước tạo manifest dùng cùng thứ tự tệp trên Windows và Linux. CI kiểm thử cả wheel cài riêng trên Windows.
 - **Brand DB không hợp lệ trả mã thoát 3** nếu UTF-8 lỗi, ID sai kiểu hoặc khai báo SHA-256 thiếu mã.
 - **Brand DB chuẩn hóa A-label và U-label** trước khi so allowlist, đối chiếu Public Suffix List và kiểm tra domain trùng.
 - **Đọc URL như browser (WHATWG).** Scheme đặc biệt bỏ qua mọi dấu `/` và `\` sau dấu `:`. Vì vậy `https:///paypаl.com/`, `https:/…` và `https:…` (chữ `а` Cyrillic) không còn mất host. `paypаl.com/?q=https://x.org/` không còn bị coi là URL có scheme. Tab và xuống dòng trong URL bị bỏ qua. Ba ca này trước đây ra SAFE, nay ra MALICIOUS.

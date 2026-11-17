@@ -72,7 +72,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: files disagree on the Unicode version, nothing written: {versions}", file=sys.stderr)
         return 1
     for name, text in downloaded.items():
-        (DATA / name).write_text(text, encoding="utf-8")
+        (DATA / name).write_text(text, encoding="utf-8", newline="\n")
     print(f"wrote {len(downloaded)} files for Unicode {versions['confusables.txt']} to {DATA}")
     subprocess.run([sys.executable, str(Path(__file__).with_name("seal_data.py"))], check=True)
     return 0

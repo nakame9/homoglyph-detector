@@ -121,7 +121,7 @@ def main() -> int:
     for category, d in CURATED_ATTACKS:
         add(d, 1, f"curated/{category}", f"curated:{d}")
 
-    with OUT.open("w", encoding="ascii") as out:
+    with OUT.open("w", encoding="ascii", newline="\n") as out:
         for row in rows:
             out.write(json.dumps(row, ensure_ascii=True) + "\n")
     positives = sum(r["label"] for r in rows)

@@ -1,0 +1,3 @@
+# Keep byte-pinned data identical across checkouts.
+src/homoglyph_detector/data/* text eol=lf
+benchmark/dataset.jsonl text eol=lf

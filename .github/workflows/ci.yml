@@ -21,6 +21,35 @@ jobs:
         if: matrix.python-version == '3.13'
         run: python benchmark/calibrate.py && git diff --exit-code src/homoglyph_detector/data/
 
+  windows:
+    runs-on: windows-latest
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - run: git config --global core.autocrlf true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m pip install -e ".[dev]"
+      - run: python scripts/seal_data.py --check
+      - run: python -m homoglyph_detector --verify
+      - run: python -m pytest -q
+        env:
+          HYPOTHESIS_PROFILE: ci
+      - run: python -m pip wheel --no-deps --wheel-dir dist .
+      - run: python -m venv "$env:RUNNER_TEMP\homoglyph-wheel"
+      - name: Verify the wheel in a clean environment
+        run: |
+          $python = Join-Path $env:RUNNER_TEMP 'homoglyph-wheel\Scripts\python.exe'
+          & $python -m pip install (Get-Item dist/*.whl).FullName
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $python -m homoglyph_detector --verify
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $python -m homoglyph_detector xn--pypal-4ve.com
+          if ($LASTEXITCODE -ne 2) { throw 'Expected the wheel to flag a malicious host' }
+          exit 0
+
   minimum-versions:
     # installs the lowest versions pyproject.toml allows, so the declared floors stay true
     runs-on: ubuntu-latest
