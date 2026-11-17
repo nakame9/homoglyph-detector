@@ -25,7 +25,7 @@ Danh sách thương hiệu cần bảo vệ là **dữ liệu, không phải cod
 | `updated` | có | `YYYY-MM-DD` |
 | `brands[].id` | có | định danh duy nhất (`a-z 0-9 -`), dùng để gộp và ghi đè |
 | `brands[].name` | có | tên hiển thị |
-| `brands[].domains` | có | domain **chính thức** (allowlist). Mọi subdomain của chúng cũng được coi là chính thức |
+| `brands[].domains` | có | domain **chính thức** (allowlist). Chấp nhận U-label và A-label (Punycode). Hai dạng cùng chỉ một domain. Mọi subdomain của chúng cũng được coi là chính thức |
 | `brands[].keywords` | có | từ khóa để so typosquat / combosquat / hình ảnh: ASCII thường, ≥ 3 ký tự |
 | `brands[].category`, `country` | không | thông tin phân loại |
 

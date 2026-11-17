@@ -49,7 +49,12 @@ class BrandDB:
 
 def validate(db: dict, origin: str) -> None:
     """Raise BrandDBError listing every problem in a parsed database."""
+    _validated_brands(db, origin)
+
+
+def _validated_brands(db: dict, origin: str) -> list[dict]:
     problems = []
+    normalized = []
     if db.get("schema") != SCHEMA:
         problems.append(f"schema must be {SCHEMA}")
     if not isinstance(db.get("name"), str) or not db["name"].strip():
@@ -84,24 +89,32 @@ def validate(db: dict, origin: str) -> None:
         if not isinstance(keywords, list) or not keywords:
             problems.append(f"{where}: keywords must be a non-empty list")
             keywords = []
+        canonical_domains = []
         for domain in domains:
             if not isinstance(domain, str) or domain != domain.lower().strip().rstrip("."):
                 problems.append(f"{where}: domain {domain!r} must be lower-case, without a trailing dot")
                 continue
             try:
-                idna.encode(domain)
+                canonical = idna.decode(idna.encode(domain)).rstrip(".")
             except idna.IDNAError as error:
                 problems.append(f"{where}: domain '{domain}' is not a valid IDNA2008 name ({error})")
                 continue
-            if _psl().privatesuffix(domain) is None:
+            if _psl().privatesuffix(canonical) is None:
                 problems.append(f"{where}: '{domain}' is a public suffix; allow-listing it would trust every site under it")
-            if owners.setdefault(domain, brand_id) != brand_id:
-                problems.append(f"{where}: domain '{domain}' is already claimed by '{owners[domain]}'")
+            if canonical not in owners:
+                owners[canonical] = brand_id
+            elif owners[canonical] == brand_id:
+                problems.append(f"{where}: duplicate domain '{canonical}'")
+            else:
+                problems.append(f"{where}: domain '{canonical}' is already claimed by '{owners[canonical]}'")
+            canonical_domains.append(canonical)
         for keyword in keywords:
             if not isinstance(keyword, str) or not KEYWORD.match(keyword):
                 problems.append(f"{where}: keyword {keyword!r} must be lower-case ASCII [a-z0-9-], 3+ characters")
+        normalized.append({**brand, "domains": canonical_domains})
     if problems:
         raise BrandDBError(f"{origin}: " + "; ".join(problems))
+    return normalized
 
 
 def _parse(raw: str, origin: str) -> dict:
@@ -111,8 +124,7 @@ def _parse(raw: str, origin: str) -> dict:
         raise BrandDBError(f"{origin}: not valid JSON ({error})") from None
     if not isinstance(db, dict):
         raise BrandDBError(f"{origin}: must be a JSON object")
-    validate(db, origin)
-    return db
+    return {**db, "brands": _validated_brands(db, origin)}
 
 
 def _db(db: dict, digest: str, verification: str, source: str) -> BrandDB:

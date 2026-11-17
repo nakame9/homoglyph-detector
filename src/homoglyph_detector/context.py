@@ -232,7 +232,9 @@ def userinfo_domain(userinfo: str) -> str:
     suffix ('john.doe', 'user')."""
     name = unicodedata.normalize("NFKC", userinfo).strip("/\\ ")
     name = re.split(r"[:/\\?#]", name, maxsplit=1)[0].lower().rstrip(".")
-    return name if "." in name and _psl().privatesuffix(name, accept_unknown=False) else ""
+    if "." not in name or not _psl().privatesuffix(name, accept_unknown=False):
+        return ""
+    return _shown(name)
 
 
 def registrable(host: str) -> tuple[str, str]:

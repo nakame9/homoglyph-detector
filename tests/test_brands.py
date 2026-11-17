@@ -95,6 +95,31 @@ def test_organisation_database_is_merged_and_detected(tmp_path):
     assert analyze("acmebank.vn", (path,)).verdict == "SAFE"
 
 
+@pytest.mark.parametrize("domain", ["\u0251pple.com", "xn--pple-p5b.com"])
+def test_official_idn_matches_both_domain_forms(tmp_path, domain):
+    db = copy.deepcopy(ACME)
+    db["brands"][0]["domains"] = [domain]
+    path = write_db(tmp_path, db)
+    for spelling in ("\u0251pple.com", "xn--pple-p5b.com"):
+        report = analyze(f"https://www.{spelling}/", (path,))
+        assert report.verdict == "SAFE"
+        assert "allowlisted" in {finding.kind for finding in report.findings}
+
+        report = analyze(f"https://{spelling}@example.org/", (path,))
+        finding, = (finding for finding in report.findings if finding.kind == "brand_in_userinfo")
+        assert finding.detail["shown"] == "\u0251pple.com"
+
+
+def test_idn_aliases_in_different_databases_cannot_claim_the_same_domain(tmp_path):
+    first = copy.deepcopy(ACME)
+    first["brands"][0]["domains"] = ["\u0251pple.com"]
+    second = copy.deepcopy(ACME)
+    second["brands"][0].update(id="otherbank", domains=["xn--pple-p5b.com"])
+    paths = (write_db(tmp_path, first), write_db(tmp_path, second, "other.json"))
+    with pytest.raises(BrandDBError, match="claimed by both"):
+        load(paths)
+
+
 def test_pinning(tmp_path):
     path = write_db(tmp_path, ACME)
     digest = sha256(Path(path).read_bytes())
@@ -136,6 +161,12 @@ def test_cli_exit_codes_for_data_problems(tmp_path, capsys):
 @pytest.mark.parametrize("change, message", [
     (lambda db: db["brands"][0]["domains"].append("github.io"), "public suffix"),   # would allow-list all of github.io
     (lambda db: db["brands"][0]["domains"].append("com.vn"), "public suffix"),
+    (lambda db: db["brands"][0]["domains"].append("xn--55qx5d.cn"), "public suffix"),
+    (lambda db: db["brands"][0]["domains"].extend(["\u0251pple.com", "xn--pple-p5b.com"]), "duplicate domain"),
+    (lambda db: db["brands"].extend([
+        {**db["brands"][0], "id": "first", "domains": ["\u0251pple.com"]},
+        {**db["brands"][0], "id": "second", "domains": ["xn--pple-p5b.com"]},
+    ]), "already claimed"),
     (lambda db: db["brands"][0]["domains"].append("Acme.vn"), "lower-case"),
     (lambda db: db["brands"][0]["domains"].append("-acme.vn"), "not a valid IDNA2008"),
     (lambda db: db["brands"][0]["keywords"].append("ab"), "keyword"),
