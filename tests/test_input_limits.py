@@ -5,6 +5,7 @@ import sys
 import pytest
 
 from homoglyph_detector import analyze
+from homoglyph_detector import cli
 from homoglyph_detector.analyzer import ENGINES
 from homoglyph_detector.cli import main
 from homoglyph_detector.context import MAX_INPUT_LENGTH
@@ -51,6 +52,34 @@ def test_cli_drains_an_oversized_line_and_keeps_following_lines(tmp_path, monkey
     shown = capsys.readouterr().out
     assert "unsupported (too_long)" in shown and oversized not in shown
 
+
+def test_batch_input_limit_applies_to_arguments_and_file_together(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(cli, "MAX_BATCH_INPUTS", 2)
+    path = tmp_path / "inputs.txt"
+    path.write_text("xn--pypal-4ve.com\n", encoding="utf-8")
+    args = ["--json", "-f", str(path), "example.org"]
+    assert main(args) == 2
+    assert len(json.loads(capsys.readouterr().out)) == 2
+    assert main(args + ["paypal.com"]) == cli.DATA_ERROR
+    captured = capsys.readouterr()
+    assert captured.out == "" and "batch exceeds 2 inputs" in captured.err
+
+
+@pytest.mark.parametrize("prefix", ["", "#", " "])
+def test_batch_character_limit_counts_drained_and_skipped_lines(monkeypatch, capsys, prefix):
+    monkeypatch.setattr(cli, "MAX_BATCH_CHARACTERS", 2 * MAX_INPUT_LENGTH)
+    monkeypatch.setattr(sys, "stdin", io.StringIO("example.org\n" + prefix + " " * (3 * MAX_INPUT_LENGTH)))
+    assert main(["-f", "-"]) == cli.DATA_ERROR
+    captured = capsys.readouterr()
+    assert captured.out == "" and "batch exceeds" in captured.err
+
+
+def test_batch_accepts_the_exact_character_limit(monkeypatch, capsys):
+    text = "# comment\nexample.org\n"
+    monkeypatch.setattr(cli, "MAX_BATCH_CHARACTERS", len(text) + len("apple.com"))
+    monkeypatch.setattr(sys, "stdin", io.StringIO(text))
+    assert main(["--json", "-f", "-", "apple.com"]) == 0
+    assert [row["input"] for row in json.loads(capsys.readouterr().out)] == ["apple.com", "example.org"]
 
 
 @pytest.mark.parametrize("text,keyword", [

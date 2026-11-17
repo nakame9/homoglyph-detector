@@ -7,6 +7,7 @@ import json
 import sys
 import unicodedata
 from collections.abc import Iterator
+from itertools import islice
 from typing import TextIO
 
 from . import __version__
@@ -19,7 +20,13 @@ from .unicode_data import data_versions, is_default_ignorable
 
 ICON = {"SAFE": "✅", "SUSPICIOUS": "⚠\ufe0f ", "MALICIOUS": "🚨"}
 EXIT = {"SAFE": 0, "SUSPICIOUS": 1, "MALICIOUS": 2}
-DATA_ERROR = 3   # tampered, unpinned-but-required or invalid data: refuse to give a verdict
+DATA_ERROR = 3   # invalid data or resource limit: refuse to give a verdict
+MAX_BATCH_INPUTS = 256
+MAX_BATCH_CHARACTERS = 65_536
+
+
+class BatchLimitError(ValueError):
+    """The complete batch cannot be processed within the resource budget."""
 
 
 def unsafe(ch: str) -> bool:
@@ -76,7 +83,7 @@ def main(argv: list[str] | None = None) -> int:
         prog="homoglyph-detector",
         description="Detect look-alike (homoglyph) domains, emails, URLs and names.",
         epilog="Exit code: 0 all safe, 1 something suspicious, 2 something malicious, "
-               "3 data failed integrity or validation checks (no verdict given).",
+               "3 data failed validation or the batch exceeded a limit (no verdict given).",
     )
     parser.add_argument("inputs", nargs="*", help="domains, emails, URLs or names")
     parser.add_argument("-f", "--file", help="read one input per line ('-' for stdin)")
@@ -100,7 +107,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         return _run(parser, args)
-    except (DataIntegrityError, BrandDBError, OSError) as error:
+    except (DataIntegrityError, BrandDBError, BatchLimitError, OSError) as error:
         print(f"homoglyph-detector: data error: {visible(str(error))}", file=sys.stderr)
         return DATA_ERROR
 
@@ -128,16 +135,24 @@ def _list_profiles() -> int:
     return 0
 
 
-def _file_inputs(stream: TextIO) -> Iterator[str]:
-    # ponytail: bound one physical line; the batch budget belongs to A9.
+def _file_inputs(stream: TextIO, remaining_characters: int) -> Iterator[str]:
     read_size = MAX_INPUT_LENGTH + 2  # leave room for a CRLF after a maximum-length input
-    while line := stream.readline(read_size):
+
+    def read_chunk() -> str:
+        nonlocal remaining_characters
+        chunk = stream.readline(min(read_size, remaining_characters + 1))
+        remaining_characters -= len(chunk)
+        if remaining_characters < 0:
+            raise BatchLimitError(f"batch exceeds {MAX_BATCH_CHARACTERS} Unicode characters; split the batch")
+        return chunk
+
+    while line := read_chunk():
         comment = line.startswith("#")
         item = line.removesuffix("\n").removesuffix("\r")
         if len(item) > MAX_INPUT_LENGTH:
             # Drain the rest before processing the next line. The bounded prefix only triggers the shared guard.
             while line and not line.endswith("\n"):
-                line = stream.readline(read_size)
+                line = read_chunk()
             if not comment:
                 yield item
         elif not comment and (item := item.strip()):
@@ -163,11 +178,18 @@ def _run(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
                           f"[{db.verification}] {db.source}"))
         return 0
 
-    inputs = list(args.inputs)
+    inputs = args.inputs
+    if len(inputs) > MAX_BATCH_INPUTS:
+        raise BatchLimitError(f"batch exceeds {MAX_BATCH_INPUTS} inputs; split the batch")
+    remaining = MAX_BATCH_CHARACTERS - sum(map(len, inputs))
+    if remaining < 0:
+        raise BatchLimitError(f"batch exceeds {MAX_BATCH_CHARACTERS} Unicode characters; split the batch")
     if args.file:
         stream = sys.stdin if args.file == "-" else open(args.file, encoding="utf-8")
         with stream:
-            inputs.extend(_file_inputs(stream))
+            inputs.extend(islice(_file_inputs(stream, remaining), MAX_BATCH_INPUTS - len(inputs) + 1))
+        if len(inputs) > MAX_BATCH_INPUTS:
+            raise BatchLimitError(f"batch exceeds {MAX_BATCH_INPUTS} inputs; split the batch")
     if not inputs:
         parser.error("give at least one input or --file")
 

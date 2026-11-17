@@ -99,12 +99,14 @@ homoglyph-detector --version                                            # phiên
 
 Mỗi đầu vào tối đa 272 điểm mã Unicode (đếm trước khi chuẩn hóa). Với file hoặc stdin, giới hạn áp dụng cho từng dòng, kể cả khoảng trắng đầu và cuối, trừ dấu xuống dòng. Đầu vào vượt giới hạn trả SUSPICIOUS với `parse_status=unsupported` và `parse_reason=too_long`, không chấm đích và không đưa chuỗi quá dài vào báo cáo.
 
+Mỗi lô CLI nhận tối đa 256 đầu vào và 65.536 điểm mã Unicode, tính cả đối số, dòng trống, chú thích và phần dư của dòng đọc từ file hoặc stdin. Chia dữ liệu thành nhiều lô nếu vượt một trong hai ngưỡng. CLI trả mã 3 và không xuất kết luận cho lô vượt giới hạn.
+
 | Mã thoát | Ý nghĩa |
 |---|---|
 | 0 | tất cả SAFE |
 | 1 | có SUSPICIOUS |
 | 2 | có MALICIOUS (cần bằng chứng ngoài độ giống hình ảnh) |
-| 3 | dữ liệu không qua kiểm tra toàn vẹn / hợp lệ, không đưa ra kết luận |
+| 3 | dữ liệu không qua kiểm tra toàn vẹn / hợp lệ hoặc lô vượt giới hạn, không đưa ra kết luận |
 
 Dùng như thư viện:
 
