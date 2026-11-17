@@ -156,6 +156,33 @@ def test_cli_exit_codes_for_data_problems(tmp_path, capsys):
     assert "[unpinned]" in capsys.readouterr().out
 
 
+@pytest.mark.parametrize("mutation, message", [
+    ("encoding", "not valid UTF-8"),
+    ("list_id", "id must be a string"),
+    ("object_id", "id must be a string"),
+    ("empty_pin", "64-digit hexadecimal SHA-256 pin"),
+    ("blank_pin", "64-digit hexadecimal SHA-256 pin"),
+])
+def test_invalid_external_brand_data_refuses_a_verdict(tmp_path, capsys, mutation, message):
+    db = copy.deepcopy(ACME)
+    if mutation in ("list_id", "object_id"):
+        db["brands"][0]["id"] = [] if mutation == "list_id" else {}
+    path = write_db(tmp_path, db)
+    if mutation == "encoding":
+        Path(path).write_bytes(b"\xff")
+    if mutation in ("empty_pin", "blank_pin"):
+        path += "#sha256=" + (" " if mutation == "blank_pin" else "")
+
+    assert main(["--json", "--brands", path, "paypal.com"]) == DATA_ERROR
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert message in captured.err
+    assert main(["--verify", "--brands", path]) == DATA_ERROR
+    captured = capsys.readouterr()
+    assert "brands:" not in captured.out
+    assert message in captured.err
+
+
 # --- validation -------------------------------------------------------------------
 
 @pytest.mark.parametrize("change, message", [

@@ -52,7 +52,7 @@ homoglyph-detector --verify --brands examples/org_brands.json
 homoglyph-detector --version
 ```
 
-Database không ghim vẫn được dùng nhưng có cảnh báo, kèm sẵn mã SHA-256 để ghim.
+Database không ghim vẫn được dùng nhưng có cảnh báo, kèm sẵn mã SHA-256 để ghim. Khi dùng `#sha256=`, phải cung cấp đủ 64 chữ số hex.
 
 ## Kiểm tra hợp lệ
 

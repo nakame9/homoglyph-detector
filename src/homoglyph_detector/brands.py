@@ -74,12 +74,13 @@ def _validated_brands(db: dict, origin: str) -> list[dict]:
             problems.append(f"{where} must be an object")
             continue
         brand_id = brand.get("id", "")
-        where = f"brand '{brand_id}'" if brand_id else where
-        if not BRAND_ID.match(str(brand_id)):
-            problems.append(f"{where}: id must match {BRAND_ID.pattern}")
-        elif brand_id in ids:
-            problems.append(f"{where}: duplicate id")
-        ids.add(brand_id)
+        if not isinstance(brand_id, str) or not BRAND_ID.fullmatch(brand_id):
+            problems.append(f"{where}: id must be a string matching {BRAND_ID.pattern}")
+        else:
+            where = f"brand '{brand_id}'"
+            if brand_id in ids:
+                problems.append(f"{where}: duplicate id")
+            ids.add(brand_id)
         if not isinstance(brand.get("name"), str) or not brand["name"].strip():
             problems.append(f"{where}: name is required")
         domains, keywords = brand.get("domains"), brand.get("keywords")
@@ -120,7 +121,7 @@ def _validated_brands(db: dict, origin: str) -> list[dict]:
 def _parse(raw: str, origin: str) -> dict:
     try:
         db = json.loads(raw)
-    except json.JSONDecodeError as error:
+    except (ValueError, RecursionError) as error:
         raise BrandDBError(f"{origin}: not valid JSON ({error})") from None
     if not isinstance(db, dict):
         raise BrandDBError(f"{origin}: must be a JSON object")
@@ -137,12 +138,19 @@ def bundled() -> BrandDB:
 
 
 def external(spec: str) -> BrandDB:
-    path, _, pin = spec.partition("#sha256=")
+    path, separator, pin = spec.partition("#sha256=")
+    pin = pin.strip().lower()
+    if separator and not re.fullmatch(r"[0-9a-f]{64}", pin):
+        raise DataIntegrityError(f"{path}: expected a 64-digit hexadecimal SHA-256 pin")
     raw = Path(path).read_bytes()
     digest = sha256(raw)
-    if pin and pin.strip().lower() != digest:
-        raise DataIntegrityError(f"{path}: SHA-256 is {digest}, expected {pin.strip().lower()}")
-    return _db(_parse(raw.decode("utf-8"), path), digest, "pinned" if pin else "unpinned", path)
+    if separator and pin != digest:
+        raise DataIntegrityError(f"{path}: SHA-256 is {digest}, expected {pin}")
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise BrandDBError(f"{path}: not valid UTF-8 ({error})") from None
+    return _db(_parse(text, path), digest, "pinned" if separator else "unpinned", path)
 
 
 def resolve(files: tuple[str, ...] = ()) -> tuple[str, ...]:

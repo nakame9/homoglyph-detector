@@ -4,6 +4,7 @@
 
 ## [Chưa phát hành]
 ### Sửa
+- **Brand DB không hợp lệ trả mã thoát 3** nếu UTF-8 lỗi, ID sai kiểu hoặc khai báo SHA-256 thiếu mã.
 - **Brand DB chuẩn hóa A-label và U-label** trước khi so allowlist, đối chiếu Public Suffix List và kiểm tra domain trùng.
 - **Đọc URL như browser (WHATWG).** Scheme đặc biệt bỏ qua mọi dấu `/` và `\` sau dấu `:`. Vì vậy `https:///paypаl.com/`, `https:/…` và `https:…` (chữ `а` Cyrillic) không còn mất host. `paypаl.com/?q=https://x.org/` không còn bị coi là URL có scheme. Tab và xuống dòng trong URL bị bỏ qua. Ba ca này trước đây ra SAFE, nay ra MALICIOUS.
 - Port được tách trên authority gốc, trước khi giải mã host. `https://paypal.com%3A443/` không còn được nhận là domain chính thức của PayPal.
