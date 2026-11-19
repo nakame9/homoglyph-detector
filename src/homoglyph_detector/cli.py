@@ -87,7 +87,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("inputs", nargs="*", help="domains, emails, URLs or names")
     parser.add_argument("-f", "--file", help="read one input per line ('-' for stdin)")
-    parser.add_argument("--json", action="store_true", help="print JSON instead of text")
+    output = parser.add_mutually_exclusive_group()
+    output.add_argument("--json", action="store_true", help="print the complete JSON report instead of text")
+    output.add_argument("--integration-json", action="store_true", help="print redacted integration JSON (schema v1)")
     parser.add_argument("--brands", action="append", default=[], metavar="FILE[#sha256=HEX]",
                         help="extra brand database, merged over the bundled one; repeatable. "
                              "'#sha256=HEX' pins it to its digest")
@@ -200,7 +202,9 @@ def _run(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
     if args.base_rate is not None and not 0 < args.base_rate < 1:
         parser.error("--base-rate must be strictly between 0 and 1")
     reports = [analyze(item, brand_files, policy, args.base_rate) for item in inputs]
-    if args.json:
+    if args.integration_json:
+        print(json_text([r.to_integration_dict() for r in reports]))
+    elif args.json:
         print(json_text([r.to_dict() for r in reports]))
     else:
         print("\n\n".join(render(r) for r in reports))

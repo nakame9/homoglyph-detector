@@ -24,11 +24,12 @@ def combosquat_engine(ctx: Context, brands: list[dict]) -> EngineResult:
             result.add("brand_in_userinfo", "medium",
                        f"URL starts with '{fake}' ({brand['name']}) but goes to '{rd}', an official "
                        f"{owner['name']} domain: the part before '@' is only a user name",
-                       brand=brand["name"], shown=fake, basis="name", destination_brand=owner["name"])
+                       brand=brand["name"], brand_id=brand["id"], shown=fake, basis="name",
+                       destination_brand=owner["name"])
         elif brand and not owner:
             result.add("brand_in_userinfo", "high",
                        f"URL starts with '{fake}' ({brand['name']}) but goes to '{rd}': the part before '@' is "
-                       "only a user name", brand=brand["name"], shown=fake, basis="name")
+                       "only a user name", brand=brand["name"], brand_id=brand["id"], shown=fake, basis="name")
     if owner or ctx.ip:   # an official host is not a squat of itself; an address carries no brand name
         return result.noisy_or()
     plain = host.replace(".", "").replace("-", "")   # also 'am.azon.com', 'pay-pal-login'

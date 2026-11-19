@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 
 from .context import REASONS, Context, classify, prepare, registrable  # noqa: F401  (re-exported)
+from .context import url_metadata
 from .brands import load, resolve
 from .engines import ENGINES, EngineResult, Finding
 from .scoring import at_base_rate, evidence_rule, evidence_summary, probability, profile, verdict
@@ -40,6 +41,24 @@ class Report:
 
     def to_dict(self) -> dict:
         return asdict(self)
+
+    def to_integration_dict(self) -> dict:
+        """Versioned report containing only the destination and fixed finding codes."""
+        # ponytail: reuse the bounded parser for metadata; engines are not run a second time.
+        ctx = None if self.parse_reason == "too_long" else prepare(self.input)
+        scheme, port, userinfo, query = url_metadata(ctx) if ctx else (None, None, None, None)
+        host = (ctx.ip or ctx.a_label or None) if ctx and self.parse_status == "ok" else None
+        port = port if host else None
+        destination = host
+        if host and scheme:
+            authority = f"[{host}]" if ":" in host else host
+            destination = f"{scheme}://{authority}" + (f":{port}" if port is not None else "")
+        findings = [{"kind": f.kind, **({"brand_id": f.detail["brand_id"]}
+                    if f.kind == "brand_in_userinfo" and "brand_id" in f.detail else {})} for f in self.findings]
+        return {"schema_version": 1, "input": destination, "input_type": self.input_type,
+                "scheme": scheme, "host": host, "port": port, "has_userinfo": userinfo, "has_query": query,
+                "parse_status": self.parse_status, "parse_reason": self.parse_reason,
+                "verdict": self.verdict, "risk_score": self.risk_score, "findings": findings}
 
 
 def run_engines(raw: str, brand_files: tuple[str, ...] = ()) -> tuple[Context, dict[str, EngineResult]]:

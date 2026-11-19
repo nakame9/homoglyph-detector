@@ -59,6 +59,10 @@ def _strip_port(host: str) -> str:
     return re.sub(r":\d*$", "", host)
 
 
+def _url_text(raw: str) -> str:
+    return raw.replace("\t", "").replace("\n", "").replace("\r", "")
+
+
 def _authority(raw: str) -> tuple[str, str] | None:
     """(scheme, authority) of a URL read as a browser reads it, or None when `raw` is not such a URL.
     Special schemes ignore any number of slashes or backslashes: 'https:/x', 'https:///x' and 'https:x' go to x."""
@@ -164,7 +168,7 @@ def classify(raw: str) -> tuple[str, str, str, str, str]:
     raw = unicodedata.normalize("NFC", raw.strip())
     if not raw:
         return "name", "", "", "empty", ""
-    url = _authority(re.sub(r"[\t\n\r]", "", raw))   # browsers drop tabs and newlines anywhere in a URL
+    url = _authority(_url_text(raw))   # browsers drop tabs and newlines anywhere in a URL
     if url:
         scheme, authority = url
         userinfo, _, hostport = authority.rpartition("@")   # the host follows the last '@'
@@ -233,6 +237,17 @@ def prepare(raw: str) -> Context:
             return ctx
     ctx.resolved = idna.decode(ctx.a_label)
     return ctx
+
+
+def url_metadata(ctx: Context) -> tuple[str | None, int | None, bool, bool]:
+    """Scheme, explicit port, userinfo presence and query presence from the analyzed URL."""
+    if ctx.input_type != "url":
+        return None, None, False, False
+    raw = _url_text(unicodedata.normalize("NFC", ctx.raw.strip()))
+    scheme, authority = _authority(raw) or _authority("http://" + raw)
+    _, at, hostport = authority.rpartition("@")
+    _, port = _split_port(hostport)
+    return scheme, int(port) if port and ctx.parse_status == "ok" else None, bool(at), "?" in raw.partition("#")[0]
 
 
 @cache

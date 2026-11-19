@@ -87,7 +87,8 @@ homoglyph-detector paypa1.com "user@pаypal.com" "https://аpple.com/login"   # 
 homoglyph-detector "5hopee Official"                                    # tên hiển thị
 homoglyph-detector -f examples/sample_domains.txt                       # mỗi dòng một đầu vào
 cat domains.txt | homoglyph-detector -f -                               # đọc từ stdin
-homoglyph-detector g00gle.com --json                                    # JSON cho SIEM / script
+homoglyph-detector g00gle.com --json                                    # báo cáo JSON đầy đủ
+homoglyph-detector --integration-json -f domains.txt                    # JSON đã lược dữ liệu cho tích hợp
 homoglyph-detector paypal-login.com --profile banking                  # profile: default, banking, browser
 homoglyph-detector paypal-login.com --max-fpr 0.01,0.001                # ngân sách báo nhầm riêng
 homoglyph-detector --profiles                                           # các profile và số liệu đo được
@@ -107,6 +108,10 @@ Mỗi lô CLI nhận tối đa 256 đầu vào và 65.536 điểm mã Unicode, t
 | 1 | có SUSPICIOUS |
 | 2 | có MALICIOUS (cần bằng chứng ngoài độ giống hình ảnh) |
 | 3 | dữ liệu không qua kiểm tra toàn vẹn / hợp lệ hoặc lô vượt giới hạn, không đưa ra kết luận |
+
+Dùng [schema tích hợp v1](docs/integration.md) qua `--integration-json` hoặc
+`analyze(value).to_integration_dict()` để bỏ userinfo, path, query, fragment và
+văn bản chẩn đoán. `--json` và `Report.to_dict()` có thể chứa đầu vào gốc.
 
 Dùng như thư viện:
 
