@@ -33,13 +33,15 @@ class Context:
     ip_obfuscated: bool = False     # that IPv4 address is written in another form (hex, octal, short, one number)
 
 
-MAX_INPUT_LENGTH = 272  # Unicode code points, before normalization
+MAX_INPUT_LENGTH = 272   # code points the engines scan: a host, a name, a URL userinfo or an email local part
+MAX_RAW_LENGTH = 8192    # code points of a whole input before normalization: bounds parsing, not scoring
 SPECIAL_SCHEMES = {"http", "https", "ws", "wss", "ftp", "file"}   # WHATWG "special" URL schemes
 SCHEME = re.compile(r"([A-Za-z][A-Za-z0-9+.\-]*):")
 # WHATWG forbidden domain code points: checked after UTS #46 mapping, so fullwidth '＠' counts as '@'
 FORBIDDEN_DOMAIN = set("\x00\t\n\r #/:<>?@[\\]^|%\x7f") | {chr(c) for c in range(0x20)}
 REASONS = {
-    "too_long": f"input exceeds the limit of {MAX_INPUT_LENGTH} Unicode characters",
+    "too_long": f"a host, name, user name or local part exceeds {MAX_INPUT_LENGTH} Unicode characters, "
+                f"or the whole input exceeds {MAX_RAW_LENGTH}",
     "empty": "there is no host",
     "invalid_port": "the port is not a number from 0 to 65535",
     "forbidden_code_point": "the host contains a character a host cannot have (such as @ : / % or a space)",
@@ -192,9 +194,12 @@ def _shown(host: str) -> str:
 
 
 def prepare(raw: str) -> Context:
-    if len(raw) > MAX_INPUT_LENGTH:
+    # A long URL is fine (tracking links, return URLs): only what the engines scan is bounded
+    if len(raw) > MAX_RAW_LENGTH:
         return Context("", "unknown", "", parse_status="unsupported", parse_reason="too_long")
     input_type, target, before_at, reason, ip = classify(raw)
+    if max(len(target), len(before_at)) > MAX_INPUT_LENGTH:
+        return Context("", "unknown", "", parse_status="unsupported", parse_reason="too_long")
     status = "rejected" if reason else "ok"
     if input_type == "name":
         return Context(raw, input_type, target, parse_status=status, parse_reason=reason)

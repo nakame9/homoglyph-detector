@@ -97,7 +97,7 @@ homoglyph-detector --verify                                             # kiểm
 homoglyph-detector --version                                            # phiên bản công cụ và dữ liệu
 ```
 
-Mỗi đầu vào tối đa 272 điểm mã Unicode (đếm trước khi chuẩn hóa). Với file hoặc stdin, giới hạn áp dụng cho từng dòng, kể cả khoảng trắng đầu và cuối, trừ dấu xuống dòng. Đầu vào vượt giới hạn trả SUSPICIOUS với `parse_status=unsupported` và `parse_reason=too_long`, không chấm đích và không đưa chuỗi quá dài vào báo cáo.
+Phần các engine quét (host, tên hiển thị, userinfo của URL, phần local của email) tối đa 272 điểm mã Unicode. Toàn bộ một đầu vào tối đa 8.192 điểm mã, đếm trước khi chuẩn hóa. Vì vậy URL dài như link tracking hay link có `returnUri` vẫn được chấm theo host. Với file hoặc stdin, giới hạn 8.192 áp dụng cho từng dòng, kể cả khoảng trắng đầu và cuối, trừ dấu xuống dòng. Đầu vào vượt một trong hai giới hạn trả SUSPICIOUS với `parse_status=unsupported` và `parse_reason=too_long`, không chấm đích và không đưa chuỗi quá dài vào báo cáo.
 
 Mỗi lô CLI nhận tối đa 256 đầu vào và 65.536 điểm mã Unicode, tính cả đối số, dòng trống, chú thích và phần dư của dòng đọc từ file hoặc stdin. Chia dữ liệu thành nhiều lô nếu vượt một trong hai ngưỡng. CLI trả mã 3 và không xuất kết luận cho lô vượt giới hạn.
 

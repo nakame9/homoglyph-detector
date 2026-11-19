@@ -13,7 +13,7 @@ from typing import TextIO
 from . import __version__
 from .analyzer import Report, analyze
 from .brands import BrandDBError, load, resolve
-from .context import MAX_INPUT_LENGTH
+from .context import MAX_RAW_LENGTH
 from .integrity import DataIntegrityError, verify_all
 from .scoring import calibration, custom_profile, profile
 from .unicode_data import data_versions, is_default_ignorable
@@ -136,7 +136,7 @@ def _list_profiles() -> int:
 
 
 def _file_inputs(stream: TextIO, remaining_characters: int) -> Iterator[str]:
-    read_size = MAX_INPUT_LENGTH + 2  # leave room for a CRLF after a maximum-length input
+    read_size = MAX_RAW_LENGTH + 2  # leave room for a CRLF after a maximum-length input
 
     def read_chunk() -> str:
         nonlocal remaining_characters
@@ -149,7 +149,7 @@ def _file_inputs(stream: TextIO, remaining_characters: int) -> Iterator[str]:
     while line := read_chunk():
         comment = line.startswith("#")
         item = line.removesuffix("\n").removesuffix("\r")
-        if len(item) > MAX_INPUT_LENGTH:
+        if len(item) > MAX_RAW_LENGTH:
             # Drain the rest before processing the next line. The bounded prefix only triggers the shared guard.
             while line and not line.endswith("\n"):
                 line = read_chunk()

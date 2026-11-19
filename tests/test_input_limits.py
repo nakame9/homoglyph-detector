@@ -8,35 +8,56 @@ from homoglyph_detector import analyze
 from homoglyph_detector import cli
 from homoglyph_detector.analyzer import ENGINES
 from homoglyph_detector.cli import main
-from homoglyph_detector.context import MAX_INPUT_LENGTH
+from homoglyph_detector.context import MAX_INPUT_LENGTH, MAX_RAW_LENGTH
 from homoglyph_detector.visual import can_score_visually, visual_similarity
 
 
-def test_api_checks_raw_length_before_running_engines(monkeypatch):
-    prefix = "https://example.org/"
-    url = prefix + "\u00e9" * (MAX_INPUT_LENGTH - len(prefix))
-    assert len(url) == MAX_INPUT_LENGTH
-    assert analyze(url).parse_status == "ok"
+FAKE = "payp" + chr(0x430) + "l.com"
 
+
+@pytest.mark.parametrize("raw,verdict", [
+    ("https://www.paypal.com/signin?returnUri=" + "x" * 560, "SAFE"),      # login link with a long return URL
+    ("https://click.mail.example.com/?qs=" + "ab12" * 92, "SAFE"),          # mail tracking link
+    (f"https://{FAKE}/" + "a" * 1980, "MALICIOUS"),                          # padding must not hide an attack
+])
+def test_a_long_url_is_scored_by_its_host(raw, verdict):
+    """The limit bounds what the engines scan (host, userinfo, name), not the length of the whole URL."""
+    report = analyze(raw)
+    assert len(raw) > MAX_INPUT_LENGTH and report.parse_status == "ok" and report.verdict == verdict
+
+
+@pytest.mark.parametrize("raw", [
+    "x" * (MAX_INPUT_LENGTH + 1),                                            # a name
+    "https://" + "a" * (MAX_INPUT_LENGTH + 1) + ".com/",                     # a host
+    "https://" + "u" * (MAX_INPUT_LENGTH + 1) + "@example.org/",             # a URL userinfo
+    "a" * (MAX_INPUT_LENGTH + 1) + "@example.org",                           # an email local part
+    "https://example.org/" + "a" * MAX_RAW_LENGTH,                           # the whole input
+])
+def test_an_oversized_input_never_reaches_an_engine(raw, monkeypatch):
     def fail(*args):
         raise AssertionError("oversized inputs must not reach an engine")
 
     monkeypatch.setitem(ENGINES, "visual", fail)
-    report = analyze(url + " ", base_rate=0.001)
+    report = analyze(raw, base_rate=0.001)
     assert (report.parse_status, report.parse_reason, report.verdict) == ("unsupported", "too_long", "SUSPICIOUS")
     assert report.input == report.target == report.skeleton == ""
     assert report.risk_score == 0 and report.probability_at_base_rate is None
 
 
+@pytest.mark.parametrize("raw", ["x" * MAX_INPUT_LENGTH, "https://example.org/" + "a" * (MAX_RAW_LENGTH - 20)])
+def test_inputs_at_the_limits_are_scored(raw):
+    assert analyze(raw).parse_status == "ok"
+
+
 def test_cli_drains_an_oversized_line_and_keeps_following_lines(tmp_path, monkeypatch, capsys):
     class BoundedStdin(io.StringIO):
         def readline(self, size=-1):
-            assert 0 < size <= MAX_INPUT_LENGTH + 2
+            assert 0 < size <= MAX_RAW_LENGTH + 2
             return super().readline(size)
 
-    oversized = "https://example.org/" + "a" * (MAX_INPUT_LENGTH * 40)
+    oversized = "https://example.org/" + "a" * (MAX_RAW_LENGTH * 2)
     prefix = "https://example.org/"
-    at_limit = prefix + "a" * (MAX_INPUT_LENGTH - len(prefix))
+    at_limit = prefix + "a" * (MAX_RAW_LENGTH - len(prefix))
     lines = "#" + "a" * (MAX_INPUT_LENGTH * 3) + "\r\n" + at_limit + "\r\n" + oversized + "\r\nhttps://example.org/"
     path = tmp_path / "inputs.txt"
     path.write_bytes(lines.encode("utf-8"))
@@ -48,7 +69,7 @@ def test_cli_drains_an_oversized_line_and_keeps_following_lines(tmp_path, monkey
         assert rows[0]["input"] == at_limit and rows[2]["input"] == "https://example.org/"
         assert rows[1]["parse_reason"] == "too_long" and rows[1]["input"] == ""
 
-    assert main([oversized, "https://payp\u0430l.com/"]) == 2
+    assert main([oversized, f"https://{FAKE}/"]) == 2
     shown = capsys.readouterr().out
     assert "unsupported (too_long)" in shown and oversized not in shown
 
