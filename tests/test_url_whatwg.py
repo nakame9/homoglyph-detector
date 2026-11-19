@@ -174,3 +174,23 @@ def test_host_parsing_agrees_with_the_url_standard(case):
     hostname = case.get("hostname", "")
     if hostname.startswith("[") or IPV4.fullmatch(hostname):
         assert ctx.ip == hostname.strip("[]")
+
+
+# --- a domain or email host with a control character --------------------------------
+
+CONTROLS = [chr(0x1b) + "[2J", chr(0x00), chr(0x07), chr(0x7f), chr(0x9b) + "31m", chr(0x85)]
+
+
+@pytest.mark.parametrize("control", CONTROLS, ids=lambda c: f"U+{ord(c[0]):04X}")
+@pytest.mark.parametrize("shape", ["evil{}.com", "pay{}pal.com", "user@pay{}pal.com", "pay{}pal.com/login"])
+def test_a_host_with_a_control_character_is_never_safe(shape, control):
+    """No browser or resolver accepts a control character in a host: like a rejected URL, send it for review."""
+    report = analyze(shape.format(control))
+    assert (report.parse_status, report.parse_reason) == ("rejected", "forbidden_code_point")
+    assert report.verdict == "SUSPICIOUS"
+
+
+@pytest.mark.parametrize("raw", [chr(0x1b) + "[1mPayPal Support", "us" + chr(0x1b) + "er@paypal.com"])
+def test_a_control_character_outside_a_host_is_left_to_the_display(raw):
+    """Names and email local parts are shown escaped (A3); only a host decides where mail or a link goes."""
+    assert analyze(raw).parse_status == "ok"

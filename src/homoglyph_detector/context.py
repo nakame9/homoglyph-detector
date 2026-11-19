@@ -103,6 +103,15 @@ def _ipv4(host: str) -> str | None:
     return str(ipaddress.IPv4Address(numbers[-1] + sum(n << 8 * (3 - i) for i, n in enumerate(numbers[:-1]))))
 
 
+def _plain_host_reason(host: str) -> str:
+    """Why a domain or email host is unusable as written: nothing to look up, or a control character (C0, DEL,
+    C1) that no resolver accepts. The full URL host parser is not applied here: it would change how domains are
+    scored ('a\u200db.com' would no longer be scored)."""
+    if not host.rstrip("."):
+        return "empty"
+    return "forbidden_code_point" if any(unicodedata.category(ch) == "Cc" for ch in host) else ""
+
+
 def _ends_in_number(host: str) -> bool:
     """Only one trailing empty label is dropped: 'foo.09..' is a domain, 'foo.09.' is an invalid IPv4."""
     parts = host.split(".")
@@ -174,10 +183,10 @@ def classify(raw: str) -> tuple[str, str, str, str, str]:
         local, _, host = raw.rpartition("@")
         if re.search(r"[/?#\\]", host):   # 'paypal.com@evil.com/login' is a URL without a scheme, not an email
             return classify("http://" + raw)
-        return "email", host, local, "" if host.rstrip(".") else "empty", ""
+        return "email", host, local, _plain_host_reason(host), ""
     if "." in raw and " " not in raw:
         host = _strip_port(re.split(r"[/?#]", raw, maxsplit=1)[0])   # 'paypal.com/login'
-        return "domain", host, "", "" if host.rstrip(".") else "empty", ""
+        return "domain", host, "", _plain_host_reason(host), ""
     return "name", raw, "", "", ""
 
 
