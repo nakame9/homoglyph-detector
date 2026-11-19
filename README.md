@@ -109,6 +109,9 @@ Mỗi lô CLI nhận tối đa 256 đầu vào và 65.536 điểm mã Unicode, t
 | 2 | có MALICIOUS (cần bằng chứng ngoài độ giống hình ảnh) |
 | 3 | dữ liệu không qua kiểm tra toàn vẹn / hợp lệ hoặc lô vượt giới hạn, không đưa ra kết luận |
 
+Nếu bên nhận đóng pipe stdout sớm (ví dụ `--version | head -1`), CLI thoát im lặng
+với mã **141**. Mã này nằm ngoài hợp đồng verdict 0–3, không biểu thị kết quả phân tích.
+
 Dùng [schema tích hợp v1](docs/integration.md) qua `--integration-json` hoặc
 `analyze(value).to_integration_dict()` để bỏ userinfo, path, query, fragment và
 văn bản chẩn đoán. `--json` và `Report.to_dict()` có thể chứa đầu vào gốc.

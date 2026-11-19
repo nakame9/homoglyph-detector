@@ -1,5 +1,7 @@
 import codecs
+import errno
 import json
+import subprocess
 import sys
 import unicodedata
 from pathlib import Path
@@ -7,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from homoglyph_detector import analyze, script_of, skeleton
+from homoglyph_detector import cli
 from homoglyph_detector.analyzer import registrable
 from homoglyph_detector.unicode_data import (confusable_type, is_bidi_control, is_default_ignorable,
                                              restriction_level)
@@ -77,6 +80,33 @@ def test_cli_exit_codes():
     assert main(["example.com"]) == 0
     assert main(["paypal-login.com"]) == 1   # combosquat alone: SUSPICIOUS
     assert main(["example.com", "p\u0430ypal.com"]) == 2
+
+
+@pytest.mark.parametrize("args", [["--version"], ["--help"], ["--json", *(["example.org"] * 20)]])
+def test_closed_stdout_pipe_exits_quietly_including_buffered_output(args):
+    code = """
+import os
+import sys
+from homoglyph_detector.cli import main
+
+reader, writer = os.pipe()
+os.close(reader)
+os.dup2(writer, sys.stdout.fileno())
+os.close(writer)
+raise SystemExit(main(sys.argv[1:]))
+"""
+    result = subprocess.run([sys.executable, "-c", code, *args], capture_output=True)
+    assert result.returncode == 141 and result.stderr == b"", (result.returncode, result.stderr)
+
+
+def test_invalid_argument_while_opening_input_remains_a_data_error(monkeypatch, capsys):
+    def invalid_input(*args, **kwargs):
+        raise OSError(errno.EINVAL, "invalid input")
+
+    monkeypatch.setattr(cli, "open", invalid_input, raising=False)
+    assert main(["-f", "input.txt"]) == 3
+    captured = capsys.readouterr()
+    assert captured.out == "" and "data error" in captured.err
 
 
 def test_cli_text_output_shows_hidden_characters(capsys):

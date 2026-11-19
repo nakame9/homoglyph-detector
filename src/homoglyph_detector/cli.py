@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import argparse
+import errno
 import json
 import os
 import sys
 import unicodedata
 from collections.abc import Iterator
+from contextlib import redirect_stdout
 from itertools import islice
 from typing import TextIO
 
@@ -29,6 +31,27 @@ MAX_BATCH_CHARACTERS = 65_536
 
 class BatchLimitError(ValueError):
     """The complete batch cannot be processed within the resource budget."""
+
+
+class _PipeOutput:
+    """Normalize the Windows CRT's EINVAL on a closed stdout pipe to BrokenPipeError."""
+
+    def __init__(self, stream: TextIO):
+        self.stream = stream
+
+    def _call(self, operation, *args):
+        try:
+            return operation(*args)
+        except OSError as error:
+            if os.name == "nt" and error.errno == errno.EINVAL:
+                raise BrokenPipeError from None
+            raise
+
+    def write(self, text: str):
+        return self._call(self.stream.write, text)
+
+    def flush(self):
+        return self._call(self.stream.flush)
 
 
 def unsafe(ch: str) -> bool:
@@ -85,7 +108,7 @@ def main(argv: list[str] | None = None) -> int:
         prog="homoglyph-detector",
         description="Detect look-alike (homoglyph) domains, emails, URLs and names.",
         epilog="Exit code: 0 all safe, 1 something suspicious, 2 something malicious, "
-               "3 data failed validation or the batch exceeded a limit (no verdict given).",
+               "3 data failed validation or the batch exceeded a limit (no verdict given); 141 output pipe closed.",
     )
     parser.add_argument("inputs", nargs="*", help="domains, emails, URLs or names")
     parser.add_argument("-f", "--file", help="read one input per line ('-' for stdin)")
@@ -108,12 +131,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--verify", action="store_true",
                         help="verify the integrity of all bundled data and brand databases, then exit")
     parser.add_argument("--version", action="store_true", help="show versions of the tool and its data")
-    args = parser.parse_args(argv)
     try:
-        return _run(parser, args)
-    except BrokenPipeError:   # the reader closed the pipe ('... | head -1'): not a data error
-        try:   # stop the interpreter from flushing into the closed pipe again on exit
-            os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+        with redirect_stdout(_PipeOutput(sys.stdout)):
+            try:
+                return _run(parser, parser.parse_args(argv))
+            finally:
+                sys.stdout.flush()
+    except BrokenPipeError:
+        # Prevent another flush of the broken pipe during interpreter shutdown.
+        try:
+            with open(os.devnull, "w") as sink:
+                os.dup2(sink.fileno(), sys.stdout.fileno())
         except (OSError, ValueError):
             pass
         return CLOSED_PIPE
