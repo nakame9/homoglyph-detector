@@ -2,6 +2,11 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/), đánh số theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [Chưa phát hành]
+### Thêm
+- **Schema tích hợp v1** qua `--integration-json` và `Report.to_integration_dict()`: xuất đích chuẩn hóa, trạng thái parse, verdict và mã finding; bỏ userinfo, path, query, fragment và văn bản chẩn đoán. Xem [hợp đồng tích hợp](docs/integration.md).
+- **Chuẩn bị baseline offline** qua `benchmark/real_world.py prepare-baseline`: nhận URL có nhãn độc lập, giữ lure userinfo đã xác nhận, gộp theo PSL, chia theo ngày và lấy mẫu có seed. Manifest ghi provenance, số mẫu và SHA-256; chưa kèm dữ liệu thật đủ điều kiện B1.
+
 ## [0.13.2] - 2026-11-19
 Gộp hai mốc 0.13.1 (sửa lỗi mất tín hiệu) và 0.13.2 (độ bền và nền tảng) của lộ trình; 0.13.1 không phát hành riêng.
 Thay đổi hành vi cần lưu ý khi tích hợp: đầu vào chưa đánh giá được (URL bị browser từ chối, đầu vào rỗng, quá dài, host có ký tự điều khiển) ra SUSPICIOUS với `parse_status` khác `ok` và mã thoát 1; lô vượt ngân sách trả mã 3.
@@ -16,8 +21,6 @@ Thay đổi hành vi cần lưu ý khi tích hợp: đầu vào chưa đánh gi�
 - **Host của domain hoặc email chứa ký tự điều khiển** (C0 như ESC, DEL, C1) trước đây ra SAFE. Nay có trạng thái `rejected/forbidden_code_point` và ra SUSPICIOUS ("cần xem lại"), giống URL bị browser từ chối. Ký tự điều khiển trong tên hiển thị hoặc phần local của email không đổi verdict, vì báo cáo đã hiển thị chúng an toàn.
 - **Đầu vào không còn điều khiển được terminal.** Báo cáo văn bản hiển thị ký tự điều khiển (C0 như ESC, CR, LF; DEL; C1), ký tự định dạng (bidi, zero-width, tag), ký tự ngắt dòng hay đoạn Unicode và mọi ký tự default-ignorable dưới dạng `<U+XXXX>`. Quy tắc này áp dụng cho mọi trường lấy từ đầu vào hoặc Brand DB: input, decoded, a-label, `skeleton` (trước đây in thô), finding, thông báo lỗi và dòng `brands:` của `--version`. Vì vậy chuỗi ANSI CSI, OSC 8 hay CRLF chèn vào input không thể xóa màn hình, tạo link giả hay giả một dòng kết luận. `--json` thay các ký tự này bằng escape `\uXXXX`. JSON vẫn hợp lệ và `json.loads` trả về đúng giá trị gốc.
 ### Thêm
-- **Chuẩn bị baseline offline** qua `benchmark/real_world.py prepare-baseline`: nhận URL có nhãn độc lập, giữ lure userinfo đã xác nhận, gộp theo PSL, chia theo ngày và lấy mẫu có seed. Manifest ghi provenance, số mẫu và SHA-256; chưa kèm dữ liệu thật đủ điều kiện B1.
-- **Schema tích hợp v1** qua `--integration-json` và `Report.to_integration_dict()`: xuất đích chuẩn hóa, trạng thái parse, verdict và mã finding; bỏ userinfo, path, query, fragment và văn bản chẩn đoán. Xem [hợp đồng tích hợp](docs/integration.md).
 - **Ngân sách cho cả lô CLI.** Lô vượt 256 đầu vào hoặc 65.536 điểm mã Unicode trả mã 3 và không xuất kết luận.
 - **`Report.parse_status` / `parse_reason`.** URL mà browser từ chối (port sai, `%40` hay `%3A` trong host, IPv4 hoặc IPv6 không hợp lệ, ký tự IDNA không cho phép, ZWJ/ZWNJ sai ngữ cảnh) và đầu vào rỗng có trạng thái `rejected`. Đích của các đầu vào này không được chấm điểm. Verdict là SUSPICIOUS ("cần xem lại"), mã thoát `1`, không bao giờ SAFE. Lỗi cú pháp không còn làm tăng verdict: `https://g00gle.com:abc/` đổi từ MALICIOUS sang SUSPICIOUS. CLI in dòng `parse`.
 - Ngoại lệ: ký tự điều khiển định dạng bidi (U+202A–U+202E, U+2066–U+2069) trong host bị từ chối vẫn được chấm, chỉ từ bằng chứng đó và theo ngưỡng của policy đang dùng. URL `https://apple.com/` có U+202E chèn trước host vẫn là MALICIOUS ở cả ba profile.
