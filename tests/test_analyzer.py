@@ -1,5 +1,6 @@
 import codecs
 import json
+import sys
 import unicodedata
 from pathlib import Path
 
@@ -291,3 +292,23 @@ def test_every_finding_has_an_evidence_class():
         assert all(f.evidence in classes for f in analyze(raw).findings)
     report = analyze("5hopee.vn")
     assert report.evidence == {"visual_similarity": "high", "brand_impersonation": "medium", "brand_basis": "visual"}
+
+
+class _ClosedPipe:
+    """stdout whose reader has gone away ('homoglyph-detector ... | head -1')."""
+
+    def write(self, text):
+        raise BrokenPipeError(32, "Broken pipe")
+
+    def flush(self):
+        raise BrokenPipeError(32, "Broken pipe")
+
+    def fileno(self):
+        raise OSError("no file descriptor in tests")
+
+
+@pytest.mark.parametrize("argv", [["--version"], ["paypal.com"], ["--json", "xn--pypal-4ve.com"]])
+def test_a_closed_pipe_is_not_a_data_error(argv, monkeypatch, capsys):
+    monkeypatch.setattr(sys, "stdout", _ClosedPipe())
+    assert main(argv) == 141                      # 128 + SIGPIPE, as a shell reports it; never 0-3
+    assert "data error" not in capsys.readouterr().err

@@ -3,6 +3,8 @@
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/), đánh số theo [Semantic Versioning](https://semver.org/lang/vi/).
 
 ## [Chưa phát hành]
+### Sửa
+- **Pipe bị đóng không còn là lỗi dữ liệu.** `homoglyph-detector ... | head -1` trước đây in `data error: [Errno 32] Broken pipe` và trả mã 3. Nay CLI thoát im lặng với mã 141 (128 + SIGPIPE, như shell báo), nằm ngoài hợp đồng mã 0–3.
 ### Thêm
 - **Schema tích hợp v1** qua `--integration-json` và `Report.to_integration_dict()`: xuất đích chuẩn hóa, trạng thái parse, verdict và mã finding; bỏ userinfo, path, query, fragment và văn bản chẩn đoán. Xem [hợp đồng tích hợp](docs/integration.md).
 - **Chuẩn bị baseline offline** qua `benchmark/real_world.py prepare-baseline`: nhận URL có nhãn độc lập, giữ lure userinfo đã xác nhận, gộp theo PSL, chia theo ngày và lấy mẫu có seed. Manifest ghi provenance, số mẫu và SHA-256; chưa kèm dữ liệu thật đủ điều kiện B1.

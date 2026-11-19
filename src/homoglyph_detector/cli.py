@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import unicodedata
 from collections.abc import Iterator
@@ -21,6 +22,7 @@ from .unicode_data import data_versions, is_default_ignorable
 ICON = {"SAFE": "✅", "SUSPICIOUS": "⚠\ufe0f ", "MALICIOUS": "🚨"}
 EXIT = {"SAFE": 0, "SUSPICIOUS": 1, "MALICIOUS": 2}
 DATA_ERROR = 3   # invalid data or resource limit: refuse to give a verdict
+CLOSED_PIPE = 128 + 13   # the output's reader went away (SIGPIPE); outside the 0-3 verdict contract
 MAX_BATCH_INPUTS = 256
 MAX_BATCH_CHARACTERS = 65_536
 
@@ -109,6 +111,12 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         return _run(parser, args)
+    except BrokenPipeError:   # the reader closed the pipe ('... | head -1'): not a data error
+        try:   # stop the interpreter from flushing into the closed pipe again on exit
+            os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+        except (OSError, ValueError):
+            pass
+        return CLOSED_PIPE
     except (DataIntegrityError, BrandDBError, BatchLimitError, OSError) as error:
         print(f"homoglyph-detector: data error: {visible(str(error))}", file=sys.stderr)
         return DATA_ERROR
