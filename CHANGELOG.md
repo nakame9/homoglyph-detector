@@ -2,7 +2,9 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/), đánh số theo [Semantic Versioning](https://semver.org/lang/vi/).
 
-## [Chưa phát hành]
+## [0.13.2] - 2026-11-19
+Gộp hai mốc 0.13.1 (sửa lỗi mất tín hiệu) và 0.13.2 (độ bền và nền tảng) của lộ trình; 0.13.1 không phát hành riêng.
+Thay đổi hành vi cần lưu ý khi tích hợp: đầu vào chưa đánh giá được (URL bị browser từ chối, đầu vào rỗng, quá dài, host có ký tự điều khiển) ra SUSPICIOUS với `parse_status` khác `ok` và mã thoát 1; lô vượt ngân sách trả mã 3.
 ### Sửa
 - **Dữ liệu đã ghim giữ nguyên SHA-256 trên Windows.** Checkout giữ LF và bước tạo manifest dùng cùng thứ tự tệp trên Windows và Linux. CI kiểm thử cả wheel cài riêng trên Windows.
 - **Brand DB không hợp lệ trả mã thoát 3** nếu UTF-8 lỗi, ID sai kiểu hoặc khai báo SHA-256 thiếu mã.
