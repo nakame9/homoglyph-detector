@@ -69,6 +69,9 @@ def test_group_behaviour(case):
     elif group == "zero_width":
         assert "default_ignorable" in kinds(report)
     elif group == "bidi_override":
+        # P1-b: a URL host with a bidi control is rejected by browsers yet still scored, and stays MALICIOUS
+        is_url = report.input_type == "url"
+        assert report.parse_status == ("rejected" if is_url else "ok"), (report.parse_status, report.parse_reason)
         assert "bidi_control" in kinds(report) and report.verdict == "MALICIOUS"
     elif group in ("vietnamese", "multilingual_legit"):
         assert report.restriction_level in ("ASCII-Only", "Single Script", "Highly Restrictive")

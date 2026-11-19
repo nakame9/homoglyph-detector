@@ -24,7 +24,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
-from homoglyph_detector.analyzer import run_engines  # noqa: E402
+from homoglyph_detector.analyzer import BIDI_FORMATTING, run_engines  # noqa: E402
+from homoglyph_detector.engines import EngineResult  # noqa: E402
 from homoglyph_detector.brands import bundled  # noqa: E402
 from homoglyph_detector.cli import visible  # noqa: E402
 from homoglyph_detector.engines import ENGINES  # noqa: E402
@@ -161,9 +162,24 @@ def reliability(y: list[int], p: list[float], bins: int = 10) -> tuple[list[tupl
     return table, ece
 
 
+def _outcome(raw: str, threshold: float, w: list[float], names: list[str]) -> str:
+    """'flag' (evidence at or above the threshold), 'review' (P1: the destination was not scored) or 'safe'.
+    Mirrors analyzer.analyze: a rejected input is scored only from bidi formatting controls in its host (P1-b)."""
+    ctx, results = run_engines(raw)
+    scores = {n: results[n].score for n in names}
+    if ctx.parse_status != "ok":
+        bidi = [f for f in results["unicode"].findings
+                if f.kind == "bidi_control" and f.detail["char"] in BIDI_FORMATTING]
+        if not bidi:
+            return "review"
+        scores = {n: 0.0 for n in names} | {"unicode": EngineResult("unicode", findings=bidi).noisy_or().score}
+    flagged = sigmoid(w[0] + sum(wi * scores[n] for wi, n in zip(w[1:], names))) >= threshold
+    return "flag" if flagged else ("review" if ctx.parse_status != "ok" else "safe")
+
+
 def _flagged(raw: str, threshold: float, w: list[float], names: list[str]) -> bool:
-    _, results = run_engines(raw)
-    return sigmoid(w[0] + sum(wi * results[n].score for wi, n in zip(w[1:], names))) >= threshold
+    """Not SAFE, as the report says: evidence or a P1 review label."""
+    return _outcome(raw, threshold, w, names) != "safe"
 
 
 def golden_section(profiles: dict, w: list[float], names: list[str]) -> list[str]:
@@ -172,18 +188,23 @@ def golden_section(profiles: dict, w: list[float], names: list[str]) -> list[str
     t = profiles["default"]["suspicious"]
     lines = ["## Golden corpus (10 nhóm test bắt buộc)", "",
              f"{len(cases)} ca gán nhãn thủ công trong `tests/golden/corpus.jsonl`, profile `default` "
-             "(gắn cờ = SUSPICIOUS trở lên). Recall / FNR tính trên ca tấn công, FPR trên ca hợp lệ.", "",
-             "| nhóm | recall | FNR | FPR | lỗi đã biết |", "|---|---|---|---|---|"]
+             "(gắn cờ = SUSPICIOUS trở lên). Recall / FNR tính trên ca tấn công, FPR trên ca hợp lệ. "
+             "Cột *xem lại (P1)* đếm các ca có nhãn được gắn cờ chỉ vì đích không chấm được (URL bị browser "
+             "từ chối, đầu vào rỗng hoặc quá dài), không phải vì có bằng chứng giả mạo; các ca này nằm trong recall "
+             "và FPR như báo cáo thật.", "",
+             "| nhóm | recall | FNR | FPR | xem lại (P1) | lỗi đã biết |", "|---|---|---|---|---|---|"]
     groups = dict.fromkeys(c["group"] for c in cases)
     for group in groups:
         rows = [c for c in cases if c["group"] == group and c["label"]]
         attacks = [c for c in rows if c["label"] == "attack"]
         benign = [c for c in rows if c["label"] == "benign"]
-        caught = sum(_flagged(c["input"], t, w, names) for c in attacks)
-        false = sum(_flagged(c["input"], t, w, names) for c in benign)
+        outcome = {c["input"]: _outcome(c["input"], t, w, names) for c in rows}
+        caught = sum(outcome[c["input"]] != "safe" for c in attacks)
+        false = sum(outcome[c["input"]] != "safe" for c in benign)
+        review = sum(o == "review" for o in outcome.values())
         known = sum("known_issue" in c for c in rows)
         lines.append(f"| {group} | {rate(caught, len(attacks))} | {rate(len(attacks) - caught, len(attacks))} | "
-                     f"{rate(false, len(benign))} | {known or ''} |")
+                     f"{rate(false, len(benign))} | {review or ''} | {known or ''} |")
     return lines + [""]
 
 
