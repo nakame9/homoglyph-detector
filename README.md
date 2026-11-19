@@ -179,6 +179,7 @@ Ngưỡng là của profile `default`; mỗi môi trường chọn điểm vận
 | [docs/brand-database.md](docs/brand-database.md) | định dạng brand database, các lớp, kiểm tra hợp lệ, toàn vẹn, version, dữ liệu Unicode |
 | [docs/benchmark.md](docs/benchmark.md) | benchmark tổng hợp và **đánh giá thực tế** (phishing thật, temporal, adversarial, calibration), giới hạn |
 | [benchmark/REAL_WORLD.md](benchmark/REAL_WORLD.md) | báo cáo đánh giá thực tế đầy đủ (tự sinh) |
+| [benchmark/BASELINE.md](benchmark/BASELINE.md) | chuẩn bị baseline offline từ URL có nhãn độc lập, gộp domain, chia theo thời gian và ghim hash |
 | [docs/testing.md](docs/testing.md) | kỹ thuật kiểm thử, golden corpus 10 nhóm, precision / recall / FPR / FNR / độ trễ, các lỗi đã tìm ra |
 | [docs/risk-scoring.md](docs/risk-scoring.md) | profile rủi ro theo môi trường, ngân sách báo nhầm, điểm vận hành |
 | [docs/bao-tri.md](docs/bao-tri.md) | **hướng dẫn bảo trì**: thêm thương hiệu, sửa báo nhầm, thêm engine, cập nhật dữ liệu, phát hành, **tra cứu lỗi** |

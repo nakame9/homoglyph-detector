@@ -2,13 +2,14 @@
 """Real-world evaluation: real phishing, international benign domains, time, adversarial variants, calibration.
 
     python benchmark/real_world.py            # needs network on first run; ~10 minutes on 2 cores
+    python benchmark/real_world.py prepare-baseline --help   # offline, independently labeled URL export
 
 Writes benchmark/REAL_WORLD.md, benchmark/adversarial.jsonl and docs/img/reliability.svg.
 
 Data (downloaded into benchmark/.cache/, never committed):
   phishing  OpenPhish Community Feed, git history of github.com/openphish/public_feed pinned at
             OPENPHISH_COMMIT: every URL with the time it first appeared (non-commercial use only,
-            https://openphish.com/terms.html; only hostnames are kept)
+            https://openphish.com/terms.html; historical hostname-only analysis)
   benign    Chrome UX Report top 1M origins (github.com/zakird/crux-top-lists pinned at CRUX_COMMIT):
             the real distribution of popular sites across countries, scripts and IDNs
 
@@ -497,4 +498,12 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    if sys.argv[1:2] == ["prepare-baseline"]:
+        from labeled_baseline import main as prepare_baseline
+        sys.exit(prepare_baseline(sys.argv[2:]))
+    if sys.argv[1:] in (["--help"], ["-h"]):
+        print(__doc__)
+        sys.exit(0)
+    if sys.argv[1:]:
+        sys.exit("usage: real_world.py [prepare-baseline --help]")
     sys.exit(main())
