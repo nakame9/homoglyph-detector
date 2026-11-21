@@ -4,201 +4,111 @@
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-Phát hiện tên miền, email, URL và tên hiển thị **giả mạo bằng ký tự trông giống nhau**: homoglyph Unicode (`pаypal.com` với chữ `а` Cyrillic), ký tự ASCII trông giống (`5hopee.vn`, `rnicrosoft.com`), typosquat, combosquat, ký tự ẩn và ký tự đảo chiều. Chạy offline, chỉ cần 2 thư viện Python thuần.
+Phát hiện tên miền, email, URL và tên hiển thị **giả mạo thương hiệu bằng ký tự trông giống nhau**: homoglyph Unicode (`pаypal.com` với `а` Cyrillic), ký tự ASCII trông giống (`5hopee.vn`, `rnicrosoft.com`), typosquat, combosquat, ký tự ẩn và ký tự đảo chiều. Chạy offline, chỉ cần 2 thư viện Python.
 
-## Tính năng
-
-- **Ba loại bằng chứng tách bạch** — mỗi bằng chứng là Unicode confusable, visual similarity hoặc brand impersonation (kèm cơ sở: `unicode` / `visual` / `spelling` / `name`). Độ giống hình ảnh phụ thuộc font nên chỉ hỗ trợ chấm điểm: **một mình nó không bao giờ dẫn tới MALICIOUS**.
-- **Detection engine nhiều lớp** — 5 engine độc lập (unicode, idna, brand, combosquat, visual), mỗi engine trả điểm và bằng chứng; tầng hợp nhất cho ra **xác suất đã hiệu chỉnh** trên benchmark 15.805 tên miền, không đặt điểm bằng tay.
-- **Unicode UTS #39** — skeleton, single / mixed / whole-script confusable, restriction level, ký tự ẩn, ký tự đảo chiều (bidi), trên dữ liệu Unicode 18 chính thức.
-- **ASCII Visual Confusable** — thay ký tự (`5`→`s`), thay cụm ký tự (`vv`→`w`, `cl`→`d`), chữ có dấu, kèm điểm độ giống hình ảnh.
-- **IDNA2008 + Public Suffix List** — kiểm tra theo RFC 5891–5893, mapping UTS #46 như trình duyệt, tách tên miền đúng (`vietcombank.com.vn`, `x.github.io`).
-- **Domain Risk Scoring theo môi trường** — cùng một điểm rủi ro, ngưỡng kết luận khác nhau: profile `default`, `banking` (chặn mọi bằng chứng), `browser` (chỉ cảnh báo bằng chứng mạnh) hoặc ngân sách báo nhầm riêng (`--max-fpr`), chọn từ benchmark theo tỷ lệ báo nhầm.
-- **Brand Intelligence Database** — thương hiệu nằm trong JSON có version; tổ chức nạp thêm database riêng; mọi dữ liệu được ghim SHA-256, dữ liệu bị sửa thì công cụ dừng.
-
-## Ví dụ
-
-```
-$ homoglyph-detector "pаypal.com" 5hopee.vn paypal-login.com "tiếngviệt.vn"
-
-🚨 MALICIOUS  pаypal.com  [domain]
-    a-label : xn--pypal-4ve.com
-    skeleton: paypal.corn
-    level   : Minimally Restrictive
-    risk    : 100/100   engines: unicode 0.75  idna 0.00  brand 0.95  combosquat 0.00  visual 0.00
-    profile : default (SUSPICIOUS >= 0.50, MALICIOUS >= 0.90)
-    evidence: unicode medium,  visual -,  brand critical (basis: unicode),  idna -
-    - [unicode/medium] 'pаypal' mixes scripts: Cyrillic, Latin (level: Minimally Restrictive)
-    - [unicode/medium] 'pаypal' renders like ASCII 'paypal' (mixed-script confusable)
-    - [unicode/info] Position 1: 'а' U+0430 (Cyrillic) looks like 'a'
-    - [brand/critical, unicode] Impersonates PayPal: renders like 'paypal.com' (mixed-script confusable)
-
-⚠️  SUSPICIOUS 5hopee.vn  [domain]
-    skeleton: 5hopee.vn
-    level   : ASCII-Only
-    risk    : 100/100   engines: unicode 0.00  idna 0.00  brand 0.50  combosquat 0.00  visual 0.70
-    profile : default (SUSPICIOUS >= 0.50, MALICIOUS >= 0.90)
-    evidence: unicode -,  visual high,  brand medium (basis: visual),  idna -
-    note    : capped at SUSPICIOUS: the only evidence is visual similarity, which depends on font and rendering
-    - [brand/medium, visual] '5hopee' is one edit away from Shopee keyword 'shopee'
-    - [visual/high] '5hopee' looks like Shopee keyword 'shopee' (visual similarity 0.95: 5->s)
-
-⚠️  SUSPICIOUS paypal-login.com  [domain]
-    skeleton: paypal-login.corn
-    level   : ASCII-Only
-    risk    : 81/100   engines: unicode 0.00  idna 0.00  brand 0.00  combosquat 0.50  visual 0.00
-    profile : default (SUSPICIOUS >= 0.50, MALICIOUS >= 0.90)
-    evidence: unicode -,  visual -,  brand medium (basis: name),  idna -
-    - [combosquat/medium, name] Contains PayPal keyword 'paypal' on unofficial domain 'paypal-login.com'
-
-✅ SAFE       tiếngviệt.vn  [domain]
-    a-label : xn--tingvit-5t4cyc.vn
-    skeleton: tiếngviệt.vn
-    level   : Single Script
-    risk    : 13/100   engines: unicode 0.00  idna 0.00  brand 0.00  combosquat 0.00  visual 0.00
-    profile : default (SUSPICIOUS >= 0.50, MALICIOUS >= 0.90)
-    evidence: unicode -,  visual -,  brand -,  idna -
-```
-
-Mỗi kết quả có điểm rủi ro 0–100, điểm của từng engine, bằng chứng theo loại (Unicode / hình ảnh / thương hiệu, kèm cơ sở), profile đã dùng, và lý do khi kết luận bị giới hạn: `5hopee.vn` chỉ trông giống `shopee` nên dừng ở SUSPICIOUS, còn `pаypal.com` có bằng chứng Unicode nên là MALICIOUS.
-
-## Cài đặt
+## Bắt đầu nhanh
 
 ```bash
 git clone https://github.com/nakame9/homoglyph-detector
 cd homoglyph-detector
-pip install -e .                 # thêm ".[dev]" để chạy test (pytest, Hypothesis), ".[bench]" để tạo lại benchmark
+pip install -e .            # ".[dev]" để chạy test, ".[bench]" để dựng lại benchmark
+homoglyph-detector "pаypal.com" 5hopee.vn
 ```
 
-Yêu cầu Python 3.10+. Thư viện phụ thuộc được khai báo trong `pyproject.toml` và pip tự cài:
+```
+🚨 MALICIOUS  pаypal.com  [domain]
+    a-label : xn--pypal-4ve.com
+    risk    : 100/100   engines: unicode 0.75  idna 0.00  brand 0.95  combosquat 0.00  visual 0.00
+    evidence: unicode medium,  visual -,  brand critical (basis: unicode),  idna -
+    - [brand/critical, unicode] Impersonates PayPal: renders like 'paypal.com' (mixed-script confusable)
 
-| Gói | Phiên bản | Ghi chú |
-|---|---|---|
-| `idna` | ≥ 3.20 | 3.20 là bản đầu tiên có bảng IDNA Unicode 18, khớp dữ liệu UTS #39 đi kèm (3.19 dùng Unicode 17, bị test chặn) |
-| `publicsuffixlist` | ≥ 1.0 | có sẵn PSL, không cần mạng khi chạy |
-| `pytest`, `hypothesis` (`.[dev]`) | ≥ 7, ≥ 6.100 | chỉ để chạy test |
+⚠️  SUSPICIOUS 5hopee.vn  [domain]
+    risk    : 100/100   engines: unicode 0.00  idna 0.00  brand 0.50  combosquat 0.00  visual 0.70
+    note    : capped at SUSPICIOUS: the only evidence is visual similarity, which depends on font and rendering
+    - [visual/high] '5hopee' looks like Shopee keyword 'shopee' (visual similarity 0.95: 5->s)
+```
 
-Đã kiểm thử cài sạch trên Python 3.10, 3.11, 3.12, 3.13, với cả phiên bản thư viện mới nhất lẫn thấp nhất cho phép; CI chạy lại cả hai trường hợp ở mỗi lần push.
+(Đã rút gọn: báo cáo đầy đủ có thêm skeleton, restriction level, profile và mọi bằng chứng.)
+
+## Công cụ làm gì
+
+- **5 engine độc lập**: `unicode` (UTS #39, Unicode 18), `idna` (IDNA2008 và UTS #46, đọc URL như trình duyệt theo WHATWG), `brand`, `combosquat`, `visual`. Mỗi engine trả điểm 0–1 kèm bằng chứng. Tầng hợp nhất cho ra **xác suất đã hiệu chỉnh** trên benchmark, không đặt điểm bằng tay.
+- **Ba loại bằng chứng tách bạch**: Unicode, hình ảnh, thương hiệu. Độ giống hình ảnh phụ thuộc font, nên **một mình nó không bao giờ dẫn tới MALICIOUS**.
+- **Ngưỡng theo môi trường**: profile `default`, `banking`, `browser`, hoặc ngân sách báo nhầm riêng (`--max-fpr`).
+- **Brand database có version và ghim SHA-256**: tổ chức nạp thêm thương hiệu của mình; dữ liệu bị sửa thì công cụ dừng.
+
+**Phạm vi:** đây là lớp phòng thủ chuyên cho giả mạo **các thương hiệu được bảo vệ**, không phải bộ lọc phishing tổng quát. Hiệu quả phụ thuộc trước hết vào độ phủ của brand database.
 
 ## Sử dụng
 
 ```bash
 homoglyph-detector paypa1.com "user@pаypal.com" "https://аpple.com/login"   # domain, email, URL
-homoglyph-detector "5hopee Official"                                    # tên hiển thị
-homoglyph-detector -f examples/sample_domains.txt                       # mỗi dòng một đầu vào
-cat domains.txt | homoglyph-detector -f -                               # đọc từ stdin
-homoglyph-detector g00gle.com --json                                    # báo cáo JSON đầy đủ
-homoglyph-detector --integration-json -f domains.txt                    # JSON đã lược dữ liệu cho tích hợp
-homoglyph-detector paypal-login.com --profile banking                  # profile: default, banking, browser
-homoglyph-detector paypal-login.com --max-fpr 0.01,0.001                # ngân sách báo nhầm riêng
-homoglyph-detector --profiles                                           # các profile và số liệu đo được
-homoglyph-detector paypal-login.com --base-rate 0.001                   # xác suất khi 1/1.000 đầu vào là tấn công
-homoglyph-detector x.vn --brands "org.json#sha256=<mã>"                 # thêm thương hiệu của tổ chức
-homoglyph-detector --verify                                             # kiểm tra toàn vẹn dữ liệu
-homoglyph-detector --version                                            # phiên bản công cụ và dữ liệu
+homoglyph-detector "5hopee Official"                 # tên hiển thị
+homoglyph-detector -f domains.txt                    # mỗi dòng một đầu vào ('-' = stdin)
+homoglyph-detector g00gle.com --json                 # báo cáo JSON đầy đủ
+homoglyph-detector --integration-json -f domains.txt # JSON đã lược dữ liệu nhạy cảm, schema v1
+homoglyph-detector x.com --profile banking           # hoặc --max-fpr 0.01,0.001; xem --profiles
+homoglyph-detector x.com --base-rate 0.001           # thêm xác suất theo tỷ lệ tấn công của bạn
+homoglyph-detector x.vn --brands "org.json#sha256=<mã>"   # thêm brand database của tổ chức
+homoglyph-detector --verify                          # kiểm tra toàn vẹn dữ liệu đi kèm
 ```
-
-Phần các engine quét (host, tên hiển thị, userinfo của URL, phần local của email) tối đa 272 điểm mã Unicode. Toàn bộ một đầu vào tối đa 8.192 điểm mã, đếm trước khi chuẩn hóa. Vì vậy URL dài như link tracking hay link có `returnUri` vẫn được chấm theo host. Với file hoặc stdin, giới hạn 8.192 áp dụng cho từng dòng, kể cả khoảng trắng đầu và cuối, trừ dấu xuống dòng. Đầu vào vượt một trong hai giới hạn trả SUSPICIOUS với `parse_status=unsupported` và `parse_reason=too_long`, không chấm đích và không đưa chuỗi quá dài vào báo cáo.
-
-Mỗi lô CLI nhận tối đa 256 đầu vào và 65.536 điểm mã Unicode, tính cả đối số, dòng trống, chú thích và phần dư của dòng đọc từ file hoặc stdin. Chia dữ liệu thành nhiều lô nếu vượt một trong hai ngưỡng. CLI trả mã 3 và không xuất kết luận cho lô vượt giới hạn.
 
 | Mã thoát | Ý nghĩa |
 |---|---|
 | 0 | tất cả SAFE |
-| 1 | có SUSPICIOUS |
-| 2 | có MALICIOUS (cần bằng chứng ngoài độ giống hình ảnh) |
-| 3 | dữ liệu không qua kiểm tra toàn vẹn / hợp lệ hoặc lô vượt giới hạn, không đưa ra kết luận |
-
-Dùng [schema tích hợp v1](docs/integration.md) qua `--integration-json` hoặc
-`analyze(value).to_integration_dict()` để bỏ userinfo, path, query, fragment và
-văn bản chẩn đoán. `--json` và `Report.to_dict()` có thể chứa đầu vào gốc.
+| 1 | có SUSPICIOUS, gồm cả đầu vào không chấm được (`parse_status` khác `ok`) |
+| 2 | có MALICIOUS |
+| 3 | dữ liệu không qua kiểm tra, file không phải UTF-8, hoặc lô vượt giới hạn; không đưa kết luận |
 
 Dùng như thư viện:
 
 ```python
 from homoglyph_detector import analyze
 
-report = analyze("pаypal.com", policy="browser")   # policy: tên profile, mặc định 'default'
-report.verdict          # 'MALICIOUS'
-report.risk_score       # 100
-report.engine_scores    # {'unicode': 0.75, 'idna': 0.0, 'brand': 0.95, 'combosquat': 0.0, 'visual': 0.0}
-report.profile          # 'browser'; report.thresholds: ngưỡng SUSPICIOUS / MALICIOUS đã dùng
-report.findings         # bằng chứng, mỗi cái có engine, kind, severity, message
-report.to_dict()        # sẵn sàng xuất JSON
+report = analyze("pаypal.com", policy="browser")
+report.verdict                  # 'MALICIOUS'
+report.findings                 # bằng chứng: engine, kind, severity, message
+report.to_integration_dict()    # bản lược cho tích hợp; report.to_dict() là bản đầy đủ
 ```
 
-## Kiến trúc
-
-```
-đầu vào ─► context.py (parse, NFC, IDNA, PSL)
-             ├─► engines/unicode_engine.py      ─┐
-             ├─► engines/idna_engine.py          │ mỗi engine: điểm 0..1 + bằng chứng
-             ├─► engines/brand_engine.py         ├ (độc lập, không đọc kết quả của nhau)
-             ├─► engines/combosquat_engine.py    │
-             └─► engines/visual_engine.py       ─┘
-          ─► scoring.py (trọng số từ calibration.json) ─► Report: xác suất, risk, verdict, bằng chứng
-```
-
-Chi tiết từng module, các khái niệm chính và bảng **"muốn sửa gì thì mở file nào"**: [docs/kien-truc.md](docs/kien-truc.md).
+**Giới hạn:** phần được quét (host, tên hiển thị, userinfo, phần local của email) tối đa 272 điểm mã, cả đầu vào tối đa 8.192; một lô CLI tối đa 256 đầu vào và 65.536 điểm mã. Đầu vào công cụ không đọc được (quá dài, scheme như `git://`, ký tự mới hơn Unicode của Python) ra SUSPICIOUS với `parse_status=unsupported`; URL mà trình duyệt từ chối ra `parse_status=rejected`. Chi tiết: [docs/integration.md](docs/integration.md).
 
 ## Chất lượng
 
-Có hai loại số liệu, đo những thứ khác nhau. Đừng đọc số của benchmark tổng hợp như hiệu quả khi triển khai.
+| Đo trên | Kết quả chính | Báo cáo |
+|---|---|---|
+| 271.231 host phishing thật (OpenPhish) và 41.620 domain hợp lệ (CrUX) | báo nhầm tối đa 0,3% ở mọi khu vực (profile `default`); phát hiện 99,6% phishing nhắc thương hiệu được bảo vệ | [benchmark/REAL_WORLD.md](benchmark/REAL_WORLD.md) |
+| benchmark tổng hợp (dnstwist + OpenDNS), tập test | F1 92,5%, báo nhầm 1,6% ở p ≥ 0,5 | [benchmark/RESULTS.md](benchmark/RESULTS.md) |
 
-**1. Phishing thật và web thật** ([benchmark/REAL_WORLD.md](benchmark/REAL_WORLD.md)): 271.231 host phishing từ lịch sử feed OpenPhish (10/2024 → 11/2026) và 41.620 domain hợp lệ từ Chrome UX Report top 1 triệu, profile `default`:
+Đọc đúng các con số này:
+- **Con số 99,6% gần như tự đúng.** "Trong phạm vi" được định nghĩa bằng việc có nhắc tên thương hiệu, và phần lớn số đó là ghép tên thương hiệu, không phải ký tự trông giống.
+- **Chỉ 3,4% phishing thật nhắc tới thương hiệu được bảo vệ**, nên tỷ lệ phát hiện trên toàn bộ phishing là 3,4%.
 
-| | kết quả |
-|---|---|
-| phishing thật thuộc phạm vi của công cụ (nhắc thương hiệu được bảo vệ, hoặc IDN) | **3,5%** — phần lớn phishing nhắm thương hiệu khác (Telegram, USPS, Ledger, Coinbase...) hoặc không giả mạo tên miền |
-| phát hiện trên **toàn bộ** phishing thật | **3,4%** |
-| phát hiện phishing nhắc thương hiệu được bảo vệ | 99,6% (gần như tự chứng minh, xem báo cáo); chỉ 0,8% có bằng chứng giả mạo *trông giống* (profile `browser`, bỏ qua combosquat), còn lại là ghép tên thương hiệu |
-| homograph IDN trong phishing thật | 166 / 271.231 host (0,06%) |
-| báo nhầm trên web thật | 0,1–0,3% mọi khu vực, 0% Việt Nam, 0,1% trên 1.678 IDN hợp lệ; 0% ở profile `browser` trừ vài domain của chính thương hiệu |
-| ổn định theo thời gian | recall trong phạm vi 91–100% mỗi tháng suốt 25 tháng; mô hình fit trên quá khứ không xếp hạng tốt hơn mô hình hiện tại |
-| precision khi 1 / 1.000 domain là tấn công | 23% trong phạm vi, 1,7% trên mọi phishing |
-
-Kết luận: đây là **một lớp phòng thủ chuyên biệt** cho giả mạo các thương hiệu được bảo vệ, không phải bộ lọc phishing tổng quát. Hiệu quả phụ thuộc trước hết vào **độ phủ của brand database**. Muốn biết xác suất trong lưu lượng của bạn, dùng `--base-rate`.
-
-**2. Benchmark tổng hợp** ([docs/benchmark.md](docs/benchmark.md)): tấn công do [dnstwist](https://github.com/elceef/dnstwist) sinh từ domain thương hiệu, domain hợp lệ từ [OpenDNS top 10.000](https://github.com/opendns/public-domain-lists), tập test 4.980 domain mô hình chưa thấy. Dùng để hiệu chỉnh tầng hợp nhất và so sánh các phiên bản, **không** đại diện phân bố phishing thật:
-
-| | precision | recall | F1 | tỷ lệ báo nhầm |
-|---|---|---|---|---|
-| p ≥ 0,5 (SUSPICIOUS trở lên) | 97,1% | 88,3% | 92,5% | 1,6% |
-| p ≥ 0,9 (MALICIOUS, áp dụng quy tắc visual-only) | 99,26% | 58,06% | 73,27% | 0,26% |
-
-Ngưỡng là của profile `default`; mỗi môi trường chọn điểm vận hành riêng: [docs/risk-scoring.md](docs/risk-scoring.md).
-
-**3. Kiểm thử**: golden corpus 142 ca cho 10 nhóm bắt buộc, Hypothesis (property-based, fuzzing Unicode), differential testing IDNA, regression snapshot, 203 biến thể adversarial với kỹ thuật chưa từng dùng khi phát triển. Độ trễ p50 4,3 ms, p99 14 ms mỗi domain: [docs/testing.md](docs/testing.md).
+Các file báo cáo do script sinh ra; cách đọc số liệu: [docs/benchmark.md](docs/benchmark.md).
 
 ## Tài liệu
 
 | Tài liệu | Nội dung |
 |---|---|
-| [docs/kien-truc.md](docs/kien-truc.md) | luồng xử lý, bản đồ thư mục, muốn sửa gì thì mở file nào, các trường kết quả |
-| [docs/ky-thuat.md](docs/ky-thuat.md) | UTS #39, ASCII visual, IDNA2008 + PSL, typosquat / combosquat, ba loại bằng chứng và quy tắc visual-only |
-| [docs/brand-database.md](docs/brand-database.md) | định dạng brand database, các lớp, kiểm tra hợp lệ, toàn vẹn, version, dữ liệu Unicode |
-| [docs/benchmark.md](docs/benchmark.md) | benchmark tổng hợp và **đánh giá thực tế** (phishing thật, temporal, adversarial, calibration), giới hạn |
-| [benchmark/REAL_WORLD.md](benchmark/REAL_WORLD.md) | báo cáo đánh giá thực tế đầy đủ (tự sinh) |
-| [benchmark/BASELINE.md](benchmark/BASELINE.md) | chuẩn bị baseline offline từ URL có nhãn độc lập, gộp domain, chia theo thời gian và ghim hash |
-| [docs/testing.md](docs/testing.md) | kỹ thuật kiểm thử, golden corpus 10 nhóm, precision / recall / FPR / FNR / độ trễ, các lỗi đã tìm ra |
-| [docs/risk-scoring.md](docs/risk-scoring.md) | profile rủi ro theo môi trường, ngân sách báo nhầm, điểm vận hành |
-| [docs/bao-tri.md](docs/bao-tri.md) | **hướng dẫn bảo trì**: thêm thương hiệu, sửa báo nhầm, thêm engine, cập nhật dữ liệu, phát hành, **tra cứu lỗi** |
-| [CHANGELOG.md](CHANGELOG.md) | lịch sử phiên bản |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | quy trình đóng góp, kiểm tra trước khi mở PR |
+| [docs/kien-truc.md](docs/kien-truc.md) | luồng xử lý, bản đồ thư mục, **muốn sửa gì thì mở file nào** |
+| [docs/ky-thuat.md](docs/ky-thuat.md) | UTS #39, ASCII visual, IDNA2008 + PSL, typosquat / combosquat, các loại bằng chứng |
+| [docs/brand-database.md](docs/brand-database.md) | định dạng brand database, các lớp, toàn vẹn, version |
+| [docs/risk-scoring.md](docs/risk-scoring.md) | profile rủi ro, ngân sách báo nhầm, điểm vận hành |
+| [docs/integration.md](docs/integration.md) | schema tích hợp v1, trạng thái parse |
+| [docs/benchmark.md](docs/benchmark.md), [docs/testing.md](docs/testing.md) | cách đo, kỹ thuật kiểm thử, giới hạn |
+| [docs/bao-tri.md](docs/bao-tri.md) | **bảo trì**: thêm thương hiệu, sửa báo nhầm, thêm engine, cập nhật dữ liệu, phát hành, tra cứu lỗi |
+| [CHANGELOG.md](CHANGELOG.md), [CONTRIBUTING.md](CONTRIBUTING.md) | lịch sử phiên bản, quy trình đóng góp |
 
 ## Lộ trình
 
-- Mở rộng brand database theo thương hiệu bị giả mạo nhiều nhất ngoài thực tế (Telegram, USPS, Ledger, Coinbase, Netflix, Instagram, MetaMask) và domain của chính thương hiệu (`cloud.microsoft`, `amazon.co.jp`).
-- Thay chữ bằng số chưa có trong bảng (`3`→e, `4`→a, `7`→t, `8`→b): chỉ bắt được 47% ở kiểm thử adversarial.
-- Engine combosquat cần dữ liệu combosquat đa dạng hơn, ví dụ từ phishing thật. Từ brand DB 1.1.0, bỏ loại `dictionary` khi fit không còn làm recall loại đó về 0% (82,1%, xem [REAL_WORLD.md](benchmark/REAL_WORLD.md)), nhưng combosquat vẫn chủ yếu học từ tấn công do dnstwist sinh.
-- Bổ sung domain quốc gia của các thương hiệu (`amazon.co.jp`).
-- Điểm số mịn hơn (đặc trưng liên tục như độ dài từ khóa, mức phổ biến của domain) để có nhiều điểm vận hành hơn ba bậc hiện tại.
-- Tập test từ domain lừa đảo thật (PhishTank, OpenPhish) bên cạnh tấn công do dnstwist sinh.
-- Chế độ `.eml`: kiểm tra From / Reply-To / Return-Path và mọi liên kết trong email lừa đảo.
-- Ký số brand database (Ed25519) để chống sửa cả `MANIFEST.json`.
-- Báo cáo HTML cho chạy hàng loạt; giao diện web để demo.
-- Kiểm tra trực tuyến tùy chọn (DNS, tuổi tên miền qua RDAP), tắt mặc định.
+- Mở rộng brand database theo thương hiệu bị giả mạo nhiều nhất ngoài thực tế (Telegram, USPS, Ledger, Coinbase, MetaMask...).
+- Bảo vệ thương hiệu tên ngắn (`zalo-login.com`, `momo-wallet.com`) và lookalike nằm ở subdomain.
+- Sửa ngữ nghĩa chữ hoa/thường của `skeleton()`.
+- Thay chữ bằng số chưa có trong bảng (`3`→e, `4`→a, `7`→t): mới bắt được 47% ở kiểm thử adversarial.
+- Chế độ `.eml`, ký số brand database (Ed25519), báo cáo HTML cho chạy hàng loạt.
+
+Mọi thay đổi về phát hiện phải qua cổng chất lượng: không làm thêm quá 5 domain hợp lệ bị gắn cờ trên web thật, không mất tấn công đã bắt được, và tăng recall trên nhóm mục tiêu.
 
 ## Giấy phép
 
-Code: MIT (xem `LICENSE`). Các file dữ liệu Unicode trong `src/homoglyph_detector/data/` (mọi file `.txt`) thuộc © Unicode, Inc., phân phối theo [Unicode License v3](https://www.unicode.org/license.txt).
+Code: [MIT](LICENSE). Các file dữ liệu Unicode trong `src/homoglyph_detector/data/` (mọi file `.txt`) thuộc © Unicode, Inc., phân phối theo [Unicode License v3](https://www.unicode.org/license.txt).

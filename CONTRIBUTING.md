@@ -1,40 +1,48 @@
 # Đóng góp
 
-Cảm ơn bạn muốn cải thiện dự án. Hướng dẫn chi tiết theo từng tình huống nằm trong [docs/bao-tri.md](docs/bao-tri.md); trang này là phần tóm tắt.
+Trang này là bản tóm tắt. Hướng dẫn theo từng tình huống (thêm thương hiệu, sửa báo nhầm, thêm engine, cập nhật dữ liệu, phát hành, tra cứu lỗi) nằm trong [docs/bao-tri.md](docs/bao-tri.md).
 
-## Bắt đầu
+## Cài môi trường
 
 ```bash
 git clone https://github.com/nakame9/homoglyph-detector
 cd homoglyph-detector
-python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate  (và đặt PYTHONUTF8=1)
 pip install -e ".[dev,bench]"
 pytest -q
 ```
 
 ## Quy trình
 
-1. Tạo nhánh mới từ `main`.
-2. Với lỗi phát hiện (báo nhầm / bỏ lọt): **thêm ca vào golden corpus trước** (`tests/golden/corpus.jsonl`), rồi mới sửa. Xem [docs/testing.md](docs/testing.md).
-3. Sửa đúng chỗ theo bảng "muốn sửa gì thì mở file nào" trong [docs/kien-truc.md](docs/kien-truc.md).
-4. Chạy các bước kiểm tra bên dưới, rồi mở pull request (mẫu PR có sẵn danh sách kiểm tra).
+1. Tạo nhánh từ `main`, mỗi nhánh một mục đích.
+2. **Viết test tái hiện trước, sửa sau.** Lỗi phát hiện (báo nhầm, bỏ lọt): thêm ca vào `tests/golden/corpus.jsonl`. Lỗi khác: thêm test vào file `tests/test_*.py` tương ứng.
+3. Tìm đúng chỗ cần sửa trong bảng "muốn sửa gì thì mở file nào" của [docs/kien-truc.md](docs/kien-truc.md).
+4. Chạy các bước kiểm tra bên dưới, ghi thay đổi người dùng thấy được vào [CHANGELOG.md](CHANGELOG.md), rồi mở PR theo mẫu.
 
-## Trước khi mở pull request
+## Kiểm tra trước khi mở PR
 
-```bash
-pytest -q                               # mọi test qua
-HYPOTHESIS_PROFILE=ci pytest -q         # như CI: property test tất định, 400 mẫu
-UPDATE_GOLDEN=1 pytest tests/test_golden.py   # chỉ khi đổi hành vi có chủ ý; review git diff snapshot
-python scripts/seal_data.py --check     # nếu có đổi dữ liệu trong src/homoglyph_detector/data/
-python benchmark/calibrate.py           # nếu có đổi engine, brands.json, bảng NEAR hay dữ liệu Unicode
-```
+| Khi nào | Lệnh |
+|---|---|
+| luôn luôn | `HYPOTHESIS_PROFILE=ci pytest -q` (giống CI) |
+| đổi dữ liệu trong `src/homoglyph_detector/data/` | `python scripts/seal_data.py`; sửa `brands.json` thì tăng `version` trước |
+| đổi `brands.json` | `python benchmark/build_dataset.py`, rồi `python benchmark/calibrate.py` |
+| đổi engine, bảng `NEAR` hoặc dữ liệu Unicode | `python benchmark/calibrate.py` |
+| đổi kết luận của ca golden có chủ ý | `UPDATE_GOLDEN=1 pytest tests/test_golden.py`, rồi review `git diff` |
+| đổi cách phát hiện | `python benchmark/real_world.py` (cần mạng lần đầu, khoảng 10 phút) |
 
-Nếu `calibrate.py` làm thay đổi `calibration.json`, hãy commit kèm `MANIFEST.json` và `benchmark/RESULTS.md`, và nêu trong PR các con số chính (F1, tỷ lệ báo nhầm) trước và sau.
+Đổi cách chấm điểm thì commit kèm `calibration.json`, `MANIFEST.json`, `benchmark/RESULTS.md`, và ghi trong PR các con số trước và sau.
+
+**Cổng chất lượng** cho mọi thay đổi về phát hiện, đo trên `benchmark/REAL_WORLD.md`:
+- không quá 5 domain hợp lệ mới bị gắn cờ, và liệt kê từng domain đó trong PR;
+- không mất tấn công nào đã phát hiện trước đó;
+- recall trên nhóm mục tiêu của thay đổi tăng ít nhất 1 điểm phần trăm.
 
 ## Quy ước
 
-- Code, tên biến và thông báo của công cụ viết bằng tiếng Anh; tài liệu trong `docs/` và README viết bằng tiếng Việt.
-- Một thay đổi, một mục đích. Ghi thay đổi người dùng thấy được vào [CHANGELOG.md](CHANGELOG.md).
-- Không dán ký tự ẩn hay ký tự đảo chiều thật vào code, test hay tài liệu; dùng escape Unicode của Python. Một test tự quét toàn repo.
+- Code, tên biến và thông báo của công cụ viết bằng tiếng Anh; README và `docs/` viết bằng tiếng Việt.
 - Không sửa tay `calibration.json` hay `MANIFEST.json`: chúng do script sinh ra.
+- Thêm domain chính thức vào `brands.json` phải có nguồn chứng minh quyền sở hữu (trang của chính thương hiệu, bản ghi registry), ghi nguồn trong PR và CHANGELOG.
+- Không dán ký tự ẩn hay ký tự đảo chiều thật vào code, test hay tài liệu; dùng escape Unicode của Python. Một test tự quét toàn repo.
+- `rejected` là đầu vào trình duyệt từ chối, `unsupported` là đầu vào công cụ không đọc được. Thêm `parse_reason` mới thì sửa đồng bộ `REASONS`, analyzer, báo cáo tích hợp, tài liệu và test trong cùng PR.
 - Không thêm thư viện phụ thuộc mới nếu thư viện chuẩn làm được.
