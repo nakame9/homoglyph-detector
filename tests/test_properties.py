@@ -105,6 +105,19 @@ def test_malformed_punycode_is_reported_not_crashed(tail):
         assert any(f.kind.startswith("idna_") for f in report.findings)
 
 
+@given(st.text(st.sampled_from(string.ascii_lowercase + string.digits + "-"), max_size=20))
+def test_malformed_punycode_in_a_url_is_reported_not_crashed(tail):
+    check(f"https://xn--{tail}.com/")
+
+
+@given(st.integers(0, 5000), st.text(st.sampled_from(string.digits), max_size=8))
+def test_any_port_gives_a_report(zeros, digits):
+    """Ports of any length, past int()'s 4300-digit limit; leading zeros do not change the value."""
+    report = check(f"https://example.com:{'0' * zeros}{digits}/")
+    valid = len(digits.lstrip("0")) <= 5 and int(digits or "0") <= 65535
+    assert (report.parse_status, report.parse_reason) == (("ok", "") if valid else ("rejected", "invalid_port"))
+
+
 # --- metamorphic properties: an attack transformation must never come out SAFE --
 
 @given(st.sampled_from(OFFICIAL), st.data())

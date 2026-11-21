@@ -4,6 +4,9 @@
 
 ## [Chưa phát hành]
 ### Sửa
+- **Port quá dài không còn làm sập cả lô.** `https://example.com:` + 4.301 chữ số vượt giới hạn chuyển chuỗi thành số của Python và ném `ValueError`. Nay ra `rejected/invalid_port`. Số 0 đứng đầu vẫn hợp lệ (`:000…080` là port 80), kể cả trong `--integration-json`.
+- **Punycode có ký tự chưa gán cạnh ZWJ/ZWNJ** (`https://xn--zva847l.com/`) làm `idna.valid_contextj` ném `ValueError`. Nay ra `rejected/invalid_joiner`.
+- **File đầu vào không phải UTF-8** (`-f`, kể cả stdin) trả mã 3 với một dòng `data error` trên stderr và không in dòng kết quả nào, thay vì traceback với mã 1.
 - **Pipe bị đóng không còn là lỗi dữ liệu.** `homoglyph-detector ... | head -1` trước đây in `data error: [Errno 32] Broken pipe` và trả mã 3. Nay CLI thoát im lặng với mã 141 (128 + SIGPIPE, như shell báo), nằm ngoài hợp đồng mã 0–3.
 ### Thêm
 - **Schema tích hợp v1** qua `--integration-json` và `Report.to_integration_dict()`: xuất đích chuẩn hóa, trạng thái parse, verdict và mã finding; bỏ userinfo, path, query, fragment và văn bản chẩn đoán. Xem [hợp đồng tích hợp](docs/integration.md).

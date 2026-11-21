@@ -103,6 +103,27 @@ def test_batch_accepts_the_exact_character_limit(monkeypatch, capsys):
     assert [row["input"] for row in json.loads(capsys.readouterr().out)] == ["apple.com", "example.org"]
 
 
+@pytest.mark.parametrize("raw,status,reason", [
+    ("https://example.com:" + "9" * 4301 + "/", "rejected", "invalid_port"),   # past int()'s 4300-digit limit
+    ("https://example.com:" + "0" * 4301 + "80/", "ok", ""),                  # leading zeros: still port 80
+    ("https://example.com:1000000/", "rejected", "invalid_port"),
+    ("https://example.com:65535/", "ok", ""),
+    ("https://xn--zva847l.com/", "rejected", "invalid_joiner"),               # U+0378 (unassigned) + ZWJ
+])
+def test_hostile_url_parts_give_a_report_not_an_exception(raw, status, reason):
+    report = analyze(raw)
+    assert (report.parse_status, report.parse_reason) == (status, reason)
+    assert report.to_integration_dict()["port"] == (80 if "080" in raw else 65535 if "65535" in raw else None)
+
+
+def test_cli_refuses_a_file_that_is_not_utf8(tmp_path, capsys):
+    path = tmp_path / "inputs.txt"
+    path.write_bytes(b"paypal.com\n\xff\n")
+    assert main(["--json", "-f", str(path)]) == cli.DATA_ERROR
+    captured = capsys.readouterr()
+    assert captured.out == "" and "data error" in captured.err and "Traceback" not in captured.err
+
+
 @pytest.mark.parametrize("text,keyword", [
     ("rnicrosoft", "microsoft"),
     ("5hopee", "shopee"),

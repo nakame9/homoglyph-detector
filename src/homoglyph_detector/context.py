@@ -124,6 +124,18 @@ def _ends_in_number(host: str) -> bool:
     return bool(re.fullmatch(r"[0-9]+|0x[0-9a-f]*", parts[-1]))
 
 
+def _port_number(digits: str) -> int:
+    """The value of an all-digit port; more than 6 significant digits only needs to stay above 65535."""
+    return int(digits.lstrip("0")[:6] or "0")
+
+
+def _valid_joiner(label: str, i: int) -> bool:
+    try:
+        return idna.valid_contextj(label, i)
+    except ValueError:   # a neighbouring code point has no Unicode name (unassigned): no context can allow it
+        return False
+
+
 def _parse_host(raw_host: str) -> tuple[str, str]:
     """WHATWG host parser for special schemes: ('' or a REASONS key, canonical IP or '')."""
     if raw_host.startswith("["):
@@ -150,7 +162,7 @@ def _parse_host(raw_host: str) -> tuple[str, str]:
                 return "invalid_punycode", ""
         if label and unicodedata.category(label[0]).startswith("M"):
             return "invalid_label", ""
-        if any(ch in "\u200c\u200d" and not idna.valid_contextj(label, i) for i, ch in enumerate(label)):
+        if any(ch in "\u200c\u200d" and not _valid_joiner(label, i) for i, ch in enumerate(label)):
             return "invalid_joiner", ""
         try:
             idna.check_bidi(label)
@@ -174,7 +186,8 @@ def classify(raw: str) -> tuple[str, str, str, str, str]:
         userinfo, _, hostport = authority.rpartition("@")   # the host follows the last '@'
         raw_host, port = _split_port(hostport)
         host = unquote(raw_host)   # .hostname would lower-case non-ASCII; browsers percent-decode the host
-        if port is not None and not re.fullmatch(r"[0-9]*", port) or port and int(port) > 65535:
+        # leading zeros are allowed ('0080' is 80); _port_number keeps int() off a 4300+ digit string
+        if port is not None and not re.fullmatch(r"[0-9]*", port) or port and _port_number(port) > 65535:
             reason, ip = "invalid_port", ""
         elif not raw_host:
             reason, ip = ("" if scheme == "file" else "empty"), ""
@@ -247,7 +260,8 @@ def url_metadata(ctx: Context) -> tuple[str | None, int | None, bool, bool]:
     scheme, authority = _authority(raw) or _authority("http://" + raw)
     _, at, hostport = authority.rpartition("@")
     _, port = _split_port(hostport)
-    return scheme, int(port) if port and ctx.parse_status == "ok" else None, bool(at), "?" in raw.partition("#")[0]
+    return scheme, _port_number(port) if port and ctx.parse_status == "ok" else None, bool(at), \
+        "?" in raw.partition("#")[0]
 
 
 @cache

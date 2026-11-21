@@ -117,7 +117,8 @@ def main(argv: list[str] | None = None) -> int:
         except (OSError, ValueError):
             pass
         return CLOSED_PIPE
-    except (DataIntegrityError, BrandDBError, BatchLimitError, OSError) as error:
+    # UnicodeDecodeError: an input file or stdin that is not UTF-8; the whole batch is refused, no rows printed
+    except (DataIntegrityError, BrandDBError, BatchLimitError, OSError, UnicodeDecodeError) as error:
         print(f"homoglyph-detector: data error: {visible(str(error))}", file=sys.stderr)
         return DATA_ERROR
 
