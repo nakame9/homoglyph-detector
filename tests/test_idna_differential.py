@@ -86,7 +86,7 @@ def test_every_disagreement_has_a_known_cause(label):
 @given(st.text(LABEL_CHARS, min_size=1, max_size=8))
 def test_engine_reports_every_disagreement(label):
     ctx = prepare(label + ".com")
-    if not ctx.host or ctx.host.isascii():
+    if not ctx.host or ctx.host.isascii() or ctx.parse_status == "unsupported":   # engines do not run
         return
     legacy = legacy_a_label(ctx.host)
     disagree = legacy is not None and legacy != (ctx.a_label or None)

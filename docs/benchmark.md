@@ -30,17 +30,17 @@ Kết quả tái tạo được từng byte; CI chạy lại và báo lỗi nế
 
 Trọng số hiện tại: unicode 17.0816, idna 0.0, brand 11.5037, combosquat 6.6264, visual 7.798, bias -1.8926. Ngưỡng của profile `default`: `SUSPICIOUS` khi p ≥ 0.5 (khả năng cao hơn không), `MALICIOUS` khi p ≥ 0.9 (9 trên 10). Các profile khác (`banking`, `browser`) và ngân sách báo nhầm riêng được chọn trên tập train theo mục tiêu tỷ lệ báo nhầm: xem [risk scoring](risk-scoring.md).
 
-## Kết quả trên tập test (4.799 dòng)
+## Kết quả trên tập test (4.980 dòng)
 
 | | precision | recall | F1 | tỷ lệ báo nhầm |
 |---|---|---|---|---|
-| đã hiệu chỉnh, p ≥ 0.5 | 0.9667 | 0.8698 | 0.9157 | 0.016 |
-| đã hiệu chỉnh, p ≥ 0.9 | 0.9926 | 0.6395 | 0.7778 | 0.0026 |
-| luật mức độ, không hiệu chỉnh | 0.9624 | 0.7522 | 0.8444 | 0.0156 |
+| đã hiệu chỉnh, p ≥ 0.5 | 0.9708 | 0.8826 | 0.9246 | 0.0156 |
+| đã hiệu chỉnh, p ≥ 0.9 | 0.9926 | 0.5806 | 0.7327 | 0.0026 |
+| luật mức độ, không hiệu chỉnh | 0.9675 | 0.7733 | 0.8595 | 0.0153 |
 
 Ngoài ra: FNR (tỷ lệ bỏ lọt) = 1 − recall; kết quả theo 10 nhóm trên golden corpus, mục tiêu kỹ thuật theo profile và độ trễ phát hiện nằm trong `RESULTS.md` (xem [testing](testing.md#kết-quả-đo)).
 
-ROC-AUC 0.9302, Brier score 0.0585, sai số hiệu chỉnh kỳ vọng (ECE) 0.0609.
+ROC-AUC 0.9384, Brier score 0.0572, sai số hiệu chỉnh kỳ vọng (ECE) 0.0644.
 
 ## Benchmark đã phát hiện gì
 
@@ -78,7 +78,7 @@ Benchmark tổng hợp có giới hạn cơ bản: domain sinh bằng công cụ
 | 1. Phishing thật | 271.231 host từ toàn bộ lịch sử git của [OpenPhish Community Feed](https://github.com/openphish/public_feed), 10/2024 → 11/2026, mỗi host kèm thời điểm xuất hiện đầu tiên | chỉ **3,5%** thuộc phạm vi công cụ; phát hiện **3,4%** toàn bộ; trong phạm vi chủ yếu là combosquat, chỉ 0,8% có bằng chứng giả mạo trông giống (profile `browser`); homograph IDN chiếm 0,06% |
 | 2. Domain hợp lệ quốc tế | 41.620 host từ [Chrome UX Report](https://github.com/zakird/crux-top-lists) top 1 triệu (phân bố thật theo quốc gia), gồm toàn bộ 1.678 IDN | FPR 0,1–0,3% mọi khu vực, 0% Việt Nam; báo nhầm còn lại chủ yếu là domain của chính thương hiệu chưa có trong database (`cloud.microsoft`, `hicloud.com`) |
 | 3. Temporal validation | fit trên phishing trước 01/05/2026, test trên phishing sau mốc | xếp hạng không đổi (ROC-AUC 0,994 trong phạm vi cho cả mô hình hiện tại lẫn mô hình fit trên quá khứ); recall trong phạm vi ổn định 91–100% mỗi tháng; mô hình hiện tại **lệch calibration** trên dữ liệu thật (ECE 0,21 so với 0,06 trên benchmark) |
-| 4. Adversarial | leave-one-technique-out trên benchmark; 203 biến thể từ 11 kỹ thuật chưa từng dùng | homoglyph Latin mở rộng / Armenia / chữ toán học / Cyrillic hoa: 100%; thay chữ bằng số ngoài bảng (`4ppl3`, `p4yp4l`): **47%**; bỏ loại `dictionary` khi fit thì engine combosquat mất trọng số (recall loại đó 81% → **0%**) |
+| 4. Adversarial | leave-one-technique-out trên benchmark; 203 biến thể từ 11 kỹ thuật chưa từng dùng | homoglyph Latin mở rộng / Armenia / chữ toán học / Cyrillic hoa: 100%; thay chữ bằng số ngoài bảng (`4ppl3`, `p4yp4l`): **47%**; bỏ loại `dictionary` khi fit, recall loại đó vẫn 82,1% (trước brand DB 1.1.0 là 0%) |
 | 5. Calibration | Brier, ECE, [reliability diagram](img/reliability.svg) | xem bên dưới |
 
 **Đánh giá thực tế đã phát hiện một lỗi báo nhầm** mà benchmark tổng hợp và golden corpus đều bỏ sót: chữ Latin có dấu hoặc chữ ghép (`mæglerhuset.dk`, `borsaekranı.com`) bị coi là "cả nhãn trông như ASCII". Đã sửa: FPR trên IDN hợp lệ giảm từ 0,3% xuống 0,1%, ở profile `browser` từ 0,2% xuống 0%.

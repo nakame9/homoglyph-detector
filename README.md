@@ -159,12 +159,12 @@ Có hai loại số liệu, đo những thứ khác nhau. Đừng đọc số c�
 
 Kết luận: đây là **một lớp phòng thủ chuyên biệt** cho giả mạo các thương hiệu được bảo vệ, không phải bộ lọc phishing tổng quát. Hiệu quả phụ thuộc trước hết vào **độ phủ của brand database**. Muốn biết xác suất trong lưu lượng của bạn, dùng `--base-rate`.
 
-**2. Benchmark tổng hợp** ([docs/benchmark.md](docs/benchmark.md)): tấn công do [dnstwist](https://github.com/elceef/dnstwist) sinh từ domain thương hiệu, domain hợp lệ từ [OpenDNS top 10.000](https://github.com/opendns/public-domain-lists), tập test 4.799 domain mô hình chưa thấy. Dùng để hiệu chỉnh tầng hợp nhất và so sánh các phiên bản, **không** đại diện phân bố phishing thật:
+**2. Benchmark tổng hợp** ([docs/benchmark.md](docs/benchmark.md)): tấn công do [dnstwist](https://github.com/elceef/dnstwist) sinh từ domain thương hiệu, domain hợp lệ từ [OpenDNS top 10.000](https://github.com/opendns/public-domain-lists), tập test 4.980 domain mô hình chưa thấy. Dùng để hiệu chỉnh tầng hợp nhất và so sánh các phiên bản, **không** đại diện phân bố phishing thật:
 
 | | precision | recall | F1 | tỷ lệ báo nhầm |
 |---|---|---|---|---|
-| p ≥ 0,5 (SUSPICIOUS trở lên) | 96,6% | 86,5% | 91,3% | 1,6% |
-| p ≥ 0,9 (MALICIOUS, áp dụng quy tắc visual-only) | 99,15% | 55,91% | 71,50% | 0,26% |
+| p ≥ 0,5 (SUSPICIOUS trở lên) | 97,1% | 88,3% | 92,5% | 1,6% |
+| p ≥ 0,9 (MALICIOUS, áp dụng quy tắc visual-only) | 99,26% | 58,06% | 73,27% | 0,26% |
 
 Ngưỡng là của profile `default`; mỗi môi trường chọn điểm vận hành riêng: [docs/risk-scoring.md](docs/risk-scoring.md).
 
@@ -190,7 +190,7 @@ Ngưỡng là của profile `default`; mỗi môi trường chọn điểm vận
 
 - Mở rộng brand database theo thương hiệu bị giả mạo nhiều nhất ngoài thực tế (Telegram, USPS, Ledger, Coinbase, Netflix, Instagram, MetaMask) và domain của chính thương hiệu (`cloud.microsoft`, `amazon.co.jp`).
 - Thay chữ bằng số chưa có trong bảng (`3`→e, `4`→a, `7`→t, `8`→b): chỉ bắt được 47% ở kiểm thử adversarial.
-- Engine combosquat chỉ có trọng số nhờ loại `dictionary` của benchmark (bỏ loại này khi fit thì recall về 0%): cần dữ liệu combosquat đa dạng hơn, ví dụ từ phishing thật.
+- Engine combosquat cần dữ liệu combosquat đa dạng hơn, ví dụ từ phishing thật. Từ brand DB 1.1.0, bỏ loại `dictionary` khi fit không còn làm recall loại đó về 0% (82,1%, xem [REAL_WORLD.md](benchmark/REAL_WORLD.md)), nhưng combosquat vẫn chủ yếu học từ tấn công do dnstwist sinh.
 - Bổ sung domain quốc gia của các thương hiệu (`amazon.co.jp`).
 - Điểm số mịn hơn (đặc trưng liên tục như độ dài từ khóa, mức phổ biến của domain) để có nhiều điểm vận hành hơn ba bậc hiện tại.
 - Tập test từ domain lừa đảo thật (PhishTank, OpenPhish) bên cạnh tấn công do dnstwist sinh.

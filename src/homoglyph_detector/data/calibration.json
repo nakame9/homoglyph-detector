@@ -1,12 +1,12 @@
 {
   "weights": {
-    "unicode": 17.0294,
+    "unicode": 16.2022,
     "idna": 0.0,
-    "brand": 11.4845,
-    "combosquat": 6.6039,
-    "visual": 7.8093
+    "brand": 11.4372,
+    "combosquat": 7.1554,
+    "visual": 7.8006
   },
-  "bias": -1.8808,
+  "bias": -1.8614,
   "profiles": {
     "default": {
       "description": "General use: SUSPICIOUS when more likely than not, MALICIOUS at 9 in 10.",
@@ -22,23 +22,23 @@
       },
       "test": {
         "suspicious": {
-          "recall": 0.865,
-          "false_positive_rate": 0.016,
-          "false_alerts_per_10k": 160.0,
-          "precision": 0.9665
+          "recall": 0.8826,
+          "false_positive_rate": 0.0156,
+          "false_alerts_per_10k": 156.0,
+          "precision": 0.9708
         },
         "malicious": {
-          "recall": 0.5591,
+          "recall": 0.5806,
           "false_positive_rate": 0.0026,
           "false_alerts_per_10k": 26.0,
-          "precision": 0.9915
+          "precision": 0.9926
         }
       }
     },
     "banking": {
       "description": "High-value transactions (banking, payments): flag and block on any evidence; false positives go to step-up verification.",
-      "suspicious": 0.27662,
-      "malicious": 0.27662,
+      "suspicious": 0.279892,
+      "malicious": 0.279892,
       "targets": {
         "suspicious": {
           "max_fpr": 0.05
@@ -49,23 +49,23 @@
       },
       "test": {
         "suspicious": {
-          "recall": 0.865,
-          "false_positive_rate": 0.016,
-          "false_alerts_per_10k": 160.0,
-          "precision": 0.9665
-        },
-        "malicious": {
-          "recall": 0.6737,
+          "recall": 0.8853,
           "false_positive_rate": 0.0156,
           "false_alerts_per_10k": 156.0,
-          "precision": 0.9582
+          "precision": 0.9709
+        },
+        "malicious": {
+          "recall": 0.7002,
+          "false_positive_rate": 0.0153,
+          "false_alerts_per_10k": 153.0,
+          "precision": 0.9642
         }
       }
     },
     "browser": {
       "description": "End-user browser warnings: every alert interrupts a person, so only strong look-alike evidence counts.",
-      "suspicious": 0.8444,
-      "malicious": 0.980487,
+      "suspicious": 0.866236,
+      "malicious": 0.981869,
       "targets": {
         "suspicious": {
           "max_fpr": 0.002
@@ -76,81 +76,81 @@
       },
       "test": {
         "suspicious": {
-          "recall": 0.6359,
+          "recall": 0.6542,
           "false_positive_rate": 0.0026,
           "false_alerts_per_10k": 26.0,
-          "precision": 0.9925
+          "precision": 0.9934
         },
         "malicious": {
-          "recall": 0.1338,
+          "recall": 0.1423,
           "false_positive_rate": 0.0006,
           "false_alerts_per_10k": 6.0,
-          "precision": 0.9911
+          "precision": 0.9925
         }
       }
     }
   },
   "brands": {
     "name": "homoglyph-detector default brands",
-    "version": "1.0.0",
-    "sha256": "64a12b0daa8484deeb650b5e6bf736f5ed35a7b430e27ab5157593842dad41e7"
+    "version": "1.1.0",
+    "sha256": "0609b5ae7a2d47beb39fa4c87d07e747d8e6d388ed65980dc6360161fd5c5a51"
   },
   "dataset": {
     "file": "benchmark/dataset.jsonl",
-    "sha256": "ca8e79c179839d3c95ff84b078f075af8c433fe7647aea832329cbaed667bda0",
-    "rows": 15805,
-    "attacks": 5740,
-    "train_rows": 11006,
-    "test_rows": 4799,
-    "train_prior": 0.370071
+    "sha256": "f464cee8188e63f3a33dd667e189614064841d4952bdfd19df480b547bb9e77c",
+    "rows": 16156,
+    "attacks": 6091,
+    "train_rows": 11176,
+    "test_rows": 4980,
+    "train_prior": 0.379653
   },
   "test_metrics": {
-    "roc_auc": 0.9277,
-    "brier": 0.0599,
-    "ece": 0.0604,
+    "roc_auc": 0.9384,
+    "brier": 0.0572,
+    "ece": 0.0644,
     "at_suspicious": {
-      "precision": 0.9665,
-      "recall": 0.865,
-      "f1": 0.9129,
-      "false_positive_rate": 0.016,
-      "false_negative_rate": 0.135,
-      "false_positives": 50,
-      "false_negatives": 225
+      "precision": 0.9708,
+      "recall": 0.8826,
+      "f1": 0.9246,
+      "false_positive_rate": 0.0156,
+      "false_negative_rate": 0.1174,
+      "false_positives": 49,
+      "false_negatives": 217
     },
     "at_malicious": {
-      "precision": 0.9915,
-      "recall": 0.5591,
-      "f1": 0.715,
+      "precision": 0.9926,
+      "recall": 0.5806,
+      "f1": 0.7327,
       "false_positive_rate": 0.0026,
-      "false_negative_rate": 0.4409,
+      "false_negative_rate": 0.4194,
       "false_positives": 8,
-      "false_negatives": 735
+      "false_negatives": 775
     }
   },
   "operating_points": [
     {
       "max_fpr_target": 0.0005,
-      "threshold": 0.980487,
-      "recall": 0.1788,
+      "threshold": 0.981869,
+      "recall": 0.1883,
       "false_positive_rate": 0.0006,
       "false_alerts_per_10k": 6.0,
-      "precision": 0.9933
+      "precision": 0.9943
     },
     {
       "max_fpr_target": 0.002,
-      "threshold": 0.8444,
-      "recall": 0.6359,
+      "threshold": 0.866236,
+      "recall": 0.6542,
       "false_positive_rate": 0.0026,
       "false_alerts_per_10k": 26.0,
-      "precision": 0.9925
+      "precision": 0.9934
     },
     {
       "max_fpr_target": 0.02,
-      "threshold": 0.27662,
-      "recall": 0.865,
-      "false_positive_rate": 0.016,
-      "false_alerts_per_10k": 160.0,
-      "precision": 0.9665
+      "threshold": 0.279892,
+      "recall": 0.8853,
+      "false_positive_rate": 0.0156,
+      "false_alerts_per_10k": 156.0,
+      "precision": 0.9709
     }
   ],
   "operating_curve": [
@@ -160,153 +160,163 @@
       "fpr": 1.0
     },
     {
-      "threshold": 0.27662,
-      "recall": 0.791554,
+      "threshold": 0.279892,
+      "recall": 0.793778,
       "fpr": 0.014856
     },
     {
-      "threshold": 0.517217,
-      "recall": 0.790327,
+      "threshold": 0.521352,
+      "recall": 0.793071,
       "fpr": 0.014856
     },
     {
-      "threshold": 0.637906,
-      "recall": 0.789836,
+      "threshold": 0.627988,
+      "recall": 0.7926,
       "fpr": 0.014856
     },
     {
-      "threshold": 0.719198,
-      "recall": 0.708078,
+      "threshold": 0.70867,
+      "recall": 0.723073,
       "fpr": 0.014856
     },
     {
-      "threshold": 0.790798,
-      "recall": 0.701203,
+      "threshold": 0.813238,
+      "recall": 0.716003,
       "fpr": 0.014856
     },
     {
-      "threshold": 0.8444,
-      "recall": 0.587528,
+      "threshold": 0.866236,
+      "recall": 0.568701,
       "fpr": 0.00101
     },
     {
-      "threshold": 0.913109,
-      "recall": 0.586791,
+      "threshold": 0.889258,
+      "recall": 0.567523,
       "fpr": 0.00101
     },
     {
-      "threshold": 0.957984,
-      "recall": 0.55561,
+      "threshold": 0.918693,
+      "recall": 0.567287,
       "fpr": 0.00101
     },
     {
-      "threshold": 0.975547,
-      "recall": 0.555119,
+      "threshold": 0.958535,
+      "recall": 0.538298,
       "fpr": 0.00101
     },
     {
-      "threshold": 0.97873,
-      "recall": 0.549472,
+      "threshold": 0.974498,
+      "recall": 0.537356,
       "fpr": 0.00101
     },
     {
-      "threshold": 0.980487,
-      "recall": 0.199362,
+      "threshold": 0.977464,
+      "recall": 0.532406,
+      "fpr": 0.00101
+    },
+    {
+      "threshold": 0.981869,
+      "recall": 0.197737,
       "fpr": 0.000144
     },
     {
-      "threshold": 0.984522,
-      "recall": 0.198871,
+      "threshold": 0.986023,
+      "recall": 0.196088,
       "fpr": 0.000144
     },
     {
-      "threshold": 0.988649,
-      "recall": 0.19617,
+      "threshold": 0.988146,
+      "recall": 0.192552,
       "fpr": 0.000144
     },
     {
-      "threshold": 0.992575,
-      "recall": 0.195924,
+      "threshold": 0.99148,
+      "recall": 0.192317,
       "fpr": 0.000144
     },
     {
-      "threshold": 0.995463,
-      "recall": 0.169163,
+      "threshold": 0.994531,
+      "recall": 0.192081,
       "fpr": 0.000144
     },
     {
-      "threshold": 0.996987,
-      "recall": 0.168917,
+      "threshold": 0.996414,
+      "recall": 0.164978,
       "fpr": 0.000144
     },
     {
-      "threshold": 0.998527,
-      "recall": 0.168672,
+      "threshold": 0.998098,
+      "recall": 0.164271,
       "fpr": 0.000144
     },
     {
-      "threshold": 0.99885,
-      "recall": 0.167935,
+      "threshold": 0.998521,
+      "recall": 0.163092,
       "fpr": 0.000144
     },
     {
-      "threshold": 0.99912,
-      "recall": 0.166953,
+      "threshold": 0.998983,
+      "recall": 0.161442,
       "fpr": 0.000144
     },
     {
-      "threshold": 0.999516,
-      "recall": 0.022342,
+      "threshold": 0.999239,
+      "recall": 0.161207,
       "fpr": 0.000144
     },
     {
-      "threshold": 0.999843,
-      "recall": 0.021851,
+      "threshold": 0.999607,
+      "recall": 0.018383,
       "fpr": 0.000144
     },
     {
-      "threshold": 0.999891,
-      "recall": 0.020624,
+      "threshold": 0.999841,
+      "recall": 0.017676,
       "fpr": 0.000144
     },
     {
-      "threshold": 0.999907,
-      "recall": 0.019642,
+      "threshold": 0.999893,
+      "recall": 0.016969,
       "fpr": 0.000144
     },
     {
-      "threshold": 0.999926,
-      "recall": 0.019151,
+      "threshold": 0.999918,
+      "recall": 0.016969,
       "fpr": 0.0
     },
     {
-      "threshold": 0.99995,
-      "recall": 0.018905,
+      "threshold": 0.999942,
+      "recall": 0.016026,
       "fpr": 0.0
     },
     {
-      "threshold": 0.99997,
-      "recall": 0.011539,
+      "threshold": 0.999963,
+      "recall": 0.009663,
       "fpr": 0.0
     },
     {
-      "threshold": 0.999987,
-      "recall": 0.011048,
+      "threshold": 0.999976,
+      "recall": 0.009192,
       "fpr": 0.0
     },
     {
-      "threshold": 0.999995,
-      "recall": 0.010557,
+      "threshold": 0.999991,
+      "recall": 0.00872,
+      "fpr": 0.0
+    },
+    {
+      "threshold": 0.999996,
+      "recall": 0.00707,
       "fpr": 0.0
     },
     {
       "threshold": 0.999998,
-      "recall": 0.006138,
+      "recall": 0.006835,
       "fpr": 0.0
     },
     {
       "threshold": 0.999999,
-      "recall": 0.004419,
+      "recall": 0.004242,
       "fpr": 0.0
     },
     {
@@ -317,22 +327,22 @@
   ],
   "baseline_test_metrics": {
     "suspicious_or_worse": {
-      "precision": 0.9622,
-      "recall": 0.7475,
-      "f1": 0.8413,
-      "false_positive_rate": 0.0156,
-      "false_negative_rate": 0.2525,
-      "false_positives": 49,
-      "false_negatives": 421
+      "precision": 0.9675,
+      "recall": 0.7733,
+      "f1": 0.8595,
+      "false_positive_rate": 0.0153,
+      "false_negative_rate": 0.2267,
+      "false_positives": 48,
+      "false_negatives": 419
     },
     "malicious": {
       "precision": 1.0,
-      "recall": 0.0714,
-      "f1": 0.1333,
+      "recall": 0.072,
+      "f1": 0.1343,
       "false_positive_rate": 0.0,
-      "false_negative_rate": 0.9286,
+      "false_negative_rate": 0.928,
       "false_positives": 0,
-      "false_negatives": 1548
+      "false_negatives": 1715
     }
   }
 }

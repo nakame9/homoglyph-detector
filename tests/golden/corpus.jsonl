@@ -112,7 +112,7 @@
 {"group": "multi_level_suffix", "input": "google.com.vn", "label": "benign"}
 {"group": "multi_level_suffix", "input": "myblog.blogspot.com", "label": "benign"}
 {"group": "multi_level_suffix", "input": "someone.github.io", "label": "benign"}
-{"group": "multi_level_suffix", "input": "amazon.co.jp", "label": "benign", "known_issue": "brand database lacks Amazon's country domains: shows up as a combosquat"}
+{"group": "multi_level_suffix", "input": "amazon.co.jp", "label": "benign"}
 {"group": "multi_level_suffix", "input": "vietcornbank.com.vn", "label": "attack"}
 {"group": "multi_level_suffix", "input": "pаypal.github.io", "label": "attack"}
 {"group": "multi_level_suffix", "input": "vietcombank.com.vn.evil.com", "label": "attack"}
@@ -120,6 +120,9 @@
 {"group": "multi_level_suffix", "input": "paypal.com.evil.co.uk", "label": "attack"}
 {"group": "multi_level_suffix", "input": "techc0mbank.com", "label": "attack"}
 {"group": "multi_level_suffix", "input": "g00gle.co.uk", "label": "attack"}
+{"group": "multi_level_suffix", "input": "admin.cloud.microsoft", "label": "benign"}
+{"group": "multi_level_suffix", "input": "cloud-microsoft-login.com", "label": "attack"}
+{"group": "multi_level_suffix", "input": "amazon-co-jp.com", "label": "attack"}
 {"group": "url_edge", "input": "https://paypal.com@evil.com/login", "label": "attack", "host": "evil.com"}
 {"group": "url_edge", "input": "https://user:pass@pаypal.com:8443/x?y=1#z", "label": "attack", "host": "pаypal.com"}
 {"group": "url_edge", "input": "HTTPS://WWW.PAYPAL.COM/", "label": "benign", "host": "www.paypal.com"}

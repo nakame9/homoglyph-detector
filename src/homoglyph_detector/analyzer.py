@@ -47,7 +47,7 @@ class Report:
         # ponytail: reuse the bounded parser for metadata; engines are not run a second time.
         ctx = None if self.parse_reason == "too_long" else prepare(self.input)
         scheme, port, userinfo, query = url_metadata(ctx) if ctx else (None, None, None, None)
-        host = (ctx.ip or ctx.a_label or None) if ctx and self.parse_status == "ok" else None
+        host = (ctx.ip or ctx.a_label or ctx.browser_host or None) if ctx and self.parse_status == "ok" else None
         port = port if host else None
         destination = host
         if host and scheme:
@@ -96,6 +96,9 @@ def analyze(raw: str, brand_files: tuple[str, ...] = (), policy: str | dict | No
         reason = REASONS[ctx.parse_reason]
         if ctx.parse_reason == "too_long":
             findings = [Finding("idna", "input_too_long", "info", reason, {"reason": ctx.parse_reason}, "protocol")]
+        elif ctx.parse_status == "unsupported":   # not a browser rejection: the tool cannot read this destination
+            findings = [Finding("idna", "input_unsupported", "info", f"Not analyzed: {reason}",
+                                {"reason": ctx.parse_reason}, "protocol")]
         else:
             findings = [Finding("idna", "url_rejected", "info", f"Browsers reject this input: {reason}",
                                 {"reason": ctx.parse_reason}, "protocol"), *diagnostics]

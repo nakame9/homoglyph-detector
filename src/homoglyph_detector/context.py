@@ -14,6 +14,8 @@ from urllib.parse import unquote
 import idna
 from publicsuffixlist import PublicSuffixList
 
+from .unicode_data import script_of
+
 
 @dataclass
 class Context:
@@ -25,6 +27,7 @@ class Context:
     userinfo: str = ""              # URL userinfo, percent-decoded ('paypal.com' in 'https://paypal.com@evil.com')
     a_label: str = ""               # the domain DNS sees; "" when no resolver accepts the host
     resolved: str = ""              # U-label form of a_label (or the IP address): the destination actually visited
+    browser_host: str = ""          # ASCII host a browser looks up when no IDNA2008 form exists ('example_.com')
     strict_error: idna.IDNAError | None = None   # why the host is not IDNA2008 as written
     lookup_error: idna.IDNAError | None = None   # why even UTS #46 lookup rejects it
     parse_status: str = "ok"        # ok / rejected (invalid input) / unsupported (input exceeds a limit)
@@ -36,6 +39,7 @@ class Context:
 MAX_INPUT_LENGTH = 272   # code points the engines scan: a host, a name, a URL userinfo or an email local part
 MAX_RAW_LENGTH = 8192    # code points of a whole input before normalization: bounds parsing, not scoring
 SPECIAL_SCHEMES = {"http", "https", "ws", "wss", "ftp", "file"}   # WHATWG "special" URL schemes
+C0_OR_SPACE = "".join(map(chr, range(0x21)))
 SCHEME = re.compile(r"([A-Za-z][A-Za-z0-9+.\-]*):")
 # WHATWG forbidden domain code points: checked after UTS #46 mapping, so fullwidth '＠' counts as '@'
 FORBIDDEN_DOMAIN = set("\x00\t\n\r #/:<>?@[\\]^|%\x7f") | {chr(c) for c in range(0x20)}
@@ -52,7 +56,11 @@ REASONS = {
     "invalid_bidi": "a label breaks the IDNA bidi rule",
     "invalid_ipv4": "the host ends in a number but is not a valid IPv4 address",
     "invalid_ipv6": "the host is not a valid IPv6 address in brackets",
+    "opaque_host": "the URL scheme is not one browsers read a host from (http, https, ws, wss, ftp, file)",
+    "unicode_newer_than_runtime": "the host has a character newer than this Python's Unicode database, "
+                                  "so IDNA and bidi rules cannot be checked on it",
 }
+UNSUPPORTED = {"too_long", "opaque_host", "unicode_newer_than_runtime"}   # not scored, but not browser-rejected
 
 
 def _strip_port(host: str) -> str:
@@ -60,7 +68,8 @@ def _strip_port(host: str) -> str:
 
 
 def _url_text(raw: str) -> str:
-    return raw.replace("\t", "").replace("\n", "").replace("\r", "")
+    """WHATWG basic URL parser: strip leading and trailing C0 controls and spaces, then drop tabs and newlines."""
+    return raw.strip(C0_OR_SPACE).replace("\t", "").replace("\n", "").replace("\r", "")
 
 
 def _authority(raw: str) -> tuple[str, str] | None:
@@ -122,6 +131,31 @@ def _ends_in_number(host: str) -> bool:
     if parts[-1] == "" and len(parts) > 1:
         parts.pop()
     return bool(re.fullmatch(r"[0-9]+|0x[0-9a-f]*", parts[-1]))
+
+
+def _newer_than_runtime(host: str) -> bool:
+    """A character the bundled Unicode tables assign a script but this Python's unicodedata does not know
+    (Python 3.13 ships Unicode 15.1, the tables are newer): its bidi class and category read as unassigned."""
+    for label in host.split("."):
+        if label[:4].lower() == "xn--":
+            try:
+                label = label[4:].encode("ascii").decode("punycode")
+            except (UnicodeError, ValueError):
+                continue
+        if any(unicodedata.category(ch) == "Cn" and script_of(ch) != "Unknown" for ch in label):
+            return True
+    return False
+
+
+def _browser_ascii(host: str) -> str:
+    """The ASCII host a browser looks up (WHATWG domain to ASCII, not strict): UTS #46 mapping without STD3
+    rules, then Punycode per non-ASCII label, so 'example_.com' or a snowman label keep their destination."""
+    try:
+        mapped = idna.uts46_remap(host, std3_rules=False, transitional=False)
+    except idna.IDNAError:
+        return ""
+    return ".".join(label if label.isascii() else "xn--" + label.encode("punycode").decode("ascii")
+                    for label in mapped.split("."))
 
 
 def _port_number(digits: str) -> int:
@@ -192,7 +226,9 @@ def classify(raw: str) -> tuple[str, str, str, str, str]:
         elif not raw_host:
             reason, ip = ("" if scheme == "file" else "empty"), ""
         elif scheme not in SPECIAL_SCHEMES:
-            reason, ip = "", ""   # an opaque host: no IDNA, no IP parsing
+            # an opaque host (git://, ssh://, ...): browsers neither percent-decode, lower-case nor IDNA-map it,
+            # so 'git://%70aypal.com/' does not go to paypal.com; not scored rather than misread
+            return "url", raw_host, unquote(userinfo), "opaque_host", ""
         else:
             reason, ip = _parse_host(raw_host)
         return "url", host, unquote(userinfo), reason, ip
@@ -226,12 +262,15 @@ def prepare(raw: str) -> Context:
     input_type, target, before_at, reason, ip = classify(raw)
     if max(len(target), len(before_at)) > MAX_INPUT_LENGTH:
         return Context("", "unknown", "", parse_status="unsupported", parse_reason="too_long")
-    status = "rejected" if reason else "ok"
+    if input_type != "name" and reason not in UNSUPPORTED and _newer_than_runtime(target):
+        reason = "unicode_newer_than_runtime"   # before IDNA: it would misreport the character as a bidi error
+    status = "unsupported" if reason in UNSUPPORTED else "rejected" if reason else "ok"
     if input_type == "name":
         return Context(raw, input_type, target, parse_status=status, parse_reason=reason)
-    host = "".join(ch.lower() if ch.isascii() else ch for ch in target).rstrip(".")
+    opaque = reason == "opaque_host"   # kept exactly as written: no case folding, no U-label display
+    host = target if opaque else "".join(ch.lower() if ch.isascii() else ch for ch in target).rstrip(".")
     email = input_type == "email"
-    ctx = Context(raw, input_type, _shown(host), host=host,
+    ctx = Context(raw, input_type, host if opaque else _shown(host), host=host,
                   local=before_at if email else "", userinfo="" if email else before_at,
                   parse_status=status, parse_reason=reason, ip=ip)
     if ip:   # an address, not a domain: no IDNA ('[::1]', '127.0.0.1')
@@ -246,7 +285,8 @@ def prepare(raw: str) -> Context:
         try:
             ctx.a_label = idna.encode(host, uts46=True).decode("ascii")   # browser lookup mapping
         except idna.IDNAError as error:
-            ctx.lookup_error = error
+            ctx.lookup_error = error   # the IDNA diagnostics stay; the destination is what a browser visits
+            ctx.browser_host = _browser_ascii(host) if input_type == "url" else ""
             return ctx
     ctx.resolved = idna.decode(ctx.a_label)
     return ctx

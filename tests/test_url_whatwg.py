@@ -8,6 +8,7 @@ P3   an IP host skips the IDN engines: canonical form -> ip_host (info); IPv4 in
 """
 import json
 import re
+import unicodedata
 from pathlib import Path
 from urllib.parse import quote
 
@@ -17,6 +18,7 @@ from homoglyph_detector import analyze
 from homoglyph_detector.cli import main
 from homoglyph_detector.context import prepare
 from homoglyph_detector.scoring import custom_profile, profile
+from homoglyph_detector.unicode_data import script_of
 
 FAKE = "payp\u0430l.com"          # Cyrillic '\u0430'
 BIDI_FORMATTING = [*range(0x202A, 0x202F), *range(0x2066, 0x206A)]   # embedding, override, isolate
@@ -174,6 +176,36 @@ def test_host_parsing_agrees_with_the_url_standard(case):
     hostname = case.get("hostname", "")
     if hostname.startswith("[") or IPV4.fullmatch(hostname):
         assert ctx.ip == hostname.strip("[]")
+    elif not case["failure"]:   # the destination a browser visits, also where strict IDNA2008 has no form for it
+        assert (ctx.a_label or ctx.browser_host) == hostname.rstrip("."), (ctx.a_label, ctx.browser_host)
+
+
+@pytest.mark.parametrize("url,host", [("https://example_.com/", "example_.com"), ("https://☃.com/", "xn--n3h.com")])
+def test_a_browser_destination_survives_a_strict_idna_error(url, host):
+    report = analyze(url)
+    row = report.to_integration_dict()
+    assert report.parse_status == "ok" and (row["host"], row["input"]) == (host, f"https://{host}")
+
+
+@pytest.mark.parametrize("url", ["git://%70aypal.com/", "ssh://git@github.com/x", "foo://PAYPAL.com/"])
+def test_an_opaque_host_is_not_scored(url):
+    """Non-special schemes keep the host as written (no percent-decoding, case or IDNA): never allowlisted."""
+    report = analyze(url)
+    assert (report.parse_status, report.parse_reason, report.verdict) == ("unsupported", "opaque_host", "SUSPICIOUS")
+    assert {f.kind for f in report.findings} == {"input_unsupported"} and report.to_integration_dict()["host"] is None
+    assert "paypal.com" not in report.target
+
+
+NEWER = next((chr(c) for c in range(0x80, 0x30000) if unicodedata.category(chr(c)) == "Cn"
+              and script_of(chr(c)) not in ("Unknown", "Common", "Inherited")), None)
+
+
+@pytest.mark.skipif(NEWER is None, reason="this Python's Unicode database is as new as the bundled tables")
+@pytest.mark.parametrize("shape", ["https://{}x.com/", "{}x.com", "user@{}x.com"])
+def test_a_character_newer_than_the_runtime_is_unsupported_not_invalid(shape):
+    report = analyze(shape.format(NEWER))
+    assert (report.parse_status, report.parse_reason) == ("unsupported", "unicode_newer_than_runtime")
+    assert report.verdict == "SUSPICIOUS" and "url_rejected" not in {f.kind for f in report.findings}
 
 
 # --- a domain or email host with a control character --------------------------------

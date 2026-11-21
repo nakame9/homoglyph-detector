@@ -4,6 +4,11 @@
 
 ## [Chưa phát hành]
 ### Sửa
+- **Host opaque không còn bị giải mã rồi đưa vào allowlist.** `git://%70aypal.com/` trước đây được đọc là `paypal.com` và ra SAFE, dù trình duyệt giữ nguyên host `%70aypal.com`. Mọi URL có scheme không đặc biệt (không phải http, https, ws, wss, ftp, file) nay ra `unsupported/opaque_host`, SUSPICIOUS, host giữ đúng như viết.
+- **Ký tự mới hơn Unicode của Python không còn bị báo là lỗi bidi.** Bảng Unicode đi kèm mới hơn cơ sở dữ liệu Unicode của Python (3.13 là 15.1), nên `https://ᲊ.com/` từng ra `rejected/invalid_bidi`. Nay ra `unsupported/unicode_newer_than_runtime` cho URL, domain và email, kiểm tra trước khi gọi IDNA.
+- **Báo cáo tích hợp giữ đích của host mà trình duyệt chấp nhận.** `https://example_.com/` và `https://☃.com/` từng có `host=null`. Nay `host` là host ASCII trình duyệt tra DNS (`example_.com`, `xn--n3h.com`), còn chẩn đoán IDNA2008 vẫn nằm trong `findings`.
+- **Ký tự điều khiển C0 và dấu cách ở hai đầu URL bị bỏ như trình duyệt** (WHATWG). `"\x00\x1b http://example.com/\x1f "` nay đọc được host `example.com`. Domain và email có ký tự điều khiển vẫn bị từ chối như trước.
+- **Brand DB 1.1.0: thêm domain chính thức của thương hiệu sẵn có.** `amazon.co.jp` (Amazon; bản ghi JPRS whois ghi tổ chức là Amazon, Inc.) và `cloud.microsoft` (Microsoft; Microsoft Learn nêu Microsoft là registry operator và registrant duy nhất của `.microsoft`). Hết báo nhầm `amazon.co.jp` (từng là known issue của golden corpus) và `admin.cloud.microsoft` (báo nhầm còn lại ở profile `browser` trên web thật).
 - **Port quá dài không còn làm sập cả lô.** `https://example.com:` + 4.301 chữ số vượt giới hạn chuyển chuỗi thành số của Python và ném `ValueError`. Nay ra `rejected/invalid_port`. Số 0 đứng đầu vẫn hợp lệ (`:000…080` là port 80), kể cả trong `--integration-json`.
 - **Punycode có ký tự chưa gán cạnh ZWJ/ZWNJ** (`https://xn--zva847l.com/`) làm `idna.valid_contextj` ném `ValueError`. Nay ra `rejected/invalid_joiner`.
 - **File đầu vào không phải UTF-8** (`-f`, kể cả stdin) trả mã 3 với một dòng `data error` trên stderr và không in dòng kết quả nào, thay vì traceback với mã 1.

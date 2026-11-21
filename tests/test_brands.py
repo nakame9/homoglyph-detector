@@ -78,7 +78,7 @@ def test_seal_refuses_a_change_without_a_version_bump(tampered_data):
     db["brands"][0]["keywords"].append("appleid")
     (tampered_data / "brands.json").write_text(json.dumps(db), "utf-8")
     assert seal.main([]) == 1                      # same version: refused
-    db["version"] = "1.0.1"
+    db["version"] = ".".join([*db["version"].split(".")[:2], str(int(db["version"].split(".")[2]) + 1)])   # next patch
     (tampered_data / "brands.json").write_text(json.dumps(db), "utf-8")
     assert seal.main([]) == 0 and seal.main(["--check"]) == 0
 
@@ -214,3 +214,15 @@ def test_validation_rejects(change, message):
 
 def test_validation_accepts_the_example():
     validate(copy.deepcopy(ACME), "test")
+
+
+@pytest.mark.parametrize("domain", ["clouds.com", "cloudy.com", "loud.com", "clout.com", "clowd.com"])
+def test_a_brand_tld_domain_lends_no_plain_word_to_typosquat_matching(domain):
+    """'cloud.microsoft' is official, but the brand is the '.microsoft' TLD: 'cloud' is an ordinary word."""
+    assert analyze(domain).verdict == "SAFE"
+
+
+@pytest.mark.parametrize("domain", ["admin.cloud.microsoft", "amazon.co.jp", "www.amazon.co.jp"])
+def test_official_country_and_brand_tld_domains_are_allowlisted(domain):
+    report = analyze(domain)
+    assert report.verdict == "SAFE" and "allowlisted" in {f.kind for f in report.findings}

@@ -18,6 +18,17 @@ def edit_distance(a: str, b: str) -> int:
     return d[-1][-1]
 
 
+def _domain_names(brand: dict) -> list[str]:
+    """The name part of each official domain, except where the brand is the suffix itself: in 'cloud.microsoft'
+    the brand is the '.microsoft' TLD and 'cloud' is a plain word, so 'clouds.com' is no typosquat of Microsoft."""
+    names = []
+    for domain in brand["domains"]:
+        rd, label = registrable(domain)
+        if rd[len(label) + 1:] not in brand["keywords"]:
+            names.append(label)
+    return names
+
+
 def _brands_host(host: str, brands: list[dict], result: EngineResult) -> None:
     rd, label = registrable(host)
     if is_official(host, brands):
@@ -33,7 +44,7 @@ def _brands_host(host: str, brands: list[dict], result: EngineResult) -> None:
                        brand=name, official=hit, confusable_type=kind, basis=resemblance_basis(label))
             continue
         # keywords plus the names of the official domains ('office' from office.com)
-        for kw in dict.fromkeys([*brand["keywords"], *(registrable(d)[1] for d in brand["domains"])]):
+        for kw in dict.fromkeys([*brand["keywords"], *_domain_names(brand)]):
             kw_skel = skeleton(kw)
             if label_skel == kw_skel and label != kw:
                 kind = confusable_type(label, kw)
