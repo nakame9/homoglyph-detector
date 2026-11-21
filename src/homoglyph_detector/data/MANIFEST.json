@@ -32,14 +32,14 @@
       "bytes": 196089
     },
     "brands.json": {
-      "sha256": "64a12b0daa8484deeb650b5e6bf736f5ed35a7b430e27ab5157593842dad41e7",
-      "version": "1.0.0",
-      "bytes": 2410
+      "sha256": "0609b5ae7a2d47beb39fa4c87d07e747d8e6d388ed65980dc6360161fd5c5a51",
+      "version": "1.1.0",
+      "bytes": 2445
     },
     "calibration.json": {
-      "sha256": "426de16ea6836d3df2843a73a7211a28c27b753a18f33357f6a1cfb876f26b95",
+      "sha256": "7408aaf21d2373c8b2571697bde87a1c53cb2ff576bd273236a9f6bfad7a765a",
       "version": null,
-      "bytes": 7247
+      "bytes": 7440
     },
     "confusables.txt": {
       "sha256": "6ed3ee967c9dfdf6677d563c9985182fbc50a2efb7d6059cd57b2e2ce18f5b92",

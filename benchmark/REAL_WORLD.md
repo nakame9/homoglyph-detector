@@ -53,18 +53,18 @@ Ví dụ bỏ lọt trong phạm vi thương hiệu: `advpedroza.lovable.app`, `
 
 | profile | hợp lệ MALICIOUS: không quy tắc | có quy tắc | phishing trong phạm vi MALICIOUS: không | có |
 |---|---|---|---|---|
-| default | 0,0% (9/41.620) | 0,0% (9/41.620) | 0,9% (83/9.377) | 0,9% (81/9.377) |
-| banking | 0,3% (122/41.620) | 0,3% (119/41.620) | 98,0% (9.191/9.377) | 98,0% (9.188/9.377) |
-| browser | 0,0% (2/41.620) | 0,0% (2/41.620) | 0,9% (83/9.377) | 0,9% (81/9.377) |
+| default | 0,0% (8/41.620) | 0,0% (8/41.620) | 0,9% (83/9.377) | 0,9% (81/9.377) |
+| banking | 0,3% (120/41.620) | 0,3% (117/41.620) | 98,0% (9.191/9.377) | 98,0% (9.188/9.377) |
+| browser | 0,0% (1/41.620) | 0,0% (1/41.620) | 0,9% (83/9.377) | 0,9% (81/9.377) |
 
 - domain hợp lệ không còn bị MALICIOUS nhờ quy tắc, profile `default`: không có.
 - domain hợp lệ không còn bị MALICIOUS nhờ quy tắc, profile `banking`: `mono-stil.ru`, `order.nomo.co.jp`, `www.goog1e3241.com`.
 - domain hợp lệ không còn bị MALICIOUS nhờ quy tắc, profile `browser`: không có.
 
 
-Engine gây báo nhầm (profile default): combosquat 111, brand 9, visual 2.
+Engine gây báo nhầm (profile default): combosquat 110, brand 8, visual 2.
 
-Báo nhầm còn lại ở profile browser: `connectivitycheck.platform.hicloud.com`, `admin.cloud.microsoft`, `akku1gk96.accounts.cloud.sap`, `sw-beta.xcloud.mn`, `hcm-eu10.hr.cloud.sap`, `adt93pwjq.accounts.cloud.sap`, `psr1.eu.fieldglass.cloud.sap`, `www.email.it`, `dnp.eoffice.go.th`.
+Báo nhầm còn lại ở profile browser: `connectivitycheck.platform.hicloud.com`, `akku1gk96.accounts.cloud.sap`, `sw-beta.xcloud.mn`, `hcm-eu10.hr.cloud.sap`, `adt93pwjq.accounts.cloud.sap`, `psr1.eu.fieldglass.cloud.sap`, `www.email.it`, `dnp.eoffice.go.th`.
 
 ## 3. Kiểm định theo thời gian (temporal validation)
 
@@ -72,10 +72,10 @@ Train: phishing xuất hiện trước 2026-05-01; test: phishing xuất hiện 
 
 | mô hình | đánh giá trên | ROC-AUC | recall @ FPR 1% | recall @ FPR 0,1% | Brier | ECE |
 |---|---|---|---|---|---|---|
-| production (benchmark tổng hợp) | toàn bộ | 0,527 | 5,8% | 0,2% | 0,2704 | 0,2148 |
-| production (benchmark tổng hợp) | trong phạm vi | 0,994 | 99,1% | 0,4% | 0,0252 | 0,1422 |
+| production (benchmark tổng hợp) | toàn bộ | 0,527 | 5,8% | 0,2% | 0,2693 | 0,2117 |
+| production (benchmark tổng hợp) | trong phạm vi | 0,994 | 99,1% | 0,4% | 0,0226 | 0,1344 |
 | fit trên quá khứ thật | toàn bộ | 0,528 | 6,0% | 0,0% | 0,2311 | 0,0855 |
-| fit trên quá khứ thật | trong phạm vi | 0,994 | 99,1% | 0,4% | 0,1487 | 0,3348 |
+| fit trên quá khứ thật | trong phạm vi | 0,994 | 99,1% | 0,4% | 0,1487 | 0,3347 |
 | fit tách ngẫu nhiên | toàn bộ | 0,516 | 3,6% | 0,1% | 0,2401 | 0,0027 |
 | fit tách ngẫu nhiên | trong phạm vi | 0,991 | 98,4% | 0,8% | 0,1419 | 0,3349 |
 
@@ -94,21 +94,21 @@ Fit lại tầng hợp nhất không có một loại tấn công của benchmar
 
 | kỹ thuật bị giữ lại | recall khi đã thấy | recall khi chưa thấy |
 |---|---|---|
-| brand/addition | 84,6% | 84,6% |
-| brand/bitsquatting | 89,3% | 89,3% |
+| brand/addition | 85,7% | 85,7% |
+| brand/bitsquatting | 90,1% | 90,1% |
 | brand/cyrillic | 90,9% | 90,9% |
-| brand/dictionary | 80,7% | 0,0% |
-| brand/homoglyph | 90,3% | 57,4% |
-| brand/hyphenation | 92,5% | 92,5% |
-| brand/insertion | 85,0% | 85,0% |
-| brand/omission | 90,8% | 90,8% |
-| brand/plural | 87,9% | 87,9% |
-| brand/repetition | 93,9% | 93,9% |
-| brand/replacement | 87,3% | 87,3% |
-| brand/subdomain | 91,7% | 91,7% |
-| brand/transposition | 92,2% | 92,2% |
-| brand/various | 71,8% | 71,8% |
-| brand/vowel-swap | 88,9% | 88,9% |
+| brand/dictionary | 82,1% | 82,1% |
+| brand/homoglyph | 91,1% | 59,9% |
+| brand/hyphenation | 92,9% | 92,9% |
+| brand/insertion | 86,2% | 86,2% |
+| brand/omission | 91,3% | 91,3% |
+| brand/plural | 86,7% | 86,7% |
+| brand/repetition | 94,2% | 94,2% |
+| brand/replacement | 88,2% | 88,2% |
+| brand/subdomain | 92,1% | 92,1% |
+| brand/transposition | 92,7% | 92,7% |
+| brand/various | 75,0% | 75,0% |
+| brand/vowel-swap | 89,6% | 89,6% |
 | curated/bidi | 100,0% | 100,0% |
 | curated/combosquat | 100,0% | 100,0% |
 | curated/display-name | 100,0% | 100,0% |
@@ -118,8 +118,7 @@ Fit lại tầng hợp nhất không có một loại tấn công của benchmar
 | curated/invisible | 100,0% | 100,0% |
 | curated/mixed-number | 100,0% | 100,0% |
 | curated/whole-script | 100,0% | 100,0% |
-| unprotected/cyrillic | 0,0% | 0,0% |
-| unprotected/homoglyph | 49,4% | 0,0% |
+| unprotected/homoglyph | 47,4% | 0,0% |
 
 ### Kỹ thuật mới chưa từng dùng khi phát triển
 
@@ -147,12 +146,12 @@ Ví dụ bỏ lọt: `4ppl3.com`, `p4yp4l.com`, `micro5of7.com`, `goo9l3.com`, `
 
 | đánh giá | tỷ lệ tấn công | Brier | ECE |
 |---|---|---|---|
-| benchmark tổng hợp, tập test | 34,7% | 0,0599 | 0,0604 |
-| phishing thật sau mốc, production | 36,2% | 0,2704 | 0,2148 |
-| như trên, hiệu chỉnh base rate 0,36 | 36,2% | 0,2720 | 0,2186 |
+| benchmark tổng hợp, tập test | 37,1% | 0,0572 | 0,0644 |
+| phishing thật sau mốc, production | 36,2% | 0,2693 | 0,2117 |
+| như trên, hiệu chỉnh base rate 0,36 | 36,2% | 0,2729 | 0,2201 |
 | phishing thật, fit trên quá khứ | 36,2% | 0,2311 | 0,0855 |
 
-Xác suất của mô hình production giả định tỷ lệ tấn công 37,0% (tập train của benchmark). Precision thật khi triển khai, với recall và FPR đo trên phishing thật sau mốc (profile default):
+Xác suất của mô hình production giả định tỷ lệ tấn công 38,0% (tập train của benchmark). Precision thật khi triển khai, với recall và FPR đo trên phishing thật sau mốc (profile default):
 
 | tỷ lệ tấn công trong lưu lượng | precision trong phạm vi | precision toàn bộ |
 |---|---|---|

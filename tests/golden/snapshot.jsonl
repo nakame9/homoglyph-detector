@@ -112,7 +112,7 @@
 {"input": "google.com.vn", "a_label": "google.com.vn", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
 {"input": "myblog.blogspot.com", "a_label": "myblog.blogspot.com", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
 {"input": "someone.github.io", "a_label": "someone.github.io", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
-{"input": "amazon.co.jp", "a_label": "amazon.co.jp", "verdicts": {"default": "SUSPICIOUS", "banking": "MALICIOUS", "browser": "SAFE"}, "evidence": ["combosquat/brand_unofficial[name]"]}
+{"input": "amazon.co.jp", "a_label": "amazon.co.jp", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
 {"input": "vietcornbank.com.vn", "a_label": "vietcornbank.com.vn", "verdicts": {"default": "SUSPICIOUS", "banking": "SUSPICIOUS", "browser": "SUSPICIOUS"}, "evidence": ["brand/brand_homograph[visual]", "visual/brand_visual"]}
 {"input": "p\u0430ypal.github.io", "a_label": "xn--pypal-4ve.github.io", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph[unicode]", "unicode/mixed_script", "unicode/whole_lookalike"]}
 {"input": "vietcombank.com.vn.evil.com", "a_label": "vietcombank.com.vn.evil.com", "verdicts": {"default": "SUSPICIOUS", "banking": "MALICIOUS", "browser": "SAFE"}, "evidence": ["combosquat/brand_in_host[name]"]}
@@ -120,6 +120,9 @@
 {"input": "paypal.com.evil.co.uk", "a_label": "paypal.com.evil.co.uk", "verdicts": {"default": "SUSPICIOUS", "banking": "MALICIOUS", "browser": "SAFE"}, "evidence": ["combosquat/brand_in_host[name]"]}
 {"input": "techc0mbank.com", "a_label": "techc0mbank.com", "verdicts": {"default": "SUSPICIOUS", "banking": "SUSPICIOUS", "browser": "SUSPICIOUS"}, "evidence": ["brand/brand_homograph[visual]", "visual/brand_visual"]}
 {"input": "g00gle.co.uk", "a_label": "g00gle.co.uk", "verdicts": {"default": "SUSPICIOUS", "banking": "SUSPICIOUS", "browser": "SUSPICIOUS"}, "evidence": ["brand/brand_homograph[visual]", "visual/brand_visual"]}
+{"input": "admin.cloud.microsoft", "a_label": "admin.cloud.microsoft", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}
+{"input": "cloud-microsoft-login.com", "a_label": "cloud-microsoft-login.com", "verdicts": {"default": "SUSPICIOUS", "banking": "MALICIOUS", "browser": "SAFE"}, "evidence": ["combosquat/brand_in_host[name]"]}
+{"input": "amazon-co-jp.com", "a_label": "amazon-co-jp.com", "verdicts": {"default": "SUSPICIOUS", "banking": "MALICIOUS", "browser": "SAFE"}, "evidence": ["combosquat/brand_in_host[name]"]}
 {"input": "https://paypal.com@evil.com/login", "a_label": "evil.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "SUSPICIOUS"}, "evidence": ["combosquat/brand_in_userinfo[name]", "idna/userinfo_domain"]}
 {"input": "https://user:pass@p\u0430ypal.com:8443/x?y=1#z", "a_label": "xn--pypal-4ve.com", "verdicts": {"default": "MALICIOUS", "banking": "MALICIOUS", "browser": "MALICIOUS"}, "evidence": ["brand/brand_homograph[unicode]", "unicode/mixed_script", "unicode/whole_lookalike"]}
 {"input": "HTTPS://WWW.PAYPAL.COM/", "a_label": "www.paypal.com", "verdicts": {"default": "SAFE", "banking": "SAFE", "browser": "SAFE"}, "evidence": []}

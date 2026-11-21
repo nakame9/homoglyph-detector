@@ -29,7 +29,7 @@ Danh sách thương hiệu cần bảo vệ là **dữ liệu, không phải cod
 | `brands[].keywords` | có | từ khóa để so typosquat / combosquat / hình ảnh: ASCII thường, ≥ 3 ký tự |
 | `brands[].category`, `country` | không | thông tin phân loại |
 
-Database đi kèm (`src/homoglyph_detector/data/brands.json`, version 1.0.0) có 13 thương hiệu: Apple, PayPal, Microsoft, Google, Facebook, Amazon, WhatsApp, Dropbox (toàn cầu) và Vietcombank, Techcombank, MoMo, Shopee, Zalo (Việt Nam).
+Database đi kèm (`src/homoglyph_detector/data/brands.json`, version 1.1.0) có 13 thương hiệu: Apple, PayPal, Microsoft, Google, Facebook, Amazon, WhatsApp, Dropbox (toàn cầu) và Vietcombank, Techcombank, MoMo, Shopee, Zalo (Việt Nam).
 
 ## Các lớp database
 

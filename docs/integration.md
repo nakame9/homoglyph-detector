@@ -24,13 +24,21 @@ và giữ bảng mã thoát hiện có. `--json` và `Report.to_dict()` vẫn xu
 
 - `input` là đích rút gọn: scheme, host và port chỉ định đối với URL; chỉ host đối
   với domain/email. Host dùng A-label hoặc IP chuẩn hóa; IPv6 có ngoặc vuông trong
-  `input`, không có ngoặc trong `host`.
+  `input`, không có ngoặc trong `host`. Với URL mà trình duyệt chấp nhận nhưng IDNA2008
+  strict không có dạng hợp lệ (`https://example_.com/`, `https://☃.com/`), `host` là host
+  ASCII trình duyệt tra DNS (`example_.com`, `xn--n3h.com`); chẩn đoán IDNA vẫn nằm trong
+  `findings`.
 - `input`, `host`, `port` là `null` khi không có đích chuẩn hóa, gồm tên hiển thị và
   đầu vào bị từ chối. `scheme` là `null` với đầu vào ngoài dạng URL. `port` cũng là
   `null` nếu URL không chỉ định port.
 - `has_userinfo` và `has_query` là cờ hiện diện, kể cả phần rỗng; cả hai là `null`
   khi `unsupported/too_long` vì không giữ chuỗi gốc để suy ra các cờ.
 - `parse_status`: `ok`, `rejected`, `unsupported`; `parse_reason` rỗng khi `ok`.
+  `rejected` nghĩa là trình duyệt từ chối đầu vào. `unsupported` nghĩa là công cụ không
+  đọc được đích, không phải trình duyệt từ chối: `too_long`, `opaque_host` (scheme không
+  đặc biệt như `git://`, `ssh://`; host giữ nguyên, không giải mã) và
+  `unicode_newer_than_runtime` (host có ký tự mới hơn cơ sở dữ liệu Unicode của Python
+  đang chạy). Cả hai trạng thái đều không chấm đích và ra ít nhất SUSPICIOUS.
   Trạng thái parse độc lập với verdict: nhánh bidi P1-b có thể là
   `rejected` và `MALICIOUS`.
 - `findings` chỉ xuất mã `kind`; `brand_in_userinfo` thêm `brand_id` từ Brand DB.

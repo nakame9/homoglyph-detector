@@ -108,6 +108,7 @@ Quy tắc chung: **mọi thay đổi làm đổi điểm của engine đều ph�
 | `host` | host như được viết (NFC, chữ ASCII viết thường) |
 | `a_label` | domain mà DNS thật sự thấy; rỗng nếu không resolver nào chấp nhận |
 | `resolved` | dạng U-label của `a_label`: domain thật sự được truy cập |
+| `browser_host` | chỉ có ở URL khi cả IDNA2008 strict lẫn UTS #46 lookup đều từ chối: host ASCII trình duyệt tra DNS (`example_.com`); dùng làm đích trong báo cáo tích hợp |
 | `strict_error`, `lookup_error` | lý do không hợp lệ theo IDNA2008 strict / UTS #46 |
 
 **EngineResult** (`engines/base.py`): `score` từ 0 đến 1, danh sách `findings`, và `facts` (thông tin không tính điểm, ví dụ restriction level). Điểm là noisy-OR của các bằng chứng; nhiều bằng chứng cùng loại chỉ tính một lần.
