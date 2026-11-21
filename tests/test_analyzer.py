@@ -190,8 +190,9 @@ def test_bidi_control(raw):
 def test_repository_has_no_hidden_characters():
     """Dogfooding: no Trojan-Source-style bidi or invisible characters in our own files."""
     root = Path(__file__).resolve().parents[1]
-    files = [p for p in root.rglob("*") if p.suffix in {".py", ".md", ".toml", ".yml", ".json"}
-             and ".git" not in p.parts and "data" not in p.parts]
+    skipped = {".git", "data", ".venv", "venv", "build", "dist", ".hypothesis", ".pytest_cache", ".cache"}
+    files = [p for p in root.rglob("*") if p.suffix in {".py", ".md", ".toml", ".yml", ".json"}   # our files only:
+             and not skipped.intersection(p.parts) and not any(part.endswith(".egg-info") for part in p.parts)]
     assert len(files) > 5
     for path in files:
         for line_no, line in enumerate(path.read_text("utf-8").splitlines(), 1):
