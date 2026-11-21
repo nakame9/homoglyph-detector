@@ -49,7 +49,10 @@ def test_label(case):
     assert (report.verdict != "SAFE") == (case["label"] == "attack"), (report.verdict, sorted(kinds(report)))
 
 
-@pytest.mark.parametrize("case", [c for c in CORPUS if "known_issue" in c], ids=lambda c: c["input"])
+KNOWN = [c for c in CORPUS if "known_issue" in c]   # may be empty: list ids work on every pytest version
+
+
+@pytest.mark.parametrize("case", KNOWN, ids=[c["input"] for c in KNOWN])
 def test_known_issues_are_still_issues(case):
     """Strict counterpart of the xfails above: when one gets fixed, drop its known_issue."""
     flagged = analyze(case["input"]).verdict != "SAFE"
